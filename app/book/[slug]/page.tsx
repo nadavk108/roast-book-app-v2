@@ -117,9 +117,10 @@ export default function BookPage() {
     : `Things ${book.victim_name} Would Never Say`;
 
   // Build slides array
+  // Cover uses victim's uploaded photo, then all generated images map to quotes
   const slides: Slide[] = [
     { type: 'cover', imageUrl: book.cover_image_url, quote: null },
-    ...book.full_image_urls.slice(1).map((url, i) => ({
+    ...book.full_image_urls.map((url, i) => ({
       type: 'roast' as const,
       imageUrl: url,
       quote: book.quotes[i],

@@ -161,14 +161,13 @@ export function TheEndPage({ victimName, bookUrl }: TheEndPageProps) {
         </div>
 
         {/* Create Your Own CTA */}
-        <div className="mt-6 pt-6 border-t border-white/10">
-          <Button
+        <div className="mt-6 pt-6 border-white/10">
+          <button
             onClick={() => window.location.href = '/'}
-            variant="outline"
-            className="w-full border-2 border-white text-white hover:bg-white hover:text-black font-bold transition-all"
+            className="w-full py-3 px-6 border-2 border-white/30 bg-white/10 backdrop-blur-sm text-white hover:bg-white hover:text-black font-bold rounded-xl transition-all hover:scale-105 active:scale-95"
           >
             Create Your Own Roast Book
-          </Button>
+          </button>
         </div>
       </div>
     </div>

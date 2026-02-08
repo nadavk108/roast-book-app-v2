@@ -193,30 +193,7 @@ export default function QuotesPage() {
 
     return (
         <div className="min-h-screen bg-[#FFFDF5] font-body text-black flex flex-col relative">
-            {/* Loading Overlay */}
-            {saving && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-8">
-                    <div className="bg-white rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl border-2 border-black">
-                        <div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-400 border-t-transparent mx-auto mb-6" />
-                        <h3 className="text-2xl font-heading font-black mb-2">
-                            {adminMode ? 'Generating Your Book...' : 'Creating Preview...'}
-                        </h3>
-                        <p className="text-gray-600 mb-4">
-                            {adminMode
-                                ? 'Crafting all your roasts with AI magic ✨'
-                                : 'Generating your first 3 roasts ✨'}
-                        </p>
-                        <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-                            <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                            <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                            <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                        </div>
-                        <p className="text-xs text-gray-400 mt-4">
-                            This usually takes 30-60 seconds
-                        </p>
-                    </div>
-                </div>
-            )}
+            {/* Removed generic loading overlay - user redirects to /progress page which has detailed loader */}
 
             <header className="px-6 py-4 flex items-center border-b-2 border-black bg-white sticky top-0 z-30">
                 <Link href="/" className="p-2 hover:bg-black/5 rounded-full transition-colors mr-4">
@@ -246,8 +223,8 @@ export default function QuotesPage() {
                         </div>
                     )}
 
-                    <div className="flex items-center justify-between mb-6">
-                        <div>
+                    <div className={`flex items-center justify-between mb-6 ${isPredominantlyHebrew(book?.victim_name || '') ? 'flex-row-reverse' : ''}`}>
+                        <div className="flex-1">
                             <h1
                                 className="text-2xl md:text-3xl font-heading font-black"
                                 dir={isPredominantlyHebrew(book?.victim_name || '') ? 'rtl' : 'ltr'}
@@ -259,7 +236,13 @@ export default function QuotesPage() {
                                     ? getHebrewBookTitle(book?.victim_name, book?.victim_gender)
                                     : `Things ${book?.victim_name} would NEVER say`}
                             </h1>
-                            <p className="text-gray-600 mt-1">
+                            <p
+                                className="text-gray-600 mt-1"
+                                dir={isPredominantlyHebrew(book?.victim_name || '') ? 'rtl' : 'ltr'}
+                                style={{
+                                    textAlign: isPredominantlyHebrew(book?.victim_name || '') ? 'right' : 'left',
+                                }}
+                            >
                                 {adminMode
                                     ? `${filledCount} quotes added (${minQuotes}-8 allowed)`
                                     : filledCount >= minQuotes
@@ -275,9 +258,9 @@ export default function QuotesPage() {
                                 setIsAssistantOpen(true);
                                 captureEvent(Events.ROAST_ASSISTANT_OPENED, { book_id: params.id });
                             }}
-                            className="bg-yellow-100 text-yellow-800 border-yellow-400 hover:bg-yellow-200"
+                            className={`bg-yellow-100 text-yellow-800 border-yellow-400 hover:bg-yellow-200 flex-shrink-0 ${isPredominantlyHebrew(book?.victim_name || '') ? 'ml-0 mr-4' : 'ml-4'}`}
                         >
-                            <Sparkles className="w-4 h-4 mr-2" />
+                            <Sparkles className={`w-4 h-4 ${isPredominantlyHebrew(book?.victim_name || '') ? 'ml-2' : 'mr-2'}`} />
                             Need ideas?
                         </Button>
                     </div>

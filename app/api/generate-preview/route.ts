@@ -176,15 +176,16 @@ export async function POST(request: NextRequest) {
     // STEP 6: Update book with generated images
     // Admin: Save to full_image_urls and mark complete
     // Regular: Save to preview_image_urls and mark preview_ready
+    // IMPORTANT: Use victim's photo as cover, NOT first generated image
     const updateData = adminMode
       ? {
           full_image_urls: previewImageUrls,
-          cover_image_url: previewImageUrls[0],
+          cover_image_url: book.victim_image_url,
           status: 'complete' as const,
         }
       : {
           preview_image_urls: previewImageUrls,
-          cover_image_url: previewImageUrls[0],
+          cover_image_url: book.victim_image_url,
           status: 'preview_ready' as const,
         };
 
