@@ -26,6 +26,9 @@ yarn-error.log*
 .env*.local
 .env
 
+# test files with potentially sensitive data
+test-*.js
+
 # vercel
 .vercel
 
