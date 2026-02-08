@@ -6,6 +6,15 @@ import { createClient } from '@/lib/supabase-server';
 // Increase timeout for file uploads
 export const maxDuration = 30; // 30 seconds
 
+// Increase body size limit for image uploads
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+};
+
 export async function POST(request: NextRequest) {
   console.log('Upload route called');
   try {

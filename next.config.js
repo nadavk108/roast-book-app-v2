@@ -13,6 +13,12 @@ const nextConfig = {
   experimental: {
     missingSuspenseWithCSRBailout: false,
   },
+  // Increase body size limit for image uploads (default is 4MB)
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
   images: {
     remotePatterns: [
       {
