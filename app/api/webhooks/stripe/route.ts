@@ -1,0 +1,90 @@
+import { NextRequest, NextResponse } from 'next/server';
+import Stripe from 'stripe';
+import { supabaseAdmin } from '@/lib/supabase';
+import stripe from '@/lib/stripe';
+
+export async function POST(request: NextRequest) {
+  const body = await request.text();
+  const signature = request.headers.get('stripe-signature');
+
+  if (!signature) {
+    return NextResponse.json(
+      { error: 'Missing signature' },
+      { status: 400 }
+    );
+  }
+
+  let event: Stripe.Event;
+
+  try {
+    event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET!
+    );
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err);
+    return NextResponse.json(
+      { error: 'Invalid signature' },
+      { status: 400 }
+    );
+  }
+
+  // Handle the checkout.session.completed event
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const bookId = session.metadata?.bookId;
+
+    if (!bookId) {
+      console.error('[Webhook] No bookId in session metadata');
+      return NextResponse.json({ received: true });
+    }
+
+    console.log(`[Webhook] Payment successful for book ${bookId}`);
+
+    // Update the book status to paid
+    const { error: updateError } = await supabaseAdmin
+      .from('roast_books')
+      .update({
+        status: 'paid',
+        stripe_payment_intent: session.payment_intent as string,
+      })
+      .eq('id', bookId);
+
+    if (updateError) {
+      console.error(`[Webhook] Failed to update book status:`, updateError);
+      return NextResponse.json({ received: true, error: 'Failed to update book' });
+    }
+
+    console.log(`[Webhook] Book ${bookId} marked as paid`);
+
+    // Trigger remaining image generation
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+      const generateUrl = `${baseUrl}/api/generate-remaining`;
+
+      console.log(`[Webhook] Triggering remaining generation: ${generateUrl}`);
+
+      const response = await fetch(generateUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ bookId }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[Webhook] Generate-remaining failed: ${response.status} ${errorText}`);
+      } else {
+        const result = await response.json();
+        console.log(`[Webhook] ✅ Generate-remaining triggered:`, result);
+      }
+    } catch (triggerError) {
+      console.error(`[Webhook] Error triggering generate-remaining:`, triggerError);
+      // Don't fail the webhook - the generation will be retried
+    }
+  }
+
+  return NextResponse.json({ received: true });
+}

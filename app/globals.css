@@ -1,0 +1,276 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import bold fonts */
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+/* Neo-Brutalist Design System - The Roast Book */
+@layer base {
+  :root {
+    /* Core palette - Neo Brutalism */
+    --background: 60 9% 98%;
+    --foreground: 0 0% 5%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 5%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 5%;
+
+    /* Electric Yellow - Primary */
+    --primary: 48 96% 53%;
+    --primary-foreground: 0 0% 5%;
+
+    /* Hot Pink - Accent */
+    --accent: 330 85% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Deep Black - Secondary */
+    --secondary: 0 0% 5%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 60 5% 90%;
+    --muted-foreground: 0 0% 35%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 5%;
+    --input: 0 0% 5%;
+    --ring: 48 96% 53%;
+
+    --radius: 0.75rem;
+
+    /* Neo-Brutalist shadows */
+    --shadow-brutal: 4px 4px 0px hsl(0, 0%, 5%);
+    --shadow-brutal-lg: 6px 6px 0px hsl(0, 0%, 5%);
+    --shadow-brutal-xl: 8px 8px 0px hsl(0, 0%, 5%);
+    --shadow-brutal-hover: 2px 2px 0px hsl(0, 0%, 5%);
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 5%;
+    --sidebar-primary: 48 96% 53%;
+    --sidebar-primary-foreground: 0 0% 5%;
+    --sidebar-accent: 330 85% 60%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 5%;
+    --sidebar-ring: 48 96% 53%;
+  }
+
+  .dark {
+    --background: 0 0% 8%;
+    --foreground: 60 9% 98%;
+
+    --card: 0 0% 12%;
+    --card-foreground: 60 9% 98%;
+
+    --popover: 0 0% 12%;
+    --popover-foreground: 60 9% 98%;
+
+    --primary: 48 96% 53%;
+    --primary-foreground: 0 0% 5%;
+
+    --accent: 330 85% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --secondary: 60 9% 98%;
+    --secondary-foreground: 0 0% 5%;
+
+    --muted: 0 0% 18%;
+    --muted-foreground: 60 5% 65%;
+
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 60 9% 98%;
+    --input: 60 9% 98%;
+    --ring: 48 96% 53%;
+
+    --shadow-brutal: 4px 4px 0px hsl(60, 9%, 98%);
+    --shadow-brutal-lg: 6px 6px 0px hsl(60, 9%, 98%);
+    --shadow-brutal-xl: 8px 8px 0px hsl(60, 9%, 98%);
+    --shadow-brutal-hover: 2px 2px 0px hsl(60, 9%, 98%);
+
+    --sidebar-background: 0 0% 12%;
+    --sidebar-foreground: 60 9% 98%;
+    --sidebar-primary: 48 96% 53%;
+    --sidebar-primary-foreground: 0 0% 5%;
+    --sidebar-accent: 330 85% 60%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 60 9% 98%;
+    --sidebar-ring: 48 96% 53%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-bold tracking-tight;
+  }
+}
+
+@layer utilities {
+  /* Brutal shadow utilities */
+  .shadow-brutal {
+    box-shadow: var(--shadow-brutal);
+  }
+
+  .shadow-brutal-lg {
+    box-shadow: var(--shadow-brutal-lg);
+  }
+
+  .shadow-brutal-xl {
+    box-shadow: var(--shadow-brutal-xl);
+  }
+
+  .shadow-brutal-hover {
+    box-shadow: var(--shadow-brutal-hover);
+  }
+
+  /* Brutal hover effect */
+  .brutal-hover {
+    @apply transition-all duration-150;
+  }
+
+  .brutal-hover:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--shadow-brutal-lg);
+  }
+
+  .brutal-hover:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+  }
+
+  /* Pattern backgrounds */
+  .bg-dots {
+    background-image: radial-gradient(circle, hsl(0, 0%, 5%) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, hsl(0, 0%, 90%) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(0, 0%, 90%) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  .bg-diagonal {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      hsl(0, 0%, 95%) 10px,
+      hsl(0, 0%, 95%) 20px
+    );
+  }
+
+  /* RTL Support Preparation */
+  [dir="rtl"] .rtl-flip {
+    transform: scaleX(-1);
+  }
+
+  /* Shimmer animation for progress bars */
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 1.5s infinite ease-in-out;
+  }
+
+  /* Sliding animation for indeterminate progress */
+  @keyframes slide-right {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(400%);
+    }
+  }
+
+  .animate-slide-right {
+    animation: slide-right 2s infinite ease-in-out;
+  }
+
+  /* Safe area padding for mobile devices (notches, home indicators) */
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .pt-safe {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+
+  .mb-safe {
+    margin-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .px-safe {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Full safe area inset wrapper */
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Fixed elements safe positioning */
+  .fixed-safe-top {
+    top: env(safe-area-inset-top);
+  }
+
+  .fixed-safe-bottom {
+    bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Custom scrollbar for brutal aesthetic */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-left: 3px solid hsl(var(--border));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--foreground));
+  border: 3px solid hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary));
+}
+
+/* Mobile viewport height fix for iOS Safari */
+@supports (-webkit-touch-callout: none) {
+  .min-h-screen {
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* Ensure body fills safe area on iOS */
+html, body {
+  min-height: 100%;
+  min-height: 100dvh;
+}

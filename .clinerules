@@ -1,0 +1,136 @@
+{
+  "customCommands": [
+    {
+      "name": "create_issue",
+      "description": "Quickly capture a bug or feature idea in Linear",
+      "prompt": "{{file:claude_create_issue.md}}"
+    },
+    {
+      "name": "exploration_phase",
+      "description": "Deeply understand a problem before building",
+      "prompt": "{{file:claude_exploration_phase.md}}"
+    },
+    {
+      "name": "create_plan",
+      "description": "Create a detailed technical implementation plan",
+      "prompt": "{{file:claude_create_plan.md}}"
+    },
+    {
+      "name": "execute_plan",
+      "description": "Execute the plan step-by-step",
+      "prompt": "{{file:claude_execute_plan.md}}"
+    },
+    {
+      "name": "review",
+      "description": "Review code for bugs and quality issues",
+      "prompt": "{{file:claude_review.md}}"
+    },
+    {
+      "name": "update_docs",
+      "description": "Update documentation after shipping a feature",
+      "prompt": "{{file:claude_update_docs.md}}"
+    }
+  ]
+}
+```
+
+### Step 4: Save and Restart
+
+1. **Save the file** (Cmd+S)
+2. **Restart VS Code**
+3. **Test**: Open Claude Code, type `/` and see if commands appear
+
+---
+
+## 🔄 Alternative: Skip the Config File Entirely
+
+If the above doesn't work, **you don't actually need** `.clinerules`. Just use **manual invocation** which always works:
+
+### How Manual Invocation Works:
+
+Instead of typing `/exploration_phase`, you type:
+```
+Read and follow the instructions in claude_exploration_phase.md
+
+Context: I want to add a share to Instagram button
+```
+
+**That's it.** Claude will read the file and follow it exactly.
+
+---
+
+## 📋 Your Complete Manual Commands (Copy-Paste Ready)
+
+**Session Start:**
+```
+Read CLAUDE_CONTEXT.md and claude_rules.md first. Ready? Here's what I need:
+```
+
+**Capture Idea:**
+```
+Read and follow claude_create_issue.md
+
+Issue: [describe bug/feature]
+```
+
+**Start Feature:**
+```
+Read and follow claude_exploration_phase.md
+
+Context: [what you want to build]
+```
+
+**Create Plan:**
+```
+Read and follow claude_create_plan.md
+```
+
+**Execute Plan:**
+```
+Read and follow claude_execute_plan.md
+```
+
+**Review Code:**
+```
+Read and follow claude_review.md
+```
+
+**Update Docs:**
+```
+Read and follow claude_update_docs.md
+```
+
+---
+
+## 🎯 My Recommendation
+
+**Use the manual method.** It's actually more reliable across different Claude Code versions and you don't need any special config files.
+
+**Benefits:**
+- ✅ Works on all setups
+- ✅ No hidden file issues
+- ✅ More explicit (you see what you're doing)
+- ✅ Can add custom context easily
+
+**Downside:**
+- Slightly more typing (but you can use Mac text replacement shortcut we set up earlier!)
+
+---
+
+## 💡 Use Your Mac Text Replacement
+
+Remember the `ccstart` shortcut we created? **Create more for each command:**
+
+### Go to Mac System Settings → Keyboard → Text Replacements
+
+Add these:
+
+| Replace | With |
+|---------|------|
+| `ccexplore` | `Read and follow claude_exploration_phase.md` |
+| `ccplan` | `Read and follow claude_create_plan.md` |
+| `ccexecute` | `Read and follow claude_execute_plan.md` |
+| `ccreview` | `Read and follow claude_review.md` |
+| `ccdocs` | `Read and follow claude_update_docs.md` |
+| `ccissue` | `Read and follow claude_create_issue.md` |
+
