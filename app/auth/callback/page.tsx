@@ -7,7 +7,42 @@ import { createClient } from '@/lib/supabase-client';
 export default function AuthCallbackPage() {
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string>('Completing sign in...');
   const hasRun = useRef(false);
+
+  /**
+   * Wait for Supabase session cookie to be present in browser before redirecting
+   * This prevents middleware race condition where redirect happens before cookie is committed
+   */
+  const waitForCookie = (destination: string): Promise<void> => {
+    return new Promise((resolve) => {
+      console.log('[AUTH CALLBACK PAGE] 🍪 Waiting for session cookie to be committed...');
+      setStatus('Finalizing login...');
+
+      let attempts = 0;
+      const maxAttempts = 20; // 20 attempts * 100ms = 2 seconds
+
+      const checkCookie = setInterval(() => {
+        attempts++;
+
+        // Check if Supabase session cookie exists (usually starts with 'sb-')
+        const cookies = document.cookie;
+        const hasSupabaseCookie = cookies.includes('sb-') && cookies.includes('access-token');
+
+        if (hasSupabaseCookie) {
+          console.log('[AUTH CALLBACK PAGE] ✅ Session cookie confirmed in browser');
+          console.log('[AUTH CALLBACK PAGE] 🔄 Safe to redirect after', attempts * 100, 'ms');
+          clearInterval(checkCookie);
+          resolve();
+        } else if (attempts >= maxAttempts) {
+          // Fallback: Cookie might be HttpOnly (not visible to JS), redirect anyway
+          console.log('[AUTH CALLBACK PAGE] ⏱️  Timeout: Redirecting after 2s (cookie might be HttpOnly)');
+          clearInterval(checkCookie);
+          resolve();
+        }
+      }, 100); // Check every 100ms
+    });
+  };
 
   useEffect(() => {
     // Prevent duplicate runs in React Strict Mode
@@ -51,10 +86,12 @@ export default function AuthCallbackPage() {
           if (sessionData?.session) {
             console.log('[AUTH CALLBACK PAGE] ✅ Session exists! First run succeeded, ignoring error.');
             console.log('[AUTH CALLBACK PAGE] ✅ Session for:', sessionData.session.user?.email);
+
+            // Wait for cookie to be committed before redirecting
+            await waitForCookie(`${origin}${next}`);
+
             console.log('[AUTH CALLBACK PAGE] 🔄 Hard redirect to:', `${origin}${next}`);
-            // CRITICAL: Use window.location.href to force full page reload
-            // This ensures middleware receives fresh auth cookies
-            window.location.href = `${origin}${next}`;
+            window.location.assign(`${origin}${next}`);
             return;
           }
 
@@ -69,10 +106,12 @@ export default function AuthCallbackPage() {
 
         if (data?.session) {
           console.log('[AUTH CALLBACK PAGE] ✅ Session established for:', data.user?.email);
+
+          // Wait for cookie to be committed before redirecting
+          await waitForCookie(`${origin}${next}`);
+
           console.log('[AUTH CALLBACK PAGE] 🔄 Hard redirect to:', `${origin}${next}`);
-          // CRITICAL: Use window.location.href to force full page reload
-          // This ensures middleware receives fresh auth cookies
-          window.location.href = `${origin}${next}`;
+          window.location.assign(`${origin}${next}`);
         } else {
           console.error('[AUTH CALLBACK PAGE] ❌ No session in response');
           setError('Failed to establish session');
@@ -107,8 +146,12 @@ export default function AuthCallbackPage() {
         ) : (
           <>
             <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <h1 className="text-2xl font-bold mb-2">Completing sign in...</h1>
-            <p className="text-gray-600">Please wait a moment</p>
+            <h1 className="text-2xl font-bold mb-2">{status}</h1>
+            <p className="text-gray-600 text-sm">
+              {status === 'Finalizing login...'
+                ? 'Securing your session...'
+                : 'Please wait a moment'}
+            </p>
           </>
         )}
       </div>
