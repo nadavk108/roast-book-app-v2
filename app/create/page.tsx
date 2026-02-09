@@ -34,10 +34,10 @@ export default function UploadPage() {
             return;
         }
 
-        // Check file size (max 10MB)
-        const maxSize = 10 * 1024 * 1024; // 10MB
+        // Check file size (max 4MB for Vercel Hobby plan)
+        const maxSize = 4 * 1024 * 1024; // 4MB
         if (imageFile.size > maxSize) {
-            alert('Image is too large. Please upload an image smaller than 10MB.');
+            alert('Image is too large. Please upload an image smaller than 4MB.');
             return;
         }
 

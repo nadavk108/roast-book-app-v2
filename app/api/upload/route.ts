@@ -6,14 +6,9 @@ import { createClient } from '@/lib/supabase-server';
 // Increase timeout for file uploads
 export const maxDuration = 30; // 30 seconds
 
-// Increase body size limit for image uploads
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-  },
-};
+// Note: Body size limit in Vercel is 4.5MB for Hobby plan
+// Vercel Pro supports up to 10MB
+// We handle this on the client side by checking file size before upload
 
 export async function POST(request: NextRequest) {
   console.log('Upload route called');
