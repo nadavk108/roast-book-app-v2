@@ -166,7 +166,12 @@ export default function PreviewPage() {
   };
 
   const handleCheckout = async () => {
-    if (!book) return;
+    if (!book) {
+      console.error('[CHECKOUT] No book found');
+      return;
+    }
+
+    console.log('[CHECKOUT] Starting checkout for book:', book.id, 'Status:', book.status);
 
     // Admin users shouldn't see this button, but handle it gracefully
     if (adminMode) {
@@ -182,13 +187,18 @@ export default function PreviewPage() {
 
     setCheckingOut(true);
     try {
+      console.log('[CHECKOUT] Calling /api/checkout with bookId:', book.id);
+
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bookId: book.id }),
       });
 
+      console.log('[CHECKOUT] Response status:', res.status, res.ok);
+
       const data = await res.json();
+      console.log('[CHECKOUT] Response data:', data);
 
       // Handle admin bypass response
       if (data.bypassPayment || data.isAdmin) {
@@ -197,11 +207,16 @@ export default function PreviewPage() {
         return;
       }
 
-      if (!res.ok) throw new Error('Checkout failed');
+      if (!res.ok) {
+        console.error('[CHECKOUT] API returned error:', data);
+        throw new Error(data.error || 'Checkout failed');
+      }
+
+      console.log('[CHECKOUT] Redirecting to Stripe:', data.sessionUrl);
       window.location.href = data.sessionUrl;
-    } catch (error) {
-      console.error(error);
-      alert('Failed to start checkout');
+    } catch (error: any) {
+      console.error('[CHECKOUT] Error:', error);
+      alert(`Failed to start checkout: ${error.message || 'Unknown error'}`);
       setCheckingOut(false);
     }
   };
