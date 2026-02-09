@@ -79,16 +79,23 @@ export async function resetPassword(email: string) {
   return { success: true };
 }
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(nextUrl?: string) {
   const supabase = createClient();
 
   // Track sign-in attempt
   captureEvent(Events.GOOGLE_SIGNIN_CLICKED);
 
+  // Build redirect URL with next parameter to preserve destination
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001';
+  const destination = nextUrl || '/dashboard';
+  const callbackUrl = `${baseUrl}/auth/callback?next=${encodeURIComponent(destination)}`;
+
+  console.log('[GOOGLE SIGNIN] Redirect URL:', callbackUrl);
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/auth/callback`,
+      redirectTo: callbackUrl,
     },
   });
 

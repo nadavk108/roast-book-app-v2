@@ -44,7 +44,13 @@ export default function LoginPage() {
       setLoading(true);
       setError(null);
       setSuccessMessage(null);
-      await signInWithGoogle();
+
+      // Get redirect destination from URL params (set by middleware)
+      const redirectParam = searchParams.get('redirect');
+      console.log('[LOGIN] Redirect param from URL:', redirectParam);
+
+      // Pass redirect destination to OAuth flow
+      await signInWithGoogle(redirectParam || '/dashboard');
     } catch (err) {
       console.error('Sign-in error:', err);
       setError('Failed to sign in. Please try again.');
