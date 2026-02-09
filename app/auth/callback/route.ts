@@ -6,10 +6,14 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
   const origin = requestUrl.origin;
+  const next = requestUrl.searchParams.get('next') || '/dashboard';
 
   if (code) {
-    // Create response to properly set cookies
-    const response = NextResponse.redirect(`${origin}/dashboard`);
+    let response = NextResponse.next({
+      request: {
+        headers: request.headers,
+      },
+    });
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,7 +24,16 @@ export async function GET(request: NextRequest) {
             return request.cookies.get(name)?.value;
           },
           set(name: string, value: string, options: CookieOptions) {
-            // Set cookies in both request and response
+            request.cookies.set({
+              name,
+              value,
+              ...options,
+            });
+            response = NextResponse.next({
+              request: {
+                headers: request.headers,
+              },
+            });
             response.cookies.set({
               name,
               value,
@@ -28,6 +41,16 @@ export async function GET(request: NextRequest) {
             });
           },
           remove(name: string, options: CookieOptions) {
+            request.cookies.set({
+              name,
+              value: '',
+              ...options,
+            });
+            response = NextResponse.next({
+              request: {
+                headers: request.headers,
+              },
+            });
             response.cookies.set({
               name,
               value: '',
@@ -40,15 +63,16 @@ export async function GET(request: NextRequest) {
 
     const { error, data } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (!error && data.user) {
-      console.log('[AUTH CALLBACK] Session established for user:', data.user.email);
-      // Cookies are already set in the response object above
-      return response;
+    if (!error && data.session) {
+      console.log('[AUTH CALLBACK] ✅ Session established for:', data.user?.email);
+      console.log('[AUTH CALLBACK] Redirecting to:', next);
+      return NextResponse.redirect(`${origin}${next}`);
     }
 
-    console.error('[AUTH CALLBACK] Failed to exchange code:', error);
+    console.error('[AUTH CALLBACK] ❌ Failed to exchange code:', error?.message);
   }
 
   // Return the user to an error page with instructions
+  console.error('[AUTH CALLBACK] ❌ No code provided or auth failed');
   return NextResponse.redirect(`${origin}/login?error=auth_failed`);
 }
