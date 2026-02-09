@@ -85,17 +85,25 @@ export async function signInWithGoogle(nextUrl?: string) {
   // Track sign-in attempt
   captureEvent(Events.GOOGLE_SIGNIN_CLICKED);
 
-  // Build redirect URL with next parameter to preserve destination
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001';
+  // FIX: Sanitize environment variable to remove newline characters
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001').trim();
   const destination = nextUrl || '/dashboard';
   const callbackUrl = `${baseUrl}/auth/callback?next=${encodeURIComponent(destination)}`;
+
+  // VERIFICATION: Prove the sanitization worked
+  console.log('═══════════════════════════════════════════════');
+  console.log('[AUTH] 🔍 ENVIRONMENT VARIABLE SANITIZATION');
+  console.log('[AUTH] Raw env value:', JSON.stringify(process.env.NEXT_PUBLIC_APP_URL));
+  console.log('[AUTH] Sanitized baseUrl:', baseUrl);
+  console.log('[AUTH] Sanitized length:', baseUrl.length, 'chars');
+  console.log('[AUTH] Expected length: 26 chars for https://theroastbook.com');
+  console.log('[AUTH] Last char code:', baseUrl.charCodeAt(baseUrl.length - 1), '(should be 109 for "m")');
+  console.log('═══════════════════════════════════════════════');
 
   // DIAGNOSTIC: Log exact values being used
   console.log('═══════════════════════════════════════════════');
   console.log('[GOOGLE SIGNIN] 🔍 DIAGNOSTIC LOGS');
   console.log('[GOOGLE SIGNIN] Input nextUrl:', nextUrl);
-  console.log('[GOOGLE SIGNIN] NEXT_PUBLIC_APP_URL env:', process.env.NEXT_PUBLIC_APP_URL);
-  console.log('[GOOGLE SIGNIN] Computed baseUrl:', baseUrl);
   console.log('[GOOGLE SIGNIN] Computed destination:', destination);
   console.log('[GOOGLE SIGNIN] Final callbackUrl:', callbackUrl);
   console.log('[GOOGLE SIGNIN] Current window.location.href:', window.location.href);
