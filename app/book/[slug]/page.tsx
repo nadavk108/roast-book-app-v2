@@ -292,11 +292,20 @@ export default function BookPage() {
         )}
       </div>
 
-      {/* Page Counter - Bottom Center */}
-      <div className="absolute bottom-4 left-0 right-0 z-30 pb-safe pointer-events-none">
-        <p className="text-white/70 text-xs font-medium text-center drop-shadow-lg">
-          {activeIndex + 1} / {slides.length}
-        </p>
+      {/* Page Counter - Minimal and subtle */}
+      <div className="absolute bottom-2 left-0 right-0 z-30 pb-safe pointer-events-none">
+        <div className="flex items-center justify-center gap-1">
+          {slides.map((_, index) => (
+            <div
+              key={index}
+              className={`h-1 rounded-full transition-all ${
+                index === activeIndex
+                  ? 'w-6 bg-white/90'
+                  : 'w-1 bg-white/40'
+              }`}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Tap Zones Visual Guide (Optional - Remove in production) */}

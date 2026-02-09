@@ -359,25 +359,52 @@ export default function PreviewPage() {
 
         {/* Slide Content */}
         {currentPage.type === 'locked' ? (
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center p-8" onClick={(e) => e.stopPropagation()}>
-            <div className="text-center">
-              <div className="text-6xl mb-6">🔒</div>
-              <h2 className="text-2xl font-heading font-black text-white mb-2">
-                Unlock Full Book
-              </h2>
-              <p className="text-gray-400 mb-8 max-w-sm">
-                Get all {book.quotes.length} hilarious roasts and share the complete book
-              </p>
-              <Button
-                onClick={handleCheckout}
-                disabled={checkingOut}
-                size="lg"
-                className="bg-yellow-400 hover:bg-yellow-500 text-black font-heading font-black text-lg px-8 py-6 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
-              >
-                {checkingOut ? 'Processing...' : 'Unlock Book - $9.99'}
-              </Button>
+          <>
+            {/* Blurred/locked background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900" />
+
+            {/* Quote shown even when locked - at bottom */}
+            {currentPage.quote && (
+              <div className="absolute bottom-0 left-0 right-0 pb-safe pb-12">
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
+                <div className="relative z-10 mx-6 mb-6">
+                  <div className="bg-black/40 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl">
+                    <p
+                      className="text-xl md:text-2xl font-heading font-bold text-white text-center leading-snug"
+                      dir={isPredominantlyHebrew(currentPage.quote) ? 'rtl' : 'ltr'}
+                    >
+                      "{currentPage.quote}"
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Paywall overlay - centered, but allows tap-through for navigation */}
+            <div className="absolute inset-0 flex items-center justify-center p-8 pointer-events-none">
+              <div className="text-center pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="text-6xl mb-6">🔒</div>
+                <h2 className="text-2xl font-heading font-black text-white mb-2">
+                  Unlock Full Book
+                </h2>
+                <p className="text-gray-400 mb-8 max-w-sm">
+                  Get all {book.quotes.length} hilarious roasts and share the complete book
+                </p>
+                <Button
+                  onClick={handleCheckout}
+                  disabled={checkingOut}
+                  size="lg"
+                  className="bg-yellow-400 hover:bg-yellow-500 text-black font-heading font-black text-lg px-8 py-6 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                >
+                  {checkingOut ? 'Processing...' : 'Unlock Book - $9.99'}
+                </Button>
+                <p className="text-white/50 text-xs mt-4">
+                  ← Tap sides to preview more quotes →
+                </p>
+              </div>
             </div>
-          </div>
+          </>
+
         ) : (
           <>
             {/* Cover Slide Content */}
@@ -439,11 +466,20 @@ export default function PreviewPage() {
         )}
       </div>
 
-      {/* Page Counter - Bottom Center */}
-      <div className="absolute bottom-4 left-0 right-0 z-30 pb-safe pointer-events-none">
-        <p className="text-white/70 text-xs font-medium text-center drop-shadow-lg">
-          {activeIndex + 1} / {totalPages}
-        </p>
+      {/* Page Counter - Minimal dot indicators */}
+      <div className="absolute bottom-2 left-0 right-0 z-30 pb-safe pointer-events-none">
+        <div className="flex items-center justify-center gap-1">
+          {pages.map((_, index) => (
+            <div
+              key={index}
+              className={`h-1 rounded-full transition-all ${
+                index === activeIndex
+                  ? 'w-6 bg-white/90'
+                  : 'w-1 bg-white/40'
+              }`}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
