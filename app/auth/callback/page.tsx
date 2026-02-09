@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-client';
 
@@ -8,17 +8,25 @@ export default function AuthCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
+  const hasRun = useRef(false);
 
   useEffect(() => {
+    // Prevent duplicate runs in React Strict Mode
+    if (hasRun.current) {
+      console.log('[AUTH CALLBACK PAGE] ⏭️  Skipping duplicate run (React Strict Mode)');
+      return;
+    }
+    hasRun.current = true;
+
     const code = searchParams.get('code');
     const next = searchParams.get('next') || '/dashboard';
 
-    console.log('[AUTH CALLBACK PAGE] Starting auth flow');
+    console.log('[AUTH CALLBACK PAGE] 🔵 Starting auth flow');
     console.log('[AUTH CALLBACK PAGE] Code present:', !!code);
     console.log('[AUTH CALLBACK PAGE] Next destination:', next);
 
     if (!code) {
-      console.error('[AUTH CALLBACK PAGE] No code provided');
+      console.error('[AUTH CALLBACK PAGE] ❌ No code provided');
       router.push('/login?error=no_code');
       return;
     }
@@ -28,11 +36,27 @@ export default function AuthCallbackPage() {
         console.log('[AUTH CALLBACK PAGE] Creating Supabase client...');
         const supabase = createClient();
 
-        console.log('[AUTH CALLBACK PAGE] Exchanging code for session...');
+        console.log('[AUTH CALLBACK PAGE] 🔄 Exchanging code for session...');
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (error) {
-          console.error('[AUTH CALLBACK PAGE] Error exchanging code:', error);
+          console.error('[AUTH CALLBACK PAGE] ⚠️  Error exchanging code:', error.message);
+
+          // SAFETY CHECK: Code might be already used (React Strict Mode double-run)
+          // Check if session exists anyway before failing
+          console.log('[AUTH CALLBACK PAGE] 🔍 Safety check: Checking for existing session...');
+          const { data: sessionData } = await supabase.auth.getSession();
+
+          if (sessionData?.session) {
+            console.log('[AUTH CALLBACK PAGE] ✅ Session exists! First run succeeded, ignoring error.');
+            console.log('[AUTH CALLBACK PAGE] ✅ Session for:', sessionData.session.user?.email);
+            console.log('[AUTH CALLBACK PAGE] ↪️  Redirecting to:', next);
+            router.push(next);
+            return;
+          }
+
+          // Both exchange failed AND no session exists - real error
+          console.error('[AUTH CALLBACK PAGE] ❌ No session found. Auth truly failed.');
           setError(error.message);
           setTimeout(() => router.push('/login?error=auth_failed'), 2000);
           return;
@@ -40,15 +64,15 @@ export default function AuthCallbackPage() {
 
         if (data?.session) {
           console.log('[AUTH CALLBACK PAGE] ✅ Session established for:', data.user?.email);
-          console.log('[AUTH CALLBACK PAGE] Redirecting to:', next);
+          console.log('[AUTH CALLBACK PAGE] ↪️  Redirecting to:', next);
           router.push(next);
         } else {
-          console.error('[AUTH CALLBACK PAGE] No session in response');
+          console.error('[AUTH CALLBACK PAGE] ❌ No session in response');
           setError('Failed to establish session');
           setTimeout(() => router.push('/login?error=no_session'), 2000);
         }
       } catch (err: any) {
-        console.error('[AUTH CALLBACK PAGE] Exception:', err);
+        console.error('[AUTH CALLBACK PAGE] ❌ Exception:', err);
         setError(err.message || 'Authentication failed');
         setTimeout(() => router.push('/login?error=exception'), 2000);
       }
