@@ -66,7 +66,16 @@ export async function GET(request: NextRequest) {
     if (!error && data.session) {
       console.log('[AUTH CALLBACK] ✅ Session established for:', data.user?.email);
       console.log('[AUTH CALLBACK] Redirecting to:', next);
-      return NextResponse.redirect(`${origin}${next}`);
+
+      // CRITICAL: Use the response object that has cookies, don't create a new redirect
+      const redirectResponse = NextResponse.redirect(`${origin}${next}`);
+
+      // Copy all cookies from the response that was used by Supabase
+      response.cookies.getAll().forEach(cookie => {
+        redirectResponse.cookies.set(cookie);
+      });
+
+      return redirectResponse;
     }
 
     console.error('[AUTH CALLBACK] ❌ Failed to exchange code:', error?.message);
