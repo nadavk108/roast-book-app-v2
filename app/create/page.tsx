@@ -164,7 +164,7 @@ export default function UploadPage() {
 
                         <div>
                             <label className="block text-sm font-bold mb-2">
-                                Gender (for Hebrew books)
+                                Gender
                             </label>
                             <div className="flex gap-3">
                                 <button

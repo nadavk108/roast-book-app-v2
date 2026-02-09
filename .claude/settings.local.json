@@ -29,7 +29,8 @@
       "Bash(vercel --prod:*)",
       "Bash(git init:*)",
       "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(grep:*)"
     ]
   }
 }
