@@ -21,10 +21,15 @@ export default async function DashboardPage({
         data: { user },
     } = await supabase.auth.getUser();
 
+    console.log('[DASHBOARD] 🔍 User check:', user ? `✅ Authenticated as ${user.email}` : '❌ No user found');
+
     // Redirect to login if not authenticated
     if (!user) {
+        console.log('[DASHBOARD] ↪️  Redirecting to login - no authenticated user');
         redirect('/login?redirect=/dashboard');
     }
+
+    console.log('[DASHBOARD] ✅ Loading dashboard for:', user.email);
 
     const query = searchParams.q || '';
 

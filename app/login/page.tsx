@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Flame, Loader2, Eye, EyeOff } from 'lucide-react';
 import { signInWithGoogle, signInWithEmail, resetPassword } from '@/lib/auth';
 import { BrutalButton } from '@/components/ui/brutal-button';
@@ -11,9 +11,22 @@ import { Label } from '@/components/ui/label';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Debug logging
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    const redirectParam = searchParams.get('redirect');
+    console.log('[LOGIN PAGE] 🔍 Mounted with params:', { error: errorParam, redirect: redirectParam });
+
+    if (errorParam) {
+      console.log('[LOGIN PAGE] ❌ Error from URL params:', errorParam);
+      setError('Authentication failed. Please try again.');
+    }
+  }, [searchParams]);
 
   // Email/Password state
   const [email, setEmail] = useState('');
