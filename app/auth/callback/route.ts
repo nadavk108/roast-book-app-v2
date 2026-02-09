@@ -1,4 +1,5 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -8,19 +9,10 @@ export async function GET(request: NextRequest) {
   const origin = requestUrl.origin;
   const next = requestUrl.searchParams.get('next') || '/dashboard';
 
-  console.log('[AUTH CALLBACK] 🔵 Started - URL:', requestUrl.toString());
-  console.log('[AUTH CALLBACK] 🔵 Code present:', !!code);
-  console.log('[AUTH CALLBACK] 🔵 Origin:', origin);
-  console.log('[AUTH CALLBACK] 🔵 Next destination:', next);
+  console.log('[AUTH CALLBACK] 🔵 Started - Code present:', !!code);
 
   if (code) {
-    let response = NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    });
-
-    let cookiesSet: string[] = [];
+    const cookieStore = cookies();
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,46 +20,15 @@ export async function GET(request: NextRequest) {
       {
         cookies: {
           get(name: string) {
-            const value = request.cookies.get(name)?.value;
-            console.log('[AUTH CALLBACK] 🔍 Cookie GET:', name, value ? '(has value)' : '(empty)');
-            return value;
+            return cookieStore.get(name)?.value;
           },
           set(name: string, value: string, options: CookieOptions) {
-            console.log('[AUTH CALLBACK] 🍪 Cookie SET:', name, 'options:', JSON.stringify(options));
-            cookiesSet.push(name);
-            request.cookies.set({
-              name,
-              value,
-              ...options,
-            });
-            response = NextResponse.next({
-              request: {
-                headers: request.headers,
-              },
-            });
-            response.cookies.set({
-              name,
-              value,
-              ...options,
-            });
+            console.log('[AUTH CALLBACK] 🍪 Setting cookie:', name);
+            cookieStore.set({ name, value, ...options });
           },
           remove(name: string, options: CookieOptions) {
-            console.log('[AUTH CALLBACK] 🗑️  Cookie REMOVE:', name);
-            request.cookies.set({
-              name,
-              value: '',
-              ...options,
-            });
-            response = NextResponse.next({
-              request: {
-                headers: request.headers,
-              },
-            });
-            response.cookies.set({
-              name,
-              value: '',
-              ...options,
-            });
+            console.log('[AUTH CALLBACK] 🗑️ Removing cookie:', name);
+            cookieStore.set({ name, value: '', ...options });
           },
         },
       }
@@ -78,35 +39,13 @@ export async function GET(request: NextRequest) {
 
     if (!error && data.session) {
       console.log('[AUTH CALLBACK] ✅ Session established for:', data.user?.email);
-      console.log('[AUTH CALLBACK] ✅ Session expires at:', new Date(data.session.expires_at! * 1000).toISOString());
-      console.log('[AUTH CALLBACK] 🍪 Total cookies set during exchange:', cookiesSet.length, cookiesSet);
-
-      const allCookies = response.cookies.getAll();
-      console.log('[AUTH CALLBACK] 🍪 Cookies in response:', allCookies.length);
-      allCookies.forEach(cookie => {
-        console.log('[AUTH CALLBACK] 🍪   -', cookie.name, ':', cookie.value.substring(0, 20) + '...', 'options:', JSON.stringify({ domain: cookie.domain, path: cookie.path, secure: cookie.secure, httpOnly: cookie.httpOnly, sameSite: cookie.sameSite }));
-      });
-
-      console.log('[AUTH CALLBACK] ↪️  Creating redirect to:', `${origin}${next}`);
-
-      // CRITICAL: Use the response object that has cookies, don't create a new redirect
-      const redirectResponse = NextResponse.redirect(`${origin}${next}`);
-
-      // Copy all cookies from the response that was used by Supabase
-      allCookies.forEach(cookie => {
-        redirectResponse.cookies.set(cookie);
-        console.log('[AUTH CALLBACK] 📋 Copied cookie to redirect:', cookie.name);
-      });
-
-      console.log('[AUTH CALLBACK] ✅ Returning redirect response with', redirectResponse.cookies.getAll().length, 'cookies');
-      return redirectResponse;
+      console.log('[AUTH CALLBACK] ✅ Redirecting to:', `${origin}${next}`);
+      return NextResponse.redirect(`${origin}${next}`);
     }
 
     console.error('[AUTH CALLBACK] ❌ Failed to exchange code:', error?.message);
-    console.error('[AUTH CALLBACK] ❌ Error details:', JSON.stringify(error, null, 2));
   }
 
-  // Return the user to an error page with instructions
-  console.error('[AUTH CALLBACK] ❌ No code provided or auth failed');
+  console.error('[AUTH CALLBACK] ❌ No code or auth failed, redirecting to login');
   return NextResponse.redirect(`${origin}/login?error=auth_failed`);
 }
