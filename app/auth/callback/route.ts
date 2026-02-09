@@ -1,5 +1,4 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -9,20 +8,31 @@ export async function GET(request: NextRequest) {
   const origin = requestUrl.origin;
 
   if (code) {
-    const cookieStore = cookies();
+    // Create response to properly set cookies
+    const response = NextResponse.redirect(`${origin}/dashboard`);
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           get(name: string) {
-            return cookieStore.get(name)?.value;
+            return request.cookies.get(name)?.value;
           },
           set(name: string, value: string, options: CookieOptions) {
-            cookieStore.set({ name, value, ...options });
+            // Set cookies in both request and response
+            response.cookies.set({
+              name,
+              value,
+              ...options,
+            });
           },
           remove(name: string, options: CookieOptions) {
-            cookieStore.set({ name, value: '', ...options });
+            response.cookies.set({
+              name,
+              value: '',
+              ...options,
+            });
           },
         },
       }
@@ -31,10 +41,12 @@ export async function GET(request: NextRequest) {
     const { error, data } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error && data.user) {
-      // Note: We can't call client-side analytics here (server component)
-      // Analytics will be tracked when user loads the dashboard
-      return NextResponse.redirect(`${origin}/dashboard`);
+      console.log('[AUTH CALLBACK] Session established for user:', data.user.email);
+      // Cookies are already set in the response object above
+      return response;
     }
+
+    console.error('[AUTH CALLBACK] Failed to exchange code:', error);
   }
 
   // Return the user to an error page with instructions
