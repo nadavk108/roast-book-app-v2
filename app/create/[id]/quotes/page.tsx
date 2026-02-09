@@ -223,21 +223,23 @@ export default function QuotesPage() {
                         </div>
                     )}
 
-                    <div className={`flex items-center justify-between mb-6 ${isPredominantlyHebrew(book?.victim_name || '') ? 'flex-row-reverse' : ''}`}>
-                        <div className="flex-1">
-                            <h1
-                                className="text-2xl md:text-3xl font-heading font-black"
-                                dir={isPredominantlyHebrew(book?.victim_name || '') ? 'rtl' : 'ltr'}
-                                style={{
-                                    textAlign: isPredominantlyHebrew(book?.victim_name || '') ? 'right' : 'left',
-                                }}
-                            >
-                                {isPredominantlyHebrew(book?.victim_name || '')
-                                    ? getHebrewBookTitle(book?.victim_name, book?.victim_gender)
-                                    : `Things ${book?.victim_name} would NEVER say`}
-                            </h1>
+                    {/* Page Header - Better spacing and layout */}
+                    <div className="mb-6">
+                        <h1
+                            className="text-2xl md:text-3xl font-heading font-black mb-2"
+                            dir={isPredominantlyHebrew(book?.victim_name || '') ? 'rtl' : 'ltr'}
+                            style={{
+                                textAlign: isPredominantlyHebrew(book?.victim_name || '') ? 'right' : 'left',
+                            }}
+                        >
+                            {isPredominantlyHebrew(book?.victim_name || '')
+                                ? getHebrewBookTitle(book?.victim_name, book?.victim_gender)
+                                : `Things ${book?.victim_name} would NEVER say`}
+                        </h1>
+
+                        <div className={`flex items-center ${isPredominantlyHebrew(book?.victim_name || '') ? 'flex-row-reverse justify-between' : 'justify-between'} gap-4`}>
                             <p
-                                className="text-gray-600 mt-1"
+                                className="text-gray-600"
                                 dir={isPredominantlyHebrew(book?.victim_name || '') ? 'rtl' : 'ltr'}
                                 style={{
                                     textAlign: isPredominantlyHebrew(book?.victim_name || '') ? 'right' : 'left',
@@ -250,22 +252,23 @@ export default function QuotesPage() {
                                         : `Add at least ${minQuotes} quotes`
                                 }
                             </p>
-                        </div>
 
-                        <Button
-                            size="sm"
-                            onClick={() => {
-                                setIsAssistantOpen(true);
-                                captureEvent(Events.ROAST_ASSISTANT_OPENED, { book_id: params.id });
-                            }}
-                            className={`bg-yellow-100 text-yellow-800 border-yellow-400 hover:bg-yellow-200 flex-shrink-0 ${isPredominantlyHebrew(book?.victim_name || '') ? 'ml-0 mr-4' : 'ml-4'}`}
-                        >
-                            <Sparkles className={`w-4 h-4 ${isPredominantlyHebrew(book?.victim_name || '') ? 'ml-2' : 'mr-2'}`} />
-                            Need ideas?
-                        </Button>
+                            <Button
+                                size="sm"
+                                onClick={() => {
+                                    setIsAssistantOpen(true);
+                                    captureEvent(Events.ROAST_ASSISTANT_OPENED, { book_id: params.id });
+                                }}
+                                className="bg-yellow-100 text-yellow-800 border-yellow-400 hover:bg-yellow-200 flex-shrink-0"
+                            >
+                                <Sparkles className="w-4 h-4 mr-2" />
+                                Need ideas?
+                            </Button>
+                        </div>
                     </div>
 
-                    <div className="space-y-4 mb-8">
+                    {/* Add padding at bottom for sticky button */}
+                    <div className="space-y-4 mb-24">
                         {quotes.map((quote, i) => {
                             const isHebrewQuote = isPredominantlyHebrew(quote);
                             return (
@@ -301,16 +304,21 @@ export default function QuotesPage() {
                         </div>
                     </div>
 
-                    <Button
-                        onClick={handleNext}
-                        disabled={!canProceed || saving}
-                        className="w-full text-lg py-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
-                        size="lg"
-                    >
-                        {saving ? 'Creating Magic...' : adminMode ? 'Generate Full Book' : 'Generate Preview'}
-                        <ArrowRight className="ml-2 h-5 w-5" />
-                    </Button>
+                </div>
 
+                {/* Sticky Submit Button - Always visible at bottom */}
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#FFFDF5] via-[#FFFDF5] to-transparent pointer-events-none">
+                    <div className="container mx-auto max-w-2xl pointer-events-auto">
+                        <Button
+                            onClick={handleNext}
+                            disabled={!canProceed || saving}
+                            className="w-full text-lg py-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
+                            size="lg"
+                        >
+                            {saving ? 'Creating Magic...' : adminMode ? 'Generate Full Book' : 'Generate Preview'}
+                            <ArrowRight className="ml-2 h-5 w-5" />
+                        </Button>
+                    </div>
                 </div>
             </main>
 
