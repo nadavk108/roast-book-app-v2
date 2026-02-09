@@ -56,10 +56,17 @@ export default function AuthCallbackPage() {
     const next = searchParams.get('next') || '/dashboard';
     const origin = window.location.origin;
 
-    console.log('[AUTH CALLBACK PAGE] 🔵 Starting auth flow');
-    console.log('[AUTH CALLBACK PAGE] Code present:', !!code);
-    console.log('[AUTH CALLBACK PAGE] Next destination:', next);
+    // DIAGNOSTIC: Log complete URL and all parameters
+    console.log('═══════════════════════════════════════════════');
+    console.log('[AUTH CALLBACK PAGE] 🔍 DIAGNOSTIC LOGS');
+    console.log('[AUTH CALLBACK PAGE] Full URL:', window.location.href);
+    console.log('[AUTH CALLBACK PAGE] All search params:', Object.fromEntries(searchParams.entries()));
+    console.log('[AUTH CALLBACK PAGE] Code param:', code);
+    console.log('[AUTH CALLBACK PAGE] Next param:', searchParams.get('next'));
+    console.log('[AUTH CALLBACK PAGE] Computed next:', next);
     console.log('[AUTH CALLBACK PAGE] Origin:', origin);
+    console.log('[AUTH CALLBACK PAGE] Final redirect will be:', `${origin}${next}`);
+    console.log('═══════════════════════════════════════════════');
 
     if (!code) {
       console.error('[AUTH CALLBACK PAGE] ❌ No code provided');
@@ -90,7 +97,11 @@ export default function AuthCallbackPage() {
             // Wait for cookie to be committed before redirecting
             await waitForCookie(`${origin}${next}`);
 
-            console.log('[AUTH CALLBACK PAGE] 🔄 Hard redirect to:', `${origin}${next}`);
+            console.log('═══════════════════════════════════════════════');
+            console.log('[AUTH CALLBACK PAGE] 🚀 ABOUT TO REDIRECT');
+            console.log('[AUTH CALLBACK PAGE] Redirect URL:', `${origin}${next}`);
+            console.log('[AUTH CALLBACK PAGE] Cookies in browser:', document.cookie.substring(0, 200) + '...');
+            console.log('═══════════════════════════════════════════════');
             window.location.assign(`${origin}${next}`);
             return;
           }

@@ -90,7 +90,16 @@ export async function signInWithGoogle(nextUrl?: string) {
   const destination = nextUrl || '/dashboard';
   const callbackUrl = `${baseUrl}/auth/callback?next=${encodeURIComponent(destination)}`;
 
-  console.log('[GOOGLE SIGNIN] Redirect URL:', callbackUrl);
+  // DIAGNOSTIC: Log exact values being used
+  console.log('═══════════════════════════════════════════════');
+  console.log('[GOOGLE SIGNIN] 🔍 DIAGNOSTIC LOGS');
+  console.log('[GOOGLE SIGNIN] Input nextUrl:', nextUrl);
+  console.log('[GOOGLE SIGNIN] NEXT_PUBLIC_APP_URL env:', process.env.NEXT_PUBLIC_APP_URL);
+  console.log('[GOOGLE SIGNIN] Computed baseUrl:', baseUrl);
+  console.log('[GOOGLE SIGNIN] Computed destination:', destination);
+  console.log('[GOOGLE SIGNIN] Final callbackUrl:', callbackUrl);
+  console.log('[GOOGLE SIGNIN] Current window.location.href:', window.location.href);
+  console.log('═══════════════════════════════════════════════');
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -99,7 +108,12 @@ export async function signInWithGoogle(nextUrl?: string) {
     },
   });
 
-  if (error) throw error;
+  if (error) {
+    console.error('[GOOGLE SIGNIN] ❌ OAuth error:', error);
+    throw error;
+  }
+
+  console.log('[GOOGLE SIGNIN] ✅ OAuth data:', data);
   return data;
 }
 

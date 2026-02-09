@@ -58,6 +58,19 @@ export async function middleware(request: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
+  // DIAGNOSTIC: Log middleware execution
+  console.log('═══════════════════════════════════════════════');
+  console.log('[MIDDLEWARE] 🔍 DIAGNOSTIC LOGS');
+  console.log('[MIDDLEWARE] Path:', request.nextUrl.pathname);
+  console.log('[MIDDLEWARE] Full URL:', request.url);
+  console.log('[MIDDLEWARE] Has session:', !!session);
+  if (session) {
+    console.log('[MIDDLEWARE] Session user:', session.user?.email);
+    console.log('[MIDDLEWARE] Session expires:', new Date(session.expires_at! * 1000).toISOString());
+  }
+  console.log('[MIDDLEWARE] Cookies:', request.cookies.getAll().map(c => c.name).join(', '));
+  console.log('═══════════════════════════════════════════════');
+
   // Protected routes that require authentication
   // Note: /book and /preview are NOT protected - publicly shareable
   // Preview page has built-in paywall for unpaid books and auto-redirects complete books to /book/[slug]
@@ -70,13 +83,17 @@ export async function middleware(request: NextRequest) {
   if (isProtectedRoute && !session) {
     const redirectUrl = new URL('/login', request.url);
     redirectUrl.searchParams.set('redirect', request.nextUrl.pathname);
+    console.log('[MIDDLEWARE] 🚫 No session, redirecting to:', redirectUrl.toString());
     return NextResponse.redirect(redirectUrl);
   }
 
   // If already logged in and trying to access login page, redirect to dashboard
   if (request.nextUrl.pathname === '/login' && session) {
+    console.log('[MIDDLEWARE] ✅ Has session at /login, redirecting to /dashboard');
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
+
+  console.log('[MIDDLEWARE] ✅ Allowing request through');
 
   return response;
 }
