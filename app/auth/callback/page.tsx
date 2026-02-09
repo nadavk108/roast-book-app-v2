@@ -1,11 +1,10 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-client';
 
 export default function AuthCallbackPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const hasRun = useRef(false);
@@ -20,14 +19,16 @@ export default function AuthCallbackPage() {
 
     const code = searchParams.get('code');
     const next = searchParams.get('next') || '/dashboard';
+    const origin = window.location.origin;
 
     console.log('[AUTH CALLBACK PAGE] 🔵 Starting auth flow');
     console.log('[AUTH CALLBACK PAGE] Code present:', !!code);
     console.log('[AUTH CALLBACK PAGE] Next destination:', next);
+    console.log('[AUTH CALLBACK PAGE] Origin:', origin);
 
     if (!code) {
       console.error('[AUTH CALLBACK PAGE] ❌ No code provided');
-      router.push('/login?error=no_code');
+      window.location.href = `${origin}/login?error=no_code`;
       return;
     }
 
@@ -50,36 +51,46 @@ export default function AuthCallbackPage() {
           if (sessionData?.session) {
             console.log('[AUTH CALLBACK PAGE] ✅ Session exists! First run succeeded, ignoring error.');
             console.log('[AUTH CALLBACK PAGE] ✅ Session for:', sessionData.session.user?.email);
-            console.log('[AUTH CALLBACK PAGE] ↪️  Redirecting to:', next);
-            router.push(next);
+            console.log('[AUTH CALLBACK PAGE] 🔄 Hard redirect to:', `${origin}${next}`);
+            // CRITICAL: Use window.location.href to force full page reload
+            // This ensures middleware receives fresh auth cookies
+            window.location.href = `${origin}${next}`;
             return;
           }
 
           // Both exchange failed AND no session exists - real error
           console.error('[AUTH CALLBACK PAGE] ❌ No session found. Auth truly failed.');
           setError(error.message);
-          setTimeout(() => router.push('/login?error=auth_failed'), 2000);
+          setTimeout(() => {
+            window.location.href = `${origin}/login?error=auth_failed`;
+          }, 2000);
           return;
         }
 
         if (data?.session) {
           console.log('[AUTH CALLBACK PAGE] ✅ Session established for:', data.user?.email);
-          console.log('[AUTH CALLBACK PAGE] ↪️  Redirecting to:', next);
-          router.push(next);
+          console.log('[AUTH CALLBACK PAGE] 🔄 Hard redirect to:', `${origin}${next}`);
+          // CRITICAL: Use window.location.href to force full page reload
+          // This ensures middleware receives fresh auth cookies
+          window.location.href = `${origin}${next}`;
         } else {
           console.error('[AUTH CALLBACK PAGE] ❌ No session in response');
           setError('Failed to establish session');
-          setTimeout(() => router.push('/login?error=no_session'), 2000);
+          setTimeout(() => {
+            window.location.href = `${origin}/login?error=no_session`;
+          }, 2000);
         }
       } catch (err: any) {
         console.error('[AUTH CALLBACK PAGE] ❌ Exception:', err);
         setError(err.message || 'Authentication failed');
-        setTimeout(() => router.push('/login?error=exception'), 2000);
+        setTimeout(() => {
+          window.location.href = `${origin}/login?error=exception`;
+        }, 2000);
       }
     };
 
     completeAuth();
-  }, [searchParams, router]);
+  }, [searchParams]);
 
   return (
     <div className="min-h-screen bg-[#FFFDF5] flex items-center justify-center p-4">
