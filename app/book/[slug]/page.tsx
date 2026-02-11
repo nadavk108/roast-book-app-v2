@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Home, Share2, Download } from 'lucide-react';
+import { Home, Share2 } from 'lucide-react';
 import { TheEndPage } from '@/components/flipbook/TheEndPage';
 import { isPredominantlyHebrew, getHebrewBookTitle } from '@/lib/hebrew-utils';
 
@@ -31,12 +31,56 @@ export default function BookPage() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+
+  // Swipe tracking
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const touchEndX = useRef(0);
+  const isSwiping = useRef(false);
 
   useEffect(() => {
     fetchBook();
     const interval = setInterval(fetchBook, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  // Preload all images once book is loaded
+  useEffect(() => {
+    if (!book) return;
+
+    const imageUrls = [
+      book.cover_image_url,
+      ...book.full_image_urls,
+    ].filter(Boolean);
+
+    if (imageUrls.length === 0) {
+      setImagesLoaded(true);
+      return;
+    }
+
+    let loaded = 0;
+    imageUrls.forEach((url) => {
+      const img = new Image();
+      img.onload = () => {
+        loaded++;
+        if (loaded >= imageUrls.length) {
+          setImagesLoaded(true);
+        }
+      };
+      img.onerror = () => {
+        loaded++;
+        if (loaded >= imageUrls.length) {
+          setImagesLoaded(true);
+        }
+      };
+      img.src = url;
+    });
+
+    // Safety timeout — don't block forever if an image is slow
+    const timeout = setTimeout(() => setImagesLoaded(true), 5000);
+    return () => clearTimeout(timeout);
+  }, [book]);
 
   const fetchBook = async () => {
     try {
@@ -82,6 +126,70 @@ export default function BookPage() {
     }
   };
 
+  // Navigation
+  const slides = book ? buildSlides(book) : [];
+
+  const goToNext = useCallback(() => {
+    setActiveIndex((prev) => Math.min(prev + 1, slides.length - 1));
+  }, [slides.length]);
+
+  const goToPrev = useCallback(() => {
+    setActiveIndex((prev) => Math.max(prev - 1, 0));
+  }, []);
+
+  // Tap handler
+  const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Don't navigate if user was swiping
+    if (isSwiping.current) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = rect.width;
+
+    if (x < width * 0.3) {
+      goToPrev();
+    } else {
+      goToNext();
+    }
+  };
+
+  // Swipe handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    isSwiping.current = false;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+    const deltaX = Math.abs(touchEndX.current - touchStartX.current);
+    const deltaY = Math.abs(e.touches[0].clientY - touchStartY.current);
+
+    // If horizontal movement is significant, mark as swipe
+    if (deltaX > 20 && deltaX > deltaY) {
+      isSwiping.current = true;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!isSwiping.current) return;
+
+    const deltaX = touchStartX.current - touchEndX.current;
+    const minSwipeDistance = 50;
+
+    if (deltaX > minSwipeDistance) {
+      goToNext(); // Swipe left = next
+    } else if (deltaX < -minSwipeDistance) {
+      goToPrev(); // Swipe right = prev
+    }
+
+    // Reset after a tick so the click handler can check isSwiping
+    setTimeout(() => {
+      isSwiping.current = false;
+    }, 10);
+  };
+
+  // Loading states
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center">
@@ -106,9 +214,17 @@ export default function BookPage() {
 
   if (!book) return <div className="fixed inset-0 bg-black text-white flex items-center justify-center">Book not found</div>;
 
+  // Show spinner until images are preloaded
+  if (!imagesLoaded) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-400 border-t-transparent" />
+      </div>
+    );
+  }
+
   const bookUrl = typeof window !== 'undefined' ? window.location.href : '';
 
-  // Detect if book uses Hebrew
   const isHebrewBook = isPredominantlyHebrew(book.victim_name) ||
     (book.quotes && book.quotes.some(q => isPredominantlyHebrew(q)));
 
@@ -116,52 +232,11 @@ export default function BookPage() {
     ? getHebrewBookTitle(book.victim_name, book.victim_gender)
     : `Things ${book.victim_name} Would Never Say`;
 
-  // Build slides array
-  // Cover uses victim's uploaded photo, then all generated images map to quotes
-  const slides: Slide[] = [
-    { type: 'cover', imageUrl: book.cover_image_url, quote: null },
-    ...book.full_image_urls.map((url, i) => ({
-      type: 'roast' as const,
-      imageUrl: url,
-      quote: book.quotes[i],
-    })),
-  ];
-
-  if (book.custom_greeting) {
-    slides.push({ type: 'greeting', imageUrl: null, quote: book.custom_greeting });
-  }
-  slides.push({ type: 'end', imageUrl: null, quote: null });
-
-  const goToNext = () => {
-    if (activeIndex < slides.length - 1) {
-      setActiveIndex(activeIndex + 1);
-    }
-  };
-
-  const goToPrev = () => {
-    if (activeIndex > 0) {
-      setActiveIndex(activeIndex - 1);
-    }
-  };
-
-  const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const width = rect.width;
-
-    // Left 30% = Previous, Right 70% = Next
-    if (x < width * 0.3) {
-      goToPrev();
-    } else {
-      goToNext();
-    }
-  };
-
   const currentSlide = slides[activeIndex];
 
   return (
     <div className="fixed inset-0 bg-black overflow-hidden">
-      {/* Progress Bars - Instagram Style */}
+      {/* Progress Bars */}
       <div className="absolute top-0 left-0 right-0 z-50 pt-safe">
         <div className="flex gap-1 px-2 py-2">
           {slides.map((_, i) => (
@@ -170,7 +245,7 @@ export default function BookPage() {
               className="flex-1 h-0.5 rounded-full overflow-hidden bg-white/30"
             >
               <div
-                className={`h-full transition-all duration-300 ${
+                className={`h-full ${
                   i < activeIndex
                     ? 'w-full bg-white'
                     : i === activeIndex
@@ -183,10 +258,9 @@ export default function BookPage() {
         </div>
       </div>
 
-      {/* Persistent Header */}
+      {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-40 pt-safe">
         <div className="flex items-center justify-between px-4 py-3 mt-3">
-          {/* Home Button */}
           <button
             onClick={() => router.push('/')}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white hover:bg-black/60 transition-colors"
@@ -195,7 +269,6 @@ export default function BookPage() {
             <Home className="w-5 h-5" />
           </button>
 
-          {/* Title */}
           <div className="flex-1 text-center px-4">
             <h1
               className="text-sm font-heading font-bold text-white truncate drop-shadow-lg"
@@ -205,7 +278,6 @@ export default function BookPage() {
             </h1>
           </div>
 
-          {/* Share Button */}
           <button
             onClick={handleShare}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white hover:bg-black/60 transition-colors"
@@ -216,21 +288,36 @@ export default function BookPage() {
         </div>
       </div>
 
-      {/* Main Content Area with Tap Zones */}
-      <div
-        className="absolute inset-0 cursor-pointer"
-        onClick={handleTap}
-      >
-        {/* Background Image */}
-        {currentSlide.imageUrl && (
-          <img
-            src={currentSlide.imageUrl}
-            alt="Roast slide"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-        )}
+      {/* Preloaded Image Layers — all rendered, only active one visible */}
+      {slides.map((slide, i) => (
+        <div
+          key={i}
+          className="absolute inset-0"
+          style={{
+            visibility: i === activeIndex ? 'visible' : 'hidden',
+            zIndex: i === activeIndex ? 1 : 0,
+          }}
+        >
+          {slide.imageUrl && (
+            <img
+              src={slide.imageUrl}
+              alt={`Slide ${i}`}
+              className="absolute inset-0 w-full h-full object-cover"
+              loading="eager"
+            />
+          )}
+        </div>
+      ))}
 
-        {/* Slide Content */}
+      {/* Interactive Layer — Tap + Swipe */}
+      <div
+        className="absolute inset-0 z-10 cursor-pointer"
+        onClick={handleTap}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Slide Content Overlays */}
         {currentSlide.type === 'end' ? (
           <div className="absolute inset-0" onClick={(e) => e.stopPropagation()}>
             <TheEndPage victimName={book.victim_name} bookUrl={bookUrl} />
@@ -249,7 +336,6 @@ export default function BookPage() {
           </div>
         ) : (
           <>
-            {/* Cover Slide Content */}
             {currentSlide.type === 'cover' && (
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent flex flex-col justify-end items-center p-6 pb-safe pb-20">
                 <h1
@@ -269,13 +355,9 @@ export default function BookPage() {
               </div>
             )}
 
-            {/* Roast Quote Overlay - Glass Morphism */}
             {currentSlide.type === 'roast' && currentSlide.quote && (
               <div className="absolute bottom-0 left-0 right-0 pb-safe pb-12">
-                {/* Dark gradient for readability */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
-
-                {/* Quote Card */}
                 <div className="relative z-10 mx-6 mb-6">
                   <div className="bg-black/40 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl">
                     <p
@@ -292,7 +374,7 @@ export default function BookPage() {
         )}
       </div>
 
-      {/* Page Counter - Minimal and subtle */}
+      {/* Page Dots */}
       <div className="absolute bottom-2 left-0 right-0 z-30 pb-safe pointer-events-none">
         <div className="flex items-center justify-center gap-1">
           {slides.map((_, index) => (
@@ -307,12 +389,24 @@ export default function BookPage() {
           ))}
         </div>
       </div>
-
-      {/* Tap Zones Visual Guide (Optional - Remove in production) */}
-      {/* <div className="absolute inset-0 pointer-events-none z-20">
-        <div className="absolute left-0 top-0 bottom-0 w-[30%] border-2 border-red-500/20" />
-        <div className="absolute right-0 top-0 bottom-0 w-[70%] border-2 border-green-500/20" />
-      </div> */}
     </div>
   );
+}
+
+function buildSlides(book: Book): Slide[] {
+  const slides: Slide[] = [
+    { type: 'cover', imageUrl: book.cover_image_url, quote: null },
+    ...book.full_image_urls.map((url, i) => ({
+      type: 'roast' as const,
+      imageUrl: url,
+      quote: book.quotes[i],
+    })),
+  ];
+
+  if (book.custom_greeting) {
+    slides.push({ type: 'greeting', imageUrl: null, quote: book.custom_greeting });
+  }
+  slides.push({ type: 'end', imageUrl: null, quote: null });
+
+  return slides;
 }
