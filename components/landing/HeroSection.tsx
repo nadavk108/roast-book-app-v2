@@ -69,7 +69,7 @@ export function HeroSection() {
                     <Star key={i} className="h-4 w-4 fill-primary text-primary" aria-hidden="true" />
                   ))}
                 </div>
-                <span className="text-muted-foreground ml-1">500+ books created</span>
+                <span className="text-muted-foreground ml-1">Loved by 500+ gifters</span>
               </div>
             </div>
 
@@ -82,7 +82,7 @@ export function HeroSection() {
             </h1>
 
             <p className="text-lg md:text-xl text-muted-foreground max-w-lg">
-              Friends write ironic quotes. AI turns them into hilarious illustrations. 
+              Describe your friend's quirks. AI generates hilarious quotes and illustrations.
               You get a personalized roast book they'll never forget.
             </p>
 
@@ -125,7 +125,7 @@ export function HeroSection() {
               </li>
               <li className="flex items-center gap-1.5">
                 <Clock className="h-4 w-4 text-accent" aria-hidden="true" />
-                <span>Ready in 24h</span>
+                <span>Ready in 2 min</span>
               </li>
             </ul>
           </motion.div>
@@ -223,11 +223,11 @@ export function HeroSection() {
               >
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-lg">
-                    🔥
+                    🎁
                   </div>
                   <div className="text-xs">
-                    <p className="font-bold">47 votes</p>
-                    <p className="text-muted-foreground">Top roast</p>
+                    <p className="font-bold">$9.99</p>
+                    <p className="text-muted-foreground">Full book</p>
                   </div>
                 </div>
               </motion.div>

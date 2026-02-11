@@ -19,7 +19,7 @@ const testimonials = [
     avatar: "👨",
   },
   {
-    quote: "We collected 30 quotes in one day. The voting was so much fun!",
+    quote: "Took me 2 minutes to make. My coworker's farewell party was unforgettable!",
     author: "Rachel K.",
     role: "Office Farewell",
     rating: 5,

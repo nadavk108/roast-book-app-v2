@@ -311,7 +311,7 @@ export default function Examples() {
                 {" "}In Action
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-                Your friends write the roasts. AI turns them into hilarious illustrations.
+                Describe your friend. AI writes the roasts and creates hilarious illustrations.
                 Swipe through real examples to see what's possible.
               </p>
             </motion.header>
@@ -389,7 +389,7 @@ export default function Examples() {
               </h2>
               <p className="text-muted-foreground text-lg mb-8">
                 Create a one-of-a-kind gift in under 5 minutes.
-                Invite friends, collect quotes, and watch the magic happen.
+                Upload a photo, describe their quirks, and watch the magic happen.
               </p>
               <Link href="/dashboard">
                 <BrutalButton size="lg">

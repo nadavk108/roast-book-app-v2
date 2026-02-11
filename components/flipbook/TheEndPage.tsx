@@ -155,7 +155,7 @@ export function TheEndPage({ victimName, bookUrl }: TheEndPageProps) {
               target="_blank"
               rel="noopener noreferrer"
             >
-              RoastBook.app
+              theroastbook.com
             </a>
           </p>
         </div>

@@ -137,7 +137,7 @@ export default function UploadPage() {
                 <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden border border-black">
                     <div className="bg-yellow-400 h-full w-[20%]" />
                 </div>
-                <span className="ml-4 font-bold whitespace-nowrap">Step 1/5</span>
+                <span className="ml-4 font-bold whitespace-nowrap">Step 1/3</span>
             </header>
 
             <main className="flex-1 container mx-auto px-4 py-8 max-w-lg">

@@ -9,7 +9,7 @@ const benefits = [
   { icon: Gift, text: "Perfect for any occasion" },
   { icon: Clock, text: "Ready in 24 hours" },
   { icon: CreditCard, text: "One-time payment, no subscription" },
-  { icon: Sparkles, text: "10 AI-generated illustrations" },
+  { icon: Sparkles, text: "8 AI-generated illustrations" },
 ];
 
 export function CTASection() {
@@ -47,7 +47,7 @@ export function CTASection() {
             </h2>
 
             <p className="text-lg md:text-xl text-background/70 max-w-2xl mx-auto mb-8">
-              Join thousands who've given the most memorable, laugh-out-loud gift ever. 
+              Join 500+ people who've given the most memorable, laugh-out-loud gift ever.
               Start free, pay only when you're ready.
             </p>
 

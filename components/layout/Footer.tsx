@@ -15,7 +15,7 @@ export function Footer() {
               <span className="font-heading text-xl font-bold">The Roast Book</span>
             </Link>
             <p className="text-secondary-foreground/80 max-w-md">
-              Create hilarious, personalized gift books for your friends. Upload photos, submit ironic quotes, and let AI bring the roast to life!
+              The funniest personalized gift you can give. Upload a photo, describe their quirks, and AI creates a custom illustrated roast book in minutes.
             </p>
           </div>
 

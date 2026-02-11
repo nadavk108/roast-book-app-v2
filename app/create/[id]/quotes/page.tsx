@@ -247,7 +247,7 @@ export default function QuotesPage() {
                     />
                 </div>
                 <span className="ml-4 font-bold whitespace-nowrap">
-                    Step {step === 'describe' ? '2' : '3'}/5
+                    Step {step === 'describe' ? '2' : '3'}/3
                 </span>
             </header>
 
