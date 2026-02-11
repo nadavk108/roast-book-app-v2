@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
-import { Lock, Shield, Home, Share2 } from 'lucide-react';
+import { Lock, Shield, Home, Share2, Send, X } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
 import { isAdminUser } from '@/lib/admin';
 import { captureEvent, Events } from '@/lib/posthog';
@@ -21,6 +21,7 @@ type Book = {
   slug: string;
   status: string;
   user_email: string | null;
+  custom_greeting: string | null;
 };
 
 type Page = {
@@ -40,29 +41,50 @@ export default function PreviewPage() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [paymentTracked, setPaymentTracked] = useState(false);
 
+  // Personal note state
+  const [showGreetingInput, setShowGreetingInput] = useState(false);
+  const [greetingText, setGreetingText] = useState('');
+  const [greetingSaved, setGreetingSaved] = useState(false);
+  const [savingGreeting, setSavingGreeting] = useState(false);
+
+  // Swipe tracking
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const touchEndX = useRef(0);
+  const isSwiping = useRef(false);
+
   const adminMode = isAdminUser(user);
+  const isPaymentReturn = searchParams.get('payment') === 'success';
 
   useEffect(() => {
     loadUser();
     fetchBook();
   }, []);
 
-  // Separate effect for payment tracking
+  // Show greeting input after payment while book generates
   useEffect(() => {
-    if (searchParams.get('payment') === 'success' && !paymentTracked && book) {
+    if (isPaymentReturn && book && !greetingSaved && !book.custom_greeting) {
+      const isGenerating = book.status === 'paid' || book.status === 'generating_remaining' || book.status === 'generating_images';
+      if (isGenerating) {
+        setShowGreetingInput(true);
+      }
+    }
+  }, [book, isPaymentReturn, greetingSaved]);
+
+  // Payment tracking
+  useEffect(() => {
+    if (isPaymentReturn && !paymentTracked && book) {
       captureEvent(Events.PAYMENT_COMPLETED, {
         book_id: book.id,
         victim_name: book.victim_name,
       });
       setPaymentTracked(true);
 
-      // Track book completion
       captureEvent(Events.BOOK_COMPLETED, {
         book_id: book.id,
         victim_name: book.victim_name,
       });
     } else if (book && book.status === 'complete' && adminMode && !paymentTracked) {
-      // Track admin book completion (no payment required)
       captureEvent(Events.BOOK_COMPLETED, {
         book_id: book.id,
         victim_name: book.victim_name,
@@ -77,21 +99,18 @@ export default function PreviewPage() {
     }
   }, [book, searchParams, paymentTracked, adminMode]);
 
-  // Separate effect for polling
+  // Polling
   useEffect(() => {
     let pollInterval: NodeJS.Timeout | null = null;
 
-    if (book && (book.status === 'paid' || book.status === 'generating_images')) {
-      console.log('Book is paid, polling for new images...');
+    if (book && (book.status === 'paid' || book.status === 'generating_images' || book.status === 'generating_remaining')) {
       pollInterval = setInterval(() => {
         fetchBook();
-      }, 3000); // Poll every 3 seconds
+      }, 3000);
     }
 
     return () => {
-      if (pollInterval) {
-        clearInterval(pollInterval);
-      }
+      if (pollInterval) clearInterval(pollInterval);
     };
   }, [book?.status]);
 
@@ -109,18 +128,13 @@ export default function PreviewPage() {
       const res = await fetch(`/api/book/${params.id}`);
       if (res.ok) {
         const data = await res.json();
-        console.log('Book loaded:', data);
         setBook(data);
 
-        // If book is complete and has a slug, redirect to the public book page
-        // This ensures shared links for complete books (like admin books) are publicly accessible
         if (data && data.status === 'complete' && data.slug) {
-          console.log('Book is complete, redirecting to public book page:', data.slug);
           window.location.href = `/book/${data.slug}`;
           return;
         }
 
-        // Track preview viewed when book loads with preview or complete status
         if (data && (data.status === 'preview_ready' || data.status === 'complete' || data.status === 'paid')) {
           captureEvent(Events.PREVIEW_GENERATED, {
             book_id: data.id,
@@ -130,14 +144,39 @@ export default function PreviewPage() {
         }
       } else {
         console.error('Failed to fetch book:', res.status, await res.text());
-        alert(`Failed to fetch book: ${res.status}`);
       }
     } catch (error) {
       console.error('Fetch error:', error);
-      alert('Network error: ' + error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSaveGreeting = async () => {
+    if (!book || !greetingText.trim()) return;
+
+    setSavingGreeting(true);
+    try {
+      const res = await fetch(`/api/book/${book.id}/update-greeting`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookId: book.id, greeting: greetingText.trim() }),
+      });
+
+      if (res.ok) {
+        setGreetingSaved(true);
+        setShowGreetingInput(false);
+      }
+    } catch (error) {
+      console.error('Failed to save greeting:', error);
+    } finally {
+      setSavingGreeting(false);
+    }
+  };
+
+  const handleSkipGreeting = () => {
+    setShowGreetingInput(false);
+    setGreetingSaved(true);
   };
 
   const handleShare = async () => {
@@ -150,11 +189,7 @@ export default function PreviewPage() {
 
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: `${title} 🔥📚`,
-          text: text,
-          url: url,
-        });
+        await navigator.share({ title: `${title} 🔥📚`, text, url });
       } catch (err) {
         await navigator.clipboard.writeText(url);
         alert('Link copied to clipboard!');
@@ -166,20 +201,13 @@ export default function PreviewPage() {
   };
 
   const handleCheckout = async () => {
-    if (!book) {
-      console.error('[CHECKOUT] No book found');
-      return;
-    }
+    if (!book) return;
 
-    console.log('[CHECKOUT] Starting checkout for book:', book.id, 'Status:', book.status);
-
-    // Admin users shouldn't see this button, but handle it gracefully
     if (adminMode) {
       alert('Admin users have full access without payment');
       return;
     }
 
-    // Track checkout initiation
     captureEvent(Events.CHECKOUT_INITIATED, {
       book_id: book.id,
       victim_name: book.victim_name,
@@ -187,20 +215,14 @@ export default function PreviewPage() {
 
     setCheckingOut(true);
     try {
-      console.log('[CHECKOUT] Calling /api/checkout with bookId:', book.id);
-
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bookId: book.id }),
       });
 
-      console.log('[CHECKOUT] Response status:', res.status, res.ok);
-
       const data = await res.json();
-      console.log('[CHECKOUT] Response data:', data);
 
-      // Handle admin bypass response
       if (data.bypassPayment || data.isAdmin) {
         alert('Admin users do not need to pay');
         setCheckingOut(false);
@@ -208,42 +230,60 @@ export default function PreviewPage() {
       }
 
       if (!res.ok) {
-        console.error('[CHECKOUT] API returned error:', data);
         throw new Error(data.error || 'Checkout failed');
       }
 
-      console.log('[CHECKOUT] Redirecting to Stripe:', data.sessionUrl);
       window.location.href = data.sessionUrl;
     } catch (error: any) {
-      console.error('[CHECKOUT] Error:', error);
       alert(`Failed to start checkout: ${error.message || 'Unknown error'}`);
       setCheckingOut(false);
     }
   };
 
-  const goToNext = () => {
-    if (activeIndex < pages.length - 1) {
-      setActiveIndex(activeIndex + 1);
+  // Navigation
+  const goToNext = useCallback(() => {
+    if (book) {
+      const pages = buildPages(book, isAdminUser(user));
+      setActiveIndex((prev) => Math.min(prev + 1, pages.length - 1));
     }
-  };
+  }, [book, user]);
 
-  const goToPrev = () => {
-    if (activeIndex > 0) {
-      setActiveIndex(activeIndex - 1);
-    }
-  };
+  const goToPrev = useCallback(() => {
+    setActiveIndex((prev) => Math.max(prev - 1, 0));
+  }, []);
 
   const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isSwiping.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const width = rect.width;
-
-    // Left 30% = Previous, Right 70% = Next
-    if (x < width * 0.3) {
+    if (x < rect.width * 0.3) {
       goToPrev();
     } else {
       goToNext();
     }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    isSwiping.current = false;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+    const deltaX = Math.abs(touchEndX.current - touchStartX.current);
+    const deltaY = Math.abs(e.touches[0].clientY - touchStartY.current);
+    if (deltaX > 20 && deltaX > deltaY) {
+      isSwiping.current = true;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!isSwiping.current) return;
+    const deltaX = touchStartX.current - touchEndX.current;
+    if (deltaX > 50) goToNext();
+    else if (deltaX < -50) goToPrev();
+    setTimeout(() => { isSwiping.current = false; }, 10);
   };
 
   if (loading || !book) {
@@ -254,36 +294,16 @@ export default function PreviewPage() {
     );
   }
 
-  // Build pages based on payment status or admin mode
-  const isPaid = book.status === 'paid' || book.status === 'complete';
-  const isAdminBook = book.user_email === 'nadavkarlinski@gmail.com'; // Book created by admin
-  const showAllImages = isPaid || adminMode || isAdminBook; // Show all if paid, viewer is admin, OR creator is admin
+  const isPaid = book.status === 'paid' || book.status === 'complete' || book.status === 'generating_remaining';
+  const isAdminBook = book.user_email === 'nadavkarlinski@gmail.com';
+  const showAllImages = isPaid || adminMode || isAdminBook;
 
-  // Choose image source: admin/paid users get full_image_urls, others get preview_image_urls
   const imageUrls = (showAllImages && book.full_image_urls?.length > 0)
     ? book.full_image_urls
     : book.preview_image_urls;
 
-  const pages: Page[] = [
-    { type: 'cover', imageUrl: book.cover_image_url || imageUrls[0], quote: null },
-  ];
+  const pages = buildPages(book, adminMode);
 
-  // Add roast pages
-  for (let i = 0; i < book.quotes.length; i++) {
-    const imageUrl = imageUrls[i];
-
-    // Admin or paid: show all available images
-    // Not paid: show first 2 previews, then locked slides
-    if (imageUrl && (showAllImages || i < 2)) {
-      pages.push({ type: 'roast', imageUrl, quote: book.quotes[i] });
-    } else if (!showAllImages) {
-      pages.push({ type: 'locked', imageUrl: null, quote: book.quotes[i] });
-    }
-  }
-
-  const totalPages = pages.length;
-
-  // Detect Hebrew in book
   const isHebrewBook = isPredominantlyHebrew(book.victim_name) ||
     (book.quotes && book.quotes.some(q => isPredominantlyHebrew(q)));
 
@@ -292,24 +312,118 @@ export default function PreviewPage() {
     : `Things ${book.victim_name} Would Never Say`;
 
   const currentPage = pages[activeIndex];
+  const isGenerating = book.status === 'paid' || book.status === 'generating_remaining' || book.status === 'generating_images';
+
+  // Personal note screen (shown after payment, during generation)
+  if (showGreetingInput && isPaymentReturn && isGenerating) {
+    return (
+      <div className="fixed inset-0 bg-black flex flex-col">
+        {/* Top section with generating indicator */}
+        <div className="flex items-center justify-center gap-3 pt-safe pt-6 px-6">
+          <div className="animate-spin rounded-full h-5 w-5 border-2 border-yellow-400 border-t-transparent" />
+          <p className="text-white/60 text-sm">
+            {isHebrewBook ? 'מייצר את הרוסטים שלך...' : 'Generating your roasts...'}
+          </p>
+        </div>
+
+        {/* Main content */}
+        <div className="flex-1 flex flex-col items-center justify-center px-6">
+          <div className="text-5xl mb-6">💌</div>
+          <h2
+            className="text-2xl font-heading font-black text-white mb-2 text-center"
+            dir={isHebrewBook ? 'rtl' : 'ltr'}
+          >
+            {isHebrewBook
+              ? `רוצה להוסיף הקדשה ל${book.victim_name}?`
+              : `Add a personal note for ${book.victim_name}?`}
+          </h2>
+          <p
+            className="text-gray-400 mb-8 text-center max-w-sm"
+            dir={isHebrewBook ? 'rtl' : 'ltr'}
+          >
+            {isHebrewBook
+              ? 'זה יופיע כעמוד מיוחד בסוף הספר'
+              : "It'll appear as a special page at the end of the book"}
+          </p>
+
+          <textarea
+            value={greetingText}
+            onChange={(e) => setGreetingText(e.target.value)}
+            placeholder={isHebrewBook
+              ? 'למשל: יום הולדת שמח! אוהב/ת אותך למרות הכל 😂'
+              : 'e.g. Happy birthday! Love you despite everything 😂'}
+            maxLength={200}
+            dir={isHebrewBook ? 'rtl' : 'ltr'}
+            className="w-full max-w-md h-32 bg-white/10 border border-white/20 rounded-2xl p-4 text-white placeholder-white/30 text-lg resize-none focus:outline-none focus:border-yellow-400/50 focus:ring-1 focus:ring-yellow-400/50"
+          />
+          <p className="text-white/30 text-xs mt-2">
+            {greetingText.length}/200
+          </p>
+
+          <div className="flex gap-3 mt-6 w-full max-w-md">
+            <button
+              onClick={handleSkipGreeting}
+              className="flex-1 py-4 rounded-xl border border-white/20 text-white/60 font-heading font-bold text-sm hover:bg-white/5 transition-colors"
+            >
+              {isHebrewBook ? 'דלג' : 'Skip'}
+            </button>
+            <button
+              onClick={handleSaveGreeting}
+              disabled={!greetingText.trim() || savingGreeting}
+              className="flex-1 py-4 rounded-xl bg-yellow-400 text-black font-heading font-black text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-yellow-300 transition-colors flex items-center justify-center gap-2"
+            >
+              {savingGreeting ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-black border-t-transparent" />
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  {isHebrewBook ? 'הוסף הקדשה' : 'Add note'}
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Generating state (after greeting saved/skipped, or if no greeting prompt)
+  if (isPaymentReturn && isGenerating) {
+    return (
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-400 border-t-transparent mb-6" />
+        <h2 className="text-2xl font-heading font-black mb-2 text-center text-white">
+          {isHebrewBook ? 'מייצר את הרוסטים שלך...' : 'Generating your roasts...'}
+        </h2>
+        <p className="text-gray-400 text-center">
+          {isHebrewBook
+            ? 'זה לוקח בערך 2 דקות. אפשר לסגור ולחזור אחר כך!'
+            : 'This usually takes about 2 minutes. Feel free to close and come back later!'}
+        </p>
+        {greetingSaved && greetingText.trim() && (
+          <div className="mt-6 bg-white/5 border border-white/10 rounded-xl px-4 py-3 max-w-sm">
+            <p className="text-white/40 text-xs mb-1">
+              {isHebrewBook ? 'ההקדשה שלך:' : 'Your note:'}
+            </p>
+            <p className="text-white/80 text-sm" dir={isHebrewBook ? 'rtl' : 'ltr'}>
+              "{greetingText}"
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black overflow-hidden">
-      {/* Progress Bars - Instagram Style */}
+      {/* Progress Bars */}
       <div className="absolute top-0 left-0 right-0 z-50 pt-safe">
         <div className="flex gap-1 px-2 py-2">
           {pages.map((_, i) => (
-            <div
-              key={i}
-              className="flex-1 h-0.5 rounded-full overflow-hidden bg-white/30"
-            >
+            <div key={i} className="flex-1 h-0.5 rounded-full overflow-hidden bg-white/30">
               <div
-                className={`h-full transition-all duration-300 ${
-                  i < activeIndex
-                    ? 'w-full bg-white'
-                    : i === activeIndex
-                    ? 'w-full bg-white'
-                    : 'w-0 bg-white'
+                className={`h-full ${
+                  i <= activeIndex ? 'w-full bg-white' : 'w-0 bg-white'
                 }`}
               />
             </div>
@@ -317,10 +431,9 @@ export default function PreviewPage() {
         </div>
       </div>
 
-      {/* Persistent Header */}
+      {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-40 pt-safe">
         <div className="flex items-center justify-between px-4 py-3 mt-3">
-          {/* Home Button */}
           <button
             onClick={() => router.push('/')}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white hover:bg-black/60 transition-colors"
@@ -329,7 +442,6 @@ export default function PreviewPage() {
             <Home className="w-5 h-5" />
           </button>
 
-          {/* Title */}
           <div className="flex-1 text-center px-4">
             <h1
               className="text-sm font-heading font-bold text-white truncate drop-shadow-lg"
@@ -339,7 +451,6 @@ export default function PreviewPage() {
             </h1>
           </div>
 
-          {/* Share Button */}
           <button
             onClick={handleShare}
             className="flex items-center justify-center w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white hover:bg-black/60 transition-colors"
@@ -358,10 +469,13 @@ export default function PreviewPage() {
         </div>
       )}
 
-      {/* Main Content Area with Tap Zones */}
+      {/* Main Content Area */}
       <div
         className="absolute inset-0 cursor-pointer"
         onClick={handleTap}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {/* Background Image */}
         {currentPage.imageUrl && currentPage.type !== 'locked' && (
@@ -375,10 +489,8 @@ export default function PreviewPage() {
         {/* Slide Content */}
         {currentPage.type === 'locked' ? (
           <>
-            {/* Blurred/locked background */}
             <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900" />
 
-            {/* Quote shown even when locked - at bottom */}
             {currentPage.quote && (
               <div className="absolute bottom-0 left-0 right-0 pb-safe pb-12">
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
@@ -395,7 +507,6 @@ export default function PreviewPage() {
               </div>
             )}
 
-            {/* Paywall overlay - centered, but allows tap-through for navigation */}
             <div className="absolute inset-0 flex items-center justify-center p-8 pointer-events-none">
               <div className="text-center pointer-events-auto" onClick={(e) => e.stopPropagation()}>
                 <div className="text-6xl mb-6">🔒</div>
@@ -419,23 +530,19 @@ export default function PreviewPage() {
               </div>
             </div>
           </>
-
         ) : (
           <>
-            {/* Cover Slide Content */}
             {currentPage.type === 'cover' && (
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent flex flex-col justify-end p-6 pb-safe pb-20">
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent flex flex-col justify-end items-center p-6 pb-safe pb-20">
                 <h1
-                  className="text-4xl md:text-5xl font-heading font-black text-white leading-tight drop-shadow-2xl mb-4"
+                  className="text-4xl md:text-5xl font-heading font-black text-white leading-tight drop-shadow-2xl mb-4 text-center"
                   dir={isHebrewBook ? 'rtl' : 'ltr'}
-                  style={{ textAlign: isHebrewBook ? 'right' : 'left' }}
                 >
                   {bookTitle}
                 </h1>
                 <p
-                  className="text-lg text-white/90 font-medium mb-8 drop-shadow-lg"
+                  className="text-lg text-white/90 font-medium mb-8 drop-shadow-lg text-center"
                   dir={isHebrewBook ? 'rtl' : 'ltr'}
-                  style={{ textAlign: isHebrewBook ? 'right' : 'left' }}
                 >
                   {isHebrewBook
                     ? `ספר רוסט מוקדש ל${book.victim_name}`
@@ -444,32 +551,19 @@ export default function PreviewPage() {
                 <div className="flex flex-col items-center gap-2">
                   <p className="text-white/80 text-sm font-medium flex items-center gap-2">
                     <span>{isHebrewBook ? 'הקש להמשך' : 'Tap to continue'}</span>
-                    <svg className="w-4 h-4 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                    </svg>
-                  </p>
-                  <p className="text-white/50 text-xs">
-                    {isHebrewBook ? 'הקש שמאלה ← | הקש ימינה →' : '← Tap left | Tap right →'}
                   </p>
                 </div>
               </div>
             )}
 
-            {/* Roast Quote Overlay - Glass Morphism */}
             {currentPage.type === 'roast' && currentPage.quote && (
               <div className="absolute bottom-0 left-0 right-0 pb-safe pb-12">
-                {/* Dark gradient for readability */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
-
-                {/* Quote Card */}
                 <div className="relative z-10 mx-6 mb-6">
                   <div className="bg-black/40 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl">
                     <p
                       className="text-xl md:text-2xl font-heading font-bold text-white text-center leading-snug"
                       dir={isPredominantlyHebrew(currentPage.quote) ? 'rtl' : 'ltr'}
-                      style={{
-                        textAlign: isPredominantlyHebrew(currentPage.quote) ? 'right' : 'center',
-                      }}
                     >
                       "{currentPage.quote}"
                     </p>
@@ -481,16 +575,14 @@ export default function PreviewPage() {
         )}
       </div>
 
-      {/* Page Counter - Minimal dot indicators */}
+      {/* Page Dots */}
       <div className="absolute bottom-2 left-0 right-0 z-30 pb-safe pointer-events-none">
         <div className="flex items-center justify-center gap-1">
           {pages.map((_, index) => (
             <div
               key={index}
               className={`h-1 rounded-full transition-all ${
-                index === activeIndex
-                  ? 'w-6 bg-white/90'
-                  : 'w-1 bg-white/40'
+                index === activeIndex ? 'w-6 bg-white/90' : 'w-1 bg-white/40'
               }`}
             />
           ))}
@@ -498,4 +590,29 @@ export default function PreviewPage() {
       </div>
     </div>
   );
+}
+
+function buildPages(book: any, adminMode: boolean): Page[] {
+  const isPaid = book.status === 'paid' || book.status === 'complete' || book.status === 'generating_remaining';
+  const isAdminBook = book.user_email === 'nadavkarlinski@gmail.com';
+  const showAllImages = isPaid || adminMode || isAdminBook;
+
+  const imageUrls = (showAllImages && book.full_image_urls?.length > 0)
+    ? book.full_image_urls
+    : book.preview_image_urls;
+
+  const pages: Page[] = [
+    { type: 'cover', imageUrl: book.cover_image_url || imageUrls[0], quote: null },
+  ];
+
+  for (let i = 0; i < book.quotes.length; i++) {
+    const imageUrl = imageUrls[i];
+    if (imageUrl && (showAllImages || i < 2)) {
+      pages.push({ type: 'roast', imageUrl, quote: book.quotes[i] });
+    } else if (!showAllImages) {
+      pages.push({ type: 'locked', imageUrl: null, quote: book.quotes[i] });
+    }
+  }
+
+  return pages;
 }
