@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      (process.env.STRIPE_WEBHOOK_SECRET || '').trim()
     );
   } catch (err) {
     console.error('Webhook signature verification failed:', err);
@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Handle the checkout.session.completed event
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
     const bookId = session.metadata?.bookId;
@@ -42,7 +41,6 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Webhook] Payment successful for book ${bookId}`);
 
-    // Update the book status to paid
     const { error: updateError } = await supabaseAdmin
       .from('roast_books')
       .update({
@@ -60,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     // Trigger remaining image generation
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+      const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://theroastbook.com').trim();
       const generateUrl = `${baseUrl}/api/generate-remaining`;
 
       console.log(`[Webhook] Triggering remaining generation: ${generateUrl}`);
@@ -82,7 +80,6 @@ export async function POST(request: NextRequest) {
       }
     } catch (triggerError) {
       console.error(`[Webhook] Error triggering generate-remaining:`, triggerError);
-      // Don't fail the webhook - the generation will be retried
     }
   }
 
