@@ -1,11 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { IdeaGeneratorModal } from '@/components/project/IdeaGeneratorModal';
-import { Sparkles, ArrowRight, ArrowLeft, Plus, Shield } from 'lucide-react';
+import { Sparkles, ArrowRight, ArrowLeft, Check, RefreshCw, Plus, X, Pencil, Shield, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth';
 import { isAdminUser, getMinQuotesRequired } from '@/lib/admin';
@@ -20,12 +18,23 @@ export default function QuotesPage() {
     const [book, setBook] = useState<any>(null);
     const [user, setUser] = useState<any>(null);
 
-    const [quotes, setQuotes] = useState<string[]>(Array(8).fill(''));
-    const [customGreeting, setCustomGreeting] = useState('');
-    const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+    // Step: 'describe' → 'select' → (optional) 'manual'
+    const [step, setStep] = useState<'describe' | 'select' | 'manual'>('describe');
+    const [description, setDescription] = useState('');
+    const [generating, setGenerating] = useState(false);
+    const [generatedQuotes, setGeneratedQuotes] = useState<string[]>([]);
+    const [selectedQuotes, setSelectedQuotes] = useState<string[]>([]);
+    const [manualQuote, setManualQuote] = useState('');
+    const [editingIndex, setEditingIndex] = useState<number | null>(null);
+    const [editText, setEditText] = useState('');
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const adminMode = isAdminUser(user);
-    const minQuotes = getMinQuotesRequired(user);
+    const minQuotes = Math.max(getMinQuotesRequired(user), 6);
+    const maxQuotes = 8;
+
+    const isHebrew = isPredominantlyHebrew(book?.victim_name || '') ||
+        isPredominantlyHebrew(description);
 
     useEffect(() => {
         fetchBook();
@@ -47,10 +56,11 @@ export default function QuotesPage() {
             if (res.ok) {
                 const data = await res.json();
                 setBook(data);
+                // If book already has quotes, go to select step with them pre-selected
                 if (data.quotes && data.quotes.length > 0) {
-                    const padded = [...data.quotes];
-                    while (padded.length < 8) padded.push('');
-                    setQuotes(padded.slice(0, 8));
+                    setSelectedQuotes(data.quotes.filter((q: string) => q.trim()));
+                    setGeneratedQuotes(data.quotes.filter((q: string) => q.trim()));
+                    setStep('select');
                 }
             }
         } catch (error) {
@@ -60,274 +70,528 @@ export default function QuotesPage() {
         }
     };
 
-    const updateQuote = (index: number, value: string) => {
-        const newQuotes = [...quotes];
-        newQuotes[index] = value;
-        setQuotes(newQuotes);
-    };
+    const handleGenerate = async () => {
+        if (!description.trim()) return;
 
-    const handleAssistantAdd = (newQuotes: string[]) => {
-        const currentQuotes = [...quotes];
-        let addIndex = 0;
+        setGenerating(true);
+        try {
+            captureEvent(Events.ROAST_ASSISTANT_OPENED, { book_id: params.id });
 
-        for (const quote of newQuotes) {
-            while (addIndex < currentQuotes.length && currentQuotes[addIndex].trim() !== '') {
-                addIndex++;
-            }
+            const res = await fetch('/api/generate-quotes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    victimName: book?.victim_name || '',
+                    trueTraits: description.trim(),
+                }),
+            });
 
-            if (addIndex < currentQuotes.length) {
-                currentQuotes[addIndex] = quote;
-            } else {
-                break;
-            }
+            if (!res.ok) throw new Error('Generation failed');
+
+            const { quotes } = await res.json();
+            setGeneratedQuotes(quotes);
+            setSelectedQuotes(quotes); // All selected by default
+            setStep('select');
+
+            captureEvent(Events.ROAST_ASSISTANT_USED, {
+                quotes_generated: quotes.length,
+                book_id: params.id,
+            });
+        } catch (error) {
+            console.error(error);
+            alert('Failed to generate quotes. Please try again.');
+        } finally {
+            setGenerating(false);
         }
-        setQuotes(currentQuotes);
-
-        // Track roast assistant usage
-        captureEvent(Events.ROAST_ASSISTANT_USED, {
-            quotes_added: newQuotes.length,
-            book_id: params.id,
-        });
     };
 
-    const handleNext = async () => {
-        let validQuotes = quotes.filter(q => q.trim());
+    const handleRegenerate = async () => {
+        if (!description.trim()) {
+            setStep('describe');
+            return;
+        }
+        setGenerating(true);
+        try {
+            const res = await fetch('/api/generate-quotes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    victimName: book?.victim_name || '',
+                    trueTraits: description.trim(),
+                }),
+            });
 
-        if (validQuotes.length < minQuotes) {
-            alert(`Please provide at least ${minQuotes} quote${minQuotes > 1 ? 's' : ''}`);
+            if (!res.ok) throw new Error('Generation failed');
+
+            const { quotes } = await res.json();
+            setGeneratedQuotes(quotes);
+            setSelectedQuotes(quotes);
+        } catch (error) {
+            console.error(error);
+            alert('Failed to regenerate. Please try again.');
+        } finally {
+            setGenerating(false);
+        }
+    };
+
+    const toggleQuote = (quote: string) => {
+        if (selectedQuotes.includes(quote)) {
+            setSelectedQuotes(selectedQuotes.filter(q => q !== quote));
+        } else {
+            if (selectedQuotes.length >= maxQuotes) return;
+            setSelectedQuotes([...selectedQuotes, quote]);
+        }
+    };
+
+    const removeQuote = (index: number) => {
+        const quote = selectedQuotes[index];
+        setSelectedQuotes(selectedQuotes.filter((_, i) => i !== index));
+    };
+
+    const addManualQuote = () => {
+        if (!manualQuote.trim() || selectedQuotes.length >= maxQuotes) return;
+        setSelectedQuotes([...selectedQuotes, manualQuote.trim()]);
+        setManualQuote('');
+    };
+
+    const startEdit = (index: number) => {
+        setEditingIndex(index);
+        setEditText(selectedQuotes[index]);
+    };
+
+    const saveEdit = () => {
+        if (editingIndex === null || !editText.trim()) return;
+        const updated = [...selectedQuotes];
+        updated[editingIndex] = editText.trim();
+        setSelectedQuotes(updated);
+        setEditingIndex(null);
+        setEditText('');
+    };
+
+    const cancelEdit = () => {
+        setEditingIndex(null);
+        setEditText('');
+    };
+
+    const handleSubmit = async () => {
+        if (selectedQuotes.length < minQuotes) {
+            alert(`Please keep at least ${minQuotes} quotes selected`);
             return;
         }
 
-        // Admin mode: Don't pad quotes, generate exactly what's entered
-        // Regular mode: Pad to 8 quotes
+        let finalQuotes = [...selectedQuotes];
+
+        // Pad to 8 if needed (non-admin)
         if (!adminMode) {
-            while (validQuotes.length < 8) {
-                validQuotes.push(validQuotes[0]);
+            while (finalQuotes.length < 8) {
+                // Cycle through existing quotes to pad
+                finalQuotes.push(finalQuotes[finalQuotes.length % selectedQuotes.length]);
             }
-        }
-
-        console.log('=== STARTING PREVIEW GENERATION ===');
-        console.log('Book ID from params:', params.id);
-        console.log('Book object:', book);
-        console.log('Valid quotes:', validQuotes);
-
-        if (!params.id && !book?.id) {
-            console.error('ERROR: No book ID available');
-            alert('Error: Book ID is missing');
-            return;
+            finalQuotes = finalQuotes.slice(0, 8);
         }
 
         const bookId = params.id || book?.id;
-        console.log('Using bookId:', bookId);
 
-        // Track quotes submission
         captureEvent(Events.QUOTES_SUBMITTED, {
-            quote_count: validQuotes.length,
-            has_custom_greeting: !!customGreeting,
+            quote_count: finalQuotes.length,
+            original_count: selectedQuotes.length,
             is_admin: adminMode,
             book_id: bookId,
         });
 
         setSaving(true);
         try {
-            console.log('Calling /api/generate-preview with payload:', {
-                bookId,
-                quotes: validQuotes,
-                customGreeting: customGreeting || null,
-            });
-
             const res = await fetch('/api/generate-preview', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     bookId: bookId,
-                    quotes: validQuotes,
-                    customGreeting: customGreeting || null,
+                    quotes: finalQuotes,
+                    customGreeting: null,
                 }),
             });
 
-            console.log('Response received. Status:', res.status);
-
             if (!res.ok) {
                 const errorData = await res.json();
-                console.error('API returned error:', errorData);
-                console.error('Full error details:', JSON.stringify(errorData, null, 2));
-
-                // Show detailed error to user
-                const errorMessage = errorData.error || 'Generation failed';
-                const errorDetails = errorData.errorDetails;
-
-                let alertMessage = `Failed to start generation:\n\n${errorMessage}`;
-
-                if (errorDetails) {
-                    alertMessage += `\n\nTechnical Details:\n`;
-                    if (errorDetails.name) alertMessage += `- Error type: ${errorDetails.name}\n`;
-                    if (errorDetails.code) alertMessage += `- Error code: ${errorDetails.code}\n`;
-                    if (errorDetails.hint) alertMessage += `- Hint: ${errorDetails.hint}\n`;
-                    if (errorDetails.stack) alertMessage += `\n Stack trace:\n${errorDetails.stack.slice(0, 500)}...`;
-                }
-
-                throw new Error(alertMessage);
+                throw new Error(errorData.error || 'Generation failed');
             }
 
-            const data = await res.json();
-            console.log('API success response:', data);
-
-            console.log('Redirecting to /progress/' + bookId);
             router.push(`/progress/${bookId}`);
         } catch (error: any) {
-            console.error('=== GENERATION ERROR ===');
-            console.error('Error message:', error.message);
-            console.error('Full error:', error);
-
-            // Show full error to user
-            alert(error.message || `Failed to start generation: ${String(error)}`);
+            alert(error.message || 'Failed to start generation');
             setSaving(false);
         }
     };
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-[#FFFDF5] flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin" />
+            </div>
+        );
+    }
 
-    const filledCount = quotes.filter(q => q.trim()).length;
-    const canProceed = filledCount >= minQuotes;
+    const victimName = book?.victim_name || 'them';
 
     return (
-        <div className="min-h-screen bg-[#FFFDF5] font-body text-black flex flex-col relative">
-            {/* Removed generic loading overlay - user redirects to /progress page which has detailed loader */}
-
+        <div className="min-h-screen bg-[#FFFDF5] font-body text-black flex flex-col">
+            {/* Header */}
             <header className="px-6 py-4 flex items-center border-b-2 border-black bg-white sticky top-0 z-30">
                 <Link href="/" className="p-2 hover:bg-black/5 rounded-full transition-colors mr-4">
                     <ArrowLeft className="w-5 h-5" />
                 </Link>
                 <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden border border-black max-w-xs md:max-w-md mx-auto">
-                    <div className="bg-yellow-400 h-full w-[40%]" />
+                    <div
+                        className="bg-yellow-400 h-full transition-all duration-300"
+                        style={{ width: step === 'describe' ? '25%' : '50%' }}
+                    />
                 </div>
-                <span className="ml-4 font-bold whitespace-nowrap">Step 2/5</span>
+                <span className="ml-4 font-bold whitespace-nowrap">
+                    Step {step === 'describe' ? '2' : '3'}/5
+                </span>
             </header>
 
-            <main className="flex-1 container mx-auto px-4 py-8 max-w-2xl">
-                <div className="bg-white border-2 border-black rounded-xl p-6 md:p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-
-                    {/* Admin Mode Banner */}
-                    {adminMode && (
-                        <div className="mb-6 bg-primary border-3 border-foreground rounded-xl p-4 shadow-brutal">
-                            <div className="flex items-center gap-3">
-                                <Shield className="h-6 w-6" />
-                                <div>
-                                    <p className="font-heading font-bold text-lg">ADMIN MODE ACTIVE</p>
-                                    <p className="text-sm">
-                                        Enter 1-8 quotes. All images will be generated immediately without preview.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Page Header - Better spacing and layout */}
-                    <div className="mb-6">
-                        <h1
-                            className="text-2xl md:text-3xl font-heading font-black mb-2"
-                            dir={isPredominantlyHebrew(book?.victim_name || '') ? 'rtl' : 'ltr'}
-                            style={{
-                                textAlign: isPredominantlyHebrew(book?.victim_name || '') ? 'right' : 'left',
-                            }}
-                        >
-                            {isPredominantlyHebrew(book?.victim_name || '')
-                                ? getHebrewBookTitle(book?.victim_name, book?.victim_gender)
-                                : `Things ${book?.victim_name} would NEVER say`}
-                        </h1>
-
-                        <div className={`flex items-center ${isPredominantlyHebrew(book?.victim_name || '') ? 'flex-row-reverse justify-between' : 'justify-between'} gap-4`}>
-                            <p
-                                className="text-gray-600"
-                                dir={isPredominantlyHebrew(book?.victim_name || '') ? 'rtl' : 'ltr'}
-                                style={{
-                                    textAlign: isPredominantlyHebrew(book?.victim_name || '') ? 'right' : 'left',
-                                }}
-                            >
-                                {adminMode
-                                    ? `${filledCount} quotes added (${minQuotes}-8 allowed)`
-                                    : filledCount >= minQuotes
-                                        ? `${filledCount} quotes added (minimum ${minQuotes})`
-                                        : `Add at least ${minQuotes} quotes`
-                                }
-                            </p>
-
-                            <Button
-                                size="sm"
-                                onClick={() => {
-                                    setIsAssistantOpen(true);
-                                    captureEvent(Events.ROAST_ASSISTANT_OPENED, { book_id: params.id });
-                                }}
-                                className="bg-yellow-100 text-yellow-800 border-yellow-400 hover:bg-yellow-200 flex-shrink-0"
-                            >
-                                <Sparkles className="w-4 h-4 mr-2" />
-                                Need ideas?
-                            </Button>
+            {/* Admin Badge */}
+            {adminMode && (
+                <div className="mx-4 mt-4 bg-primary border-3 border-foreground rounded-xl p-4 shadow-brutal">
+                    <div className="flex items-center gap-3">
+                        <Shield className="h-6 w-6" />
+                        <div>
+                            <p className="font-heading font-bold text-lg">ADMIN MODE</p>
+                            <p className="text-sm">Min 1 quote. All images generated immediately.</p>
                         </div>
                     </div>
-
-                    {/* Add padding at bottom for sticky button */}
-                    <div className="space-y-4 mb-24">
-                        {quotes.map((quote, i) => {
-                            const isHebrewQuote = isPredominantlyHebrew(quote);
-                            return (
-                                <div key={i} className="relative group">
-                                    <Input
-                                        value={quote}
-                                        onChange={(e) => updateQuote(i, e.target.value)}
-                                        placeholder={`Quote #${i + 1}`}
-                                        className="py-6 pl-4 pr-10 text-lg border-2 border-gray-200 focus:border-black focus:ring-yellow-400 rounded-xl"
-                                        dir={isHebrewQuote ? 'rtl' : 'ltr'}
-                                        style={{
-                                            textAlign: isHebrewQuote ? 'right' : 'left',
-                                        }}
-                                    />
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-300">
-                                        {i + 1}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-6 mb-8 text-center" onClick={() => {
-                        setIsAssistantOpen(true);
-                        captureEvent(Events.ROAST_ASSISTANT_OPENED, { book_id: params.id });
-                    }}>
-                        <div className="flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-transform">
-                            <div className="bg-yellow-400 rounded-full p-2 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] mb-2">
-                                <Plus className="w-6 h-6" />
-                            </div>
-                            <p className="font-bold">Use Roast Assistant</p>
-                            <p className="text-xs text-gray-500">Generate funny quotes instantly</p>
-                        </div>
-                    </div>
-
                 </div>
+            )}
 
-                {/* Sticky Submit Button - Always visible at bottom */}
-                <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#FFFDF5] via-[#FFFDF5] to-transparent pointer-events-none">
-                    <div className="container mx-auto max-w-2xl pointer-events-auto">
+            <main className="flex-1 container mx-auto px-4 py-6 max-w-2xl pb-32">
+
+                {/* ===== STEP 1: DESCRIBE ===== */}
+                {step === 'describe' && (
+                    <div className="bg-white border-2 border-black rounded-xl p-6 md:p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                        <div className="text-center mb-6">
+                            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-yellow-400 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] mb-4">
+                                <Sparkles className="w-7 h-7" />
+                            </div>
+                            <h1
+                                className="text-2xl md:text-3xl font-heading font-black mb-2"
+                                dir={isHebrew ? 'rtl' : 'ltr'}
+                            >
+                                {isHebrew
+                                    ? `ספרו לנו על ${victimName}`
+                                    : `Tell us about ${victimName}`}
+                            </h1>
+                            <p
+                                className="text-gray-500 max-w-md mx-auto"
+                                dir={isHebrew ? 'rtl' : 'ltr'}
+                            >
+                                {isHebrew
+                                    ? 'הכל רלוונטי — תחביבים, הרגלים, אובססיות, בדיחות פנימיות, שגעונות. אנחנו נהפוך את זה לרוסטים מטורפים.'
+                                    : "Anything goes — hobbies, habits, obsessions, quirks, inside jokes. We'll turn it into hilarious roasts."}
+                            </p>
+                        </div>
+
+                        <textarea
+                            ref={textareaRef}
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder={isHebrew
+                                ? 'למשל: אוהב פיצה יותר מהחיים שלו, תמיד מאחר, מכור לטיקטוק, חושב שהוא שף מקצועי אבל שורף ביצה, ישן עד 2 בצהריים בשבת...'
+                                : "e.g. Lives for pizza, always 15 min late, TikTok addict, thinks he's a chef but burns eggs, sleeps till 2pm on weekends, still quotes The Office daily..."}
+                            className="w-full min-h-[160px] p-4 rounded-xl border-2 border-black bg-[#FFFDF5] text-lg resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400 placeholder:text-gray-400 placeholder:text-base"
+                            dir={isHebrew ? 'rtl' : 'ltr'}
+                            style={{ textAlign: isHebrew ? 'right' : 'left' }}
+                            maxLength={800}
+                        />
+                        <div className="flex justify-between items-center mt-2 mb-4">
+                            <p className="text-xs text-gray-400">{description.length}/800</p>
+                            <p className="text-xs text-gray-400">
+                                {isHebrew ? 'ככל שתכתבו יותר, הרוסטים יהיו יותר מדויקים' : 'The more you share, the funnier the roasts'}
+                            </p>
+                        </div>
+
                         <Button
-                            onClick={handleNext}
-                            disabled={!canProceed || saving}
+                            onClick={handleGenerate}
+                            disabled={!description.trim() || generating}
                             className="w-full text-lg py-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
                             size="lg"
                         >
-                            {saving ? 'Creating Magic...' : adminMode ? 'Generate Full Book' : 'Generate Preview'}
-                            <ArrowRight className="ml-2 h-5 w-5" />
+                            {generating ? (
+                                <>
+                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                    {isHebrew ? 'מייצר רוסטים...' : 'Generating roasts...'}
+                                </>
+                            ) : (
+                                <>
+                                    <Sparkles className="mr-2 h-5 w-5" />
+                                    {isHebrew ? 'צרו לי רוסטים' : 'Generate Roasts'}
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                )}
+
+                {/* ===== STEP 2: SELECT / EDIT QUOTES ===== */}
+                {step === 'select' && (
+                    <>
+                        <div className="mb-4">
+                            <h1
+                                className="text-2xl font-heading font-black mb-1 text-center"
+                                dir={isHebrew ? 'rtl' : 'ltr'}
+                            >
+                                {isHebrew
+                                    ? `בחרו רוסטים ל${victimName}`
+                                    : `Pick roasts for ${victimName}`}
+                            </h1>
+                            <p className="text-gray-500 text-center text-sm">
+                                {isHebrew
+                                    ? `הקישו כדי לבטל בחירה. מינימום ${minQuotes}, מקסימום ${maxQuotes}.`
+                                    : `Tap to deselect. Keep ${minQuotes}–${maxQuotes} quotes.`}
+                            </p>
+                        </div>
+
+                        {/* Selected count badge */}
+                        <div className="flex items-center justify-center gap-2 mb-4">
+                            <div className={`px-4 py-1.5 rounded-full border-2 font-heading font-bold text-sm ${
+                                selectedQuotes.length >= minQuotes
+                                    ? 'bg-green-100 border-green-500 text-green-700'
+                                    : 'bg-red-100 border-red-400 text-red-600'
+                            }`}>
+                                {selectedQuotes.length}/{maxQuotes} selected
+                            </div>
+                        </div>
+
+                        {/* Loading overlay for regeneration */}
+                        {generating && (
+                            <div className="flex items-center justify-center py-12">
+                                <Loader2 className="w-8 h-8 animate-spin text-yellow-500 mr-3" />
+                                <p className="font-heading font-bold">
+                                    {isHebrew ? 'מייצר רוסטים חדשים...' : 'Generating new roasts...'}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Quote cards */}
+                        {!generating && (
+                            <div className="space-y-3 mb-6">
+                                {generatedQuotes.map((quote, i) => {
+                                    const isSelected = selectedQuotes.includes(quote);
+                                    const selectedIndex = selectedQuotes.indexOf(quote);
+                                    const isHebrewQuote = isPredominantlyHebrew(quote);
+                                    const isEditing = editingIndex !== null && selectedQuotes[editingIndex] === quote;
+
+                                    if (isEditing) {
+                                        return (
+                                            <div key={i} className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4">
+                                                <input
+                                                    value={editText}
+                                                    onChange={(e) => setEditText(e.target.value)}
+                                                    className="w-full p-2 border-2 border-black rounded-lg text-sm font-medium bg-white"
+                                                    dir={isPredominantlyHebrew(editText) ? 'rtl' : 'ltr'}
+                                                    autoFocus
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') saveEdit();
+                                                        if (e.key === 'Escape') cancelEdit();
+                                                    }}
+                                                />
+                                                <div className="flex gap-2 mt-2">
+                                                    <button onClick={saveEdit} className="text-xs font-bold text-green-600 hover:underline">Save</button>
+                                                    <button onClick={cancelEdit} className="text-xs font-bold text-gray-400 hover:underline">Cancel</button>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+
+                                    return (
+                                        <div
+                                            key={i}
+                                            onClick={() => toggleQuote(quote)}
+                                            className={`
+                                                relative p-4 rounded-xl border-2 cursor-pointer transition-all group
+                                                ${isSelected
+                                                    ? 'bg-yellow-50 border-yellow-400 shadow-[2px_2px_0px_0px_#FACC15]'
+                                                    : 'bg-white border-gray-200 opacity-50 hover:opacity-70'
+                                                }
+                                            `}
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div className={`
+                                                    w-6 h-6 rounded border-2 shrink-0 mt-0.5 flex items-center justify-center transition-colors
+                                                    ${isSelected
+                                                        ? 'bg-yellow-400 border-black'
+                                                        : 'border-gray-300'
+                                                    }
+                                                `}>
+                                                    {isSelected && <Check className="w-3.5 h-3.5 text-black" />}
+                                                </div>
+                                                <p
+                                                    className="flex-1 text-sm font-medium leading-relaxed"
+                                                    dir={isHebrewQuote ? 'rtl' : 'ltr'}
+                                                    style={{ textAlign: isHebrewQuote ? 'right' : 'left' }}
+                                                >
+                                                    "{quote}"
+                                                </p>
+                                            </div>
+
+                                            {/* Edit button */}
+                                            {isSelected && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        startEdit(selectedIndex);
+                                                    }}
+                                                    className="absolute top-3 right-3 p-1.5 rounded-lg bg-white/80 border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-100"
+                                                >
+                                                    <Pencil className="w-3 h-3 text-gray-500" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+
+                                {/* Manual quotes (ones not from generated set) */}
+                                {selectedQuotes
+                                    .filter(q => !generatedQuotes.includes(q))
+                                    .map((quote, i) => {
+                                        const actualIndex = selectedQuotes.indexOf(quote);
+                                        const isHebrewQuote = isPredominantlyHebrew(quote);
+                                        const isEditing = editingIndex === actualIndex;
+
+                                        if (isEditing) {
+                                            return (
+                                                <div key={`manual-${i}`} className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4">
+                                                    <input
+                                                        value={editText}
+                                                        onChange={(e) => setEditText(e.target.value)}
+                                                        className="w-full p-2 border-2 border-black rounded-lg text-sm font-medium bg-white"
+                                                        dir={isPredominantlyHebrew(editText) ? 'rtl' : 'ltr'}
+                                                        autoFocus
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') saveEdit();
+                                                            if (e.key === 'Escape') cancelEdit();
+                                                        }}
+                                                    />
+                                                    <div className="flex gap-2 mt-2">
+                                                        <button onClick={saveEdit} className="text-xs font-bold text-green-600 hover:underline">Save</button>
+                                                        <button onClick={cancelEdit} className="text-xs font-bold text-gray-400 hover:underline">Cancel</button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <div
+                                                key={`manual-${i}`}
+                                                className="relative p-4 rounded-xl border-2 border-yellow-400 bg-yellow-50 shadow-[2px_2px_0px_0px_#FACC15] group"
+                                            >
+                                                <div className="flex items-start gap-3">
+                                                    <div className="w-6 h-6 rounded bg-yellow-400 border-2 border-black shrink-0 mt-0.5 flex items-center justify-center">
+                                                        <Check className="w-3.5 h-3.5 text-black" />
+                                                    </div>
+                                                    <p
+                                                        className="flex-1 text-sm font-medium leading-relaxed"
+                                                        dir={isHebrewQuote ? 'rtl' : 'ltr'}
+                                                        style={{ textAlign: isHebrewQuote ? 'right' : 'left' }}
+                                                    >
+                                                        "{quote}"
+                                                    </p>
+                                                </div>
+                                                <div className="absolute top-3 right-3 flex gap-1">
+                                                    <button
+                                                        onClick={() => startEdit(actualIndex)}
+                                                        className="p-1.5 rounded-lg bg-white/80 border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-100"
+                                                    >
+                                                        <Pencil className="w-3 h-3 text-gray-500" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => removeQuote(actualIndex)}
+                                                        className="p-1.5 rounded-lg bg-white/80 border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50"
+                                                    >
+                                                        <X className="w-3 h-3 text-red-500" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                            </div>
+                        )}
+
+                        {/* Add your own + Regenerate */}
+                        {!generating && (
+                            <div className="space-y-3 mb-6">
+                                {/* Add manual quote */}
+                                {selectedQuotes.length < maxQuotes && (
+                                    <div className="flex gap-2">
+                                        <input
+                                            value={manualQuote}
+                                            onChange={(e) => setManualQuote(e.target.value)}
+                                            placeholder={isHebrew ? 'הוסיפו ציטוט משלכם...' : 'Add your own quote...'}
+                                            className="flex-1 p-3 rounded-xl border-2 border-gray-200 text-sm focus:outline-none focus:border-black"
+                                            dir={isPredominantlyHebrew(manualQuote) ? 'rtl' : 'ltr'}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') addManualQuote();
+                                            }}
+                                        />
+                                        <button
+                                            onClick={addManualQuote}
+                                            disabled={!manualQuote.trim()}
+                                            className="px-4 rounded-xl border-2 border-black bg-white hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            <Plus className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Action buttons */}
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={handleRegenerate}
+                                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-bold transition-colors"
+                                    >
+                                        <RefreshCw className="w-4 h-4" />
+                                        {isHebrew ? 'צרו חדשים' : 'Regenerate'}
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setStep('describe');
+                                        }}
+                                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-bold transition-colors"
+                                    >
+                                        <ArrowLeft className="w-4 h-4" />
+                                        {isHebrew ? 'שנו תיאור' : 'Edit description'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </>
+                )}
+            </main>
+
+            {/* Sticky Submit Button - Only on select step */}
+            {step === 'select' && !generating && (
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#FFFDF5] via-[#FFFDF5] to-transparent pointer-events-none z-20">
+                    <div className="container mx-auto max-w-2xl pointer-events-auto">
+                        <Button
+                            onClick={handleSubmit}
+                            disabled={selectedQuotes.length < (adminMode ? 1 : minQuotes) || saving}
+                            className="w-full text-lg py-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
+                            size="lg"
+                        >
+                            {saving ? (
+                                <>
+                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                    {isHebrew ? 'מייצר...' : 'Creating Magic...'}
+                                </>
+                            ) : (
+                                <>
+                                    {adminMode ? 'Generate Full Book' : isHebrew ? 'צרו תצוגה מקדימה' : 'Generate Preview'}
+                                    <ArrowRight className="ml-2 h-5 w-5" />
+                                </>
+                            )}
                         </Button>
                     </div>
                 </div>
-            </main>
-
-            <IdeaGeneratorModal
-                isOpen={isAssistantOpen}
-                onClose={() => setIsAssistantOpen(false)}
-                victimName={book?.victim_name || 'them'}
-                onSelectSuggestions={handleAssistantAdd}
-            />
+            )}
         </div>
     );
 }
