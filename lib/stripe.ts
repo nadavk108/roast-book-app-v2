@@ -1,15 +1,23 @@
 import Stripe from 'stripe';
 
-if (!process.env.STRIPE_SECRET_KEY) {
+const stripeKey = (process.env.STRIPE_SECRET_KEY || '').trim();
+
+if (!stripeKey) {
   throw new Error('Missing STRIPE_SECRET_KEY');
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+const stripe = new Stripe(stripeKey, {
   apiVersion: '2024-12-18.acacia',
 });
 
 export async function createCheckoutSession(bookId: string, slug: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://theroastbook.com').trim();
+  
+  const successUrl = `${baseUrl}/preview/${bookId}?payment=success`;
+  const cancelUrl = `${baseUrl}/preview/${bookId}?payment=cancelled`;
+  
+  console.log('[STRIPE] Base URL:', JSON.stringify(baseUrl));
+  console.log('[STRIPE] Success URL:', JSON.stringify(successUrl));
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
@@ -21,14 +29,14 @@ export async function createCheckoutSession(bookId: string, slug: string) {
             name: 'The Roast Book - Full Flipbook',
             description: 'Unlock all 8 roast images',
           },
-          unit_amount: 999, // $9.99
+          unit_amount: 999,
         },
         quantity: 1,
       },
     ],
     mode: 'payment',
-    success_url: `${baseUrl}/preview/${bookId}?payment=success`,
-    cancel_url: `${baseUrl}/preview/${bookId}?payment=cancelled`,
+    success_url: successUrl,
+    cancel_url: cancelUrl,
     metadata: {
       bookId,
     },
