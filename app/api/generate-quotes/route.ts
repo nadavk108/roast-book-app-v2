@@ -9,17 +9,68 @@ const openai = new OpenAI({
   maxRetries: 2,
 });
 
+const QUOTE_SYSTEM_PROMPT = (count: number, hebrewInstruction: string) => `You are the Lead Comedy Writer for The Roast Book.
+Your job is to turn a victim's real traits, passions, and obsessions into ${count} short quotes that betray their identity in a way their friends will instantly recognize as wrong for them.
+
+These quotes must sound like real things someone might say, but they must represent the most boring, square, or socially mismatched version of a person relative to who the victim actually is.
+
+Do NOT write obvious opposites. Do NOT write direct negations of their interests. Do NOT insult the victim directly. The humor must come from identity betrayal and cringe, not cruelty.
+
+COMEDY ENGINE (MANDATORY)
+Each quote must:
+- Sound natural in conversation
+- Reveal a personality the victim would never become
+- Imply the victim has turned into:
+  - A rule-follower
+  - A snob
+  - A wellness extremist
+  - A minimalist monk
+  - Or a corporate square
+- Feel socially embarrassing to imagine them saying
+
+Think: "This would be horrifying to hear them say out loud."
+
+STYLE MODES (Pick the most ironic mode per trait)
+- If they love chaos, parties, nightlife → Make them sound like a wellness influencer or early-bed productivity bro
+- If they love junk food → Make them sound like a flavorless health purist
+- If they love tech, gadgets, startups → Make them sound nostalgic, analog, and anti-innovation
+- If they love shopping, brands, flexing → Make them sound like a monk who hates possessions
+- If they love weed, rebellion, laziness → Make them sound like a hyper-responsible rule enforcer
+- If they are messy or late → Make them sound neurotically punctual and organized
+
+TONE RULES
+- Funny but not mean
+- Subtle cringe beats obvious reversal
+- No swearing
+- No direct mention of their real traits
+- No sarcasm that sounds written by AI
+- Must sound like something someone could actually say in public
+
+${hebrewInstruction}
+
+OUTPUT RULES (STRICT)
+- Return exactly ${count} quotes
+- Each quote must be under 15 words
+- Return ONLY a JSON object with a "quotes" array: {"quotes": ["quote1", "quote2", ...]}
+- No extra text, no explanations
+
+QUALITY FILTER (MENTAL CHECK BEFORE OUTPUT)
+If the quote:
+- Could apply to anyone → reject it
+- Sounds like a joke setup → reject it
+- Is just "I don't like X" → reject it
+- Feels too mean → soften it
+- Would not embarrass the victim socially → rewrite it`;
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { bookId, victimName, trueTraits } = body;
 
-    // Support two modes: bookId-based (for automated generation) or traits-based (for assistant)
+    // Traits-based generation for Roast Assistant ("Need help" button)
     if (victimName && trueTraits) {
-      // Traits-based generation for Roast Assistant
       console.log('Generating quotes from traits:', { victimName, trueTraits });
 
-      // Detect if input is in Hebrew
       const isHebrew = isPredominantlyHebrew(victimName) || isPredominantlyHebrew(trueTraits);
       const hebrewInstruction = isHebrew ? getHebrewPromptInstruction() : '';
 
@@ -28,32 +79,11 @@ export async function POST(request: NextRequest) {
         messages: [
           {
             role: 'system',
-            content: `You are a Lead Satirist for "The Roast Book." Your task is to generate 8 razor-sharp, hilarious quotes titled "Things [Victim Name] Would Never Say."
-
-CRITICAL STRATEGY: Do not just invert their traits. Instead, force the victim to adopt the persona of their "Mortal Enemy"—the most boring, corporate, or judgmental version of a person who would find the victim's actual passions repulsive or "unprofessional."
-
-STYLING ARCHETYPES:
-- If they are a Rebel/Artist: Make them sound like a high-strung HR Manager.
-- If they are Tech-Obsessed: Make them sound like a 19th-century Luddite.
-- If they are a Foodie: Make them sound like they find flavor "taxing" and "unnecessary."
-- If they are a Fitness Junkie: Make them sound like someone who views a flight of stairs as an "insurmountable safety hazard."
-
-EXAMPLES:
-- Trait (Loves Crypto): "I've decided to move my life savings into a high-interest savings account. Slow and steady wins the race!"
-- Trait (Loves Weed): "I find that a crisp glass of lukewarm water provides all the 'recreation' a law-abiding citizen needs."
-- Trait (Loves Fashion): "Is it possible to get this shirt in a more 'utilitarian' shade of oatmeal? I find self-expression distracting."
-
-${hebrewInstruction}
-
-OUTPUT RULES:
-- Exactly 8 quotes.
-- Under 15 words each.
-- Short and punchy.
-- Return ONLY a JSON object with a "quotes" array: {"quotes": ["quote1", "quote2", ...]}.`,
+            content: QUOTE_SYSTEM_PROMPT(8, hebrewInstruction),
           },
           {
             role: 'user',
-            content: `Person: ${victimName}\nThings they actually love/do: ${trueTraits}\n\nGenerate 8 hilarious quotes using the "Mortal Enemy" approach. Format: {"quotes": ["quote1", "quote2", ...]}`,
+            content: `Person: ${victimName}\nThings they actually love/do: ${trueTraits}\n\nGenerate 8 quotes that betray their identity. Format: {"quotes": ["quote1", "quote2", ...]}`,
           },
         ],
         response_format: { type: 'json_object' },
@@ -70,7 +100,7 @@ OUTPUT RULES:
       });
     }
 
-    // BookId-based generation (original flow)
+    // BookId-based generation (automated flow)
     if (!bookId) {
       return NextResponse.json(
         { error: 'Missing bookId or victimName/trueTraits' },
@@ -93,45 +123,20 @@ OUTPUT RULES:
 
     console.log('Generating quotes for book:', bookId);
 
-    // Detect if the victim description is in Hebrew
     const isHebrew = isPredominantlyHebrew(book.victim_description || '') ||
       isPredominantlyHebrew(book.victim_name || '');
     const hebrewInstruction = isHebrew ? getHebrewPromptInstruction() : '';
 
-    console.log('Hebrew detection:', { isHebrew, victimDescription: book.victim_description });
-
-    // Generate 6 roast quotes
     const quotesResponse = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         {
           role: 'system',
-          content: `You are a Lead Satirist for "The Roast Book." Your task is to generate 6 razor-sharp, hilarious quotes titled "Things [Victim Name] Would Never Say."
-
-CRITICAL STRATEGY: Do not just invert their traits. Instead, force the victim to adopt the persona of their "Mortal Enemy"—the most boring, corporate, or judgmental version of a person who would find the victim's actual passions repulsive or "unprofessional."
-
-STYLING ARCHETYPES:
-- If they are a Rebel/Artist: Make them sound like a high-strung HR Manager.
-- If they are Tech-Obsessed: Make them sound like a 19th-century Luddite.
-- If they are a Foodie: Make them sound like they find flavor "taxing" and "unnecessary."
-- If they are a Fitness Junkie: Make them sound like someone who views a flight of stairs as an "insurmountable safety hazard."
-
-EXAMPLES:
-- Trait (Loves Crypto): "I've decided to move my life savings into a high-interest savings account. Slow and steady wins the race!"
-- Trait (Loves Weed): "I find that a crisp glass of lukewarm water provides all the 'recreation' a law-abiding citizen needs."
-- Trait (Loves Fashion): "Is it possible to get this shirt in a more 'utilitarian' shade of oatmeal? I find self-expression distracting."
-
-${hebrewInstruction}
-
-OUTPUT RULES:
-- Exactly 6 quotes.
-- Under 15 words each.
-- Short and punchy.
-- Return ONLY a JSON object with a "quotes" array: {"quotes": ["quote1", "quote2", ...]}.`,
+          content: QUOTE_SYSTEM_PROMPT(6, hebrewInstruction),
         },
         {
           role: 'user',
-          content: `Based on this person's appearance and vibe: ${book.victim_description}\n\nInfer their personality and generate 6 hilarious quotes using the "Mortal Enemy" approach. Format: {"quotes": ["quote1", "quote2", ...]}`,
+          content: `Based on this person's appearance and vibe: ${book.victim_description}\n\nInfer their personality and generate 6 quotes that betray their identity. Format: {"quotes": ["quote1", "quote2", ...]}`,
         },
       ],
       response_format: { type: 'json_object' },
@@ -142,7 +147,6 @@ OUTPUT RULES:
 
     console.log('Generated quotes:', quotes);
 
-    // Update book with quotes (keep status as 'analyzing' until preview is ready)
     const { error: updateError } = await supabaseAdmin
       .from('roast_books')
       .update({
