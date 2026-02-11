@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Home, Share2 } from 'lucide-react';
+import { Home, Share2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { TheEndPage } from '@/components/flipbook/TheEndPage';
 import { isPredominantlyHebrew, getHebrewBookTitle } from '@/lib/hebrew-utils';
 
@@ -32,12 +32,14 @@ export default function BookPage() {
   const [generating, setGenerating] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [showArrows, setShowArrows] = useState(false);
 
   // Swipe tracking
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const touchEndX = useRef(0);
   const isSwiping = useRef(false);
+  const hideArrowsTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetchBook();
@@ -64,20 +66,15 @@ export default function BookPage() {
       const img = new Image();
       img.onload = () => {
         loaded++;
-        if (loaded >= imageUrls.length) {
-          setImagesLoaded(true);
-        }
+        if (loaded >= imageUrls.length) setImagesLoaded(true);
       };
       img.onerror = () => {
         loaded++;
-        if (loaded >= imageUrls.length) {
-          setImagesLoaded(true);
-        }
+        if (loaded >= imageUrls.length) setImagesLoaded(true);
       };
       img.src = url;
     });
 
-    // Safety timeout — don't block forever if an image is slow
     const timeout = setTimeout(() => setImagesLoaded(true), 5000);
     return () => clearTimeout(timeout);
   }, [book]);
@@ -111,11 +108,7 @@ export default function BookPage() {
 
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: `${title} 🔥📚`,
-          text: text,
-          url: url,
-        });
+        await navigator.share({ title: `${title} 🔥📚`, text, url });
       } catch (err) {
         await navigator.clipboard.writeText(url);
         alert('Link copied to clipboard!');
@@ -137,9 +130,37 @@ export default function BookPage() {
     setActiveIndex((prev) => Math.max(prev - 1, 0));
   }, []);
 
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        goToNext();
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        goToPrev();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [goToNext, goToPrev]);
+
+  // Show arrows on mouse move, hide after 2s idle
+  const handleMouseMove = useCallback(() => {
+    setShowArrows(true);
+    if (hideArrowsTimer.current) clearTimeout(hideArrowsTimer.current);
+    hideArrowsTimer.current = setTimeout(() => setShowArrows(false), 2000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (hideArrowsTimer.current) clearTimeout(hideArrowsTimer.current);
+    };
+  }, []);
+
   // Tap handler
   const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Don't navigate if user was swiping
     if (isSwiping.current) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
@@ -164,8 +185,6 @@ export default function BookPage() {
     touchEndX.current = e.touches[0].clientX;
     const deltaX = Math.abs(touchEndX.current - touchStartX.current);
     const deltaY = Math.abs(e.touches[0].clientY - touchStartY.current);
-
-    // If horizontal movement is significant, mark as swipe
     if (deltaX > 20 && deltaX > deltaY) {
       isSwiping.current = true;
     }
@@ -173,20 +192,10 @@ export default function BookPage() {
 
   const handleTouchEnd = () => {
     if (!isSwiping.current) return;
-
     const deltaX = touchStartX.current - touchEndX.current;
-    const minSwipeDistance = 50;
-
-    if (deltaX > minSwipeDistance) {
-      goToNext(); // Swipe left = next
-    } else if (deltaX < -minSwipeDistance) {
-      goToPrev(); // Swipe right = prev
-    }
-
-    // Reset after a tick so the click handler can check isSwiping
-    setTimeout(() => {
-      isSwiping.current = false;
-    }, 10);
+    if (deltaX > 50) goToNext();
+    else if (deltaX < -50) goToPrev();
+    setTimeout(() => { isSwiping.current = false; }, 10);
   };
 
   // Loading states
@@ -214,7 +223,6 @@ export default function BookPage() {
 
   if (!book) return <div className="fixed inset-0 bg-black text-white flex items-center justify-center">Book not found</div>;
 
-  // Show spinner until images are preloaded
   if (!imagesLoaded) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center">
@@ -235,22 +243,15 @@ export default function BookPage() {
   const currentSlide = slides[activeIndex];
 
   return (
-    <div className="fixed inset-0 bg-black overflow-hidden">
+    <div className="fixed inset-0 bg-black overflow-hidden" onMouseMove={handleMouseMove}>
       {/* Progress Bars */}
       <div className="absolute top-0 left-0 right-0 z-50 pt-safe">
         <div className="flex gap-1 px-2 py-2">
           {slides.map((_, i) => (
-            <div
-              key={i}
-              className="flex-1 h-0.5 rounded-full overflow-hidden bg-white/30"
-            >
+            <div key={i} className="flex-1 h-0.5 rounded-full overflow-hidden bg-white/30">
               <div
                 className={`h-full ${
-                  i < activeIndex
-                    ? 'w-full bg-white'
-                    : i === activeIndex
-                    ? 'w-full bg-white'
-                    : 'w-0 bg-white'
+                  i <= activeIndex ? 'w-full bg-white' : 'w-0 bg-white'
                 }`}
               />
             </div>
@@ -288,7 +289,7 @@ export default function BookPage() {
         </div>
       </div>
 
-      {/* Preloaded Image Layers — all rendered, only active one visible */}
+      {/* Preloaded Image Layers */}
       {slides.map((slide, i) => (
         <div
           key={i}
@@ -374,6 +375,30 @@ export default function BookPage() {
         )}
       </div>
 
+      {/* Desktop Arrow Buttons — hidden on touch, visible on mouse hover */}
+      {activeIndex > 0 && (
+        <button
+          onClick={(e) => { e.stopPropagation(); goToPrev(); }}
+          className={`hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-12 h-12 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-white hover:bg-black/70 transition-all ${
+            showArrows ? 'opacity-100' : 'opacity-0'
+          }`}
+          aria-label="Previous slide"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+      )}
+      {activeIndex < slides.length - 1 && (
+        <button
+          onClick={(e) => { e.stopPropagation(); goToNext(); }}
+          className={`hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-12 h-12 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-white hover:bg-black/70 transition-all ${
+            showArrows ? 'opacity-100' : 'opacity-0'
+          }`}
+          aria-label="Next slide"
+        >
+          <ChevronRight className="w-6 h-6" />
+        </button>
+      )}
+
       {/* Page Dots */}
       <div className="absolute bottom-2 left-0 right-0 z-30 pb-safe pointer-events-none">
         <div className="flex items-center justify-center gap-1">
@@ -381,9 +406,7 @@ export default function BookPage() {
             <div
               key={index}
               className={`h-1 rounded-full transition-all ${
-                index === activeIndex
-                  ? 'w-6 bg-white/90'
-                  : 'w-1 bg-white/40'
+                index === activeIndex ? 'w-6 bg-white/90' : 'w-1 bg-white/40'
               }`}
             />
           ))}
