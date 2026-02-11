@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Trigger remaining image generation
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://theroastbook.com').trim();
     const generateUrl = `${baseUrl}/api/generate-remaining`;
 
     const response = await fetch(generateUrl, {

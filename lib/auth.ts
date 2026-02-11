@@ -7,18 +7,14 @@ import { isAdmin } from './admin';
 export async function signInWithEmail(email: string, password: string) {
   const supabase = createClient();
 
-  // Track email auth attempt
   captureEvent(Events.EMAIL_SIGNIN_CLICKED);
 
-  // STEP 1: Try to sign in first
   const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
-  // If sign in succeeds, return
   if (signInData.user && signInData.session) {
-    // Track successful sign in
     captureEvent(Events.EMAIL_SIGNIN_COMPLETED, {
       is_new_user: false,
     });
@@ -30,13 +26,14 @@ export async function signInWithEmail(email: string, password: string) {
     };
   }
 
-  // STEP 2: If sign in failed because user doesn't exist, try sign up
   if (signInError?.message?.includes('Invalid login credentials')) {
+    const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://theroastbook.com').trim();
+
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/auth/callback`,
+        emailRedirectTo: `${baseUrl}/auth/callback`,
       },
     });
 
@@ -48,7 +45,6 @@ export async function signInWithEmail(email: string, password: string) {
       throw new Error('Sign up failed');
     }
 
-    // Track successful sign up
     captureEvent(Events.EMAIL_SIGNIN_COMPLETED, {
       is_new_user: true,
     });
@@ -57,22 +53,22 @@ export async function signInWithEmail(email: string, password: string) {
       user: signUpData.user,
       session: signUpData.session,
       isNewUser: true,
-      needsEmailVerification: !signUpData.session // If no session, email verification is required
+      needsEmailVerification: !signUpData.session
     };
   }
 
-  // STEP 3: If sign in failed for other reason (wrong password), throw error
   throw new Error(signInError?.message || 'Authentication failed');
 }
 
 export async function resetPassword(email: string) {
   const supabase = createClient();
 
-  // Track password reset request
   captureEvent(Events.PASSWORD_RESET_REQUESTED);
 
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://theroastbook.com').trim();
+
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/auth/reset-password`,
+    redirectTo: `${baseUrl}/auth/reset-password`,
   });
 
   if (error) throw error;
@@ -82,32 +78,13 @@ export async function resetPassword(email: string) {
 export async function signInWithGoogle(nextUrl?: string) {
   const supabase = createClient();
 
-  // Track sign-in attempt
   captureEvent(Events.GOOGLE_SIGNIN_CLICKED);
 
-  // FIX: Sanitize environment variable to remove newline characters
-  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001').trim();
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://theroastbook.com').trim();
   const destination = nextUrl || '/dashboard';
   const callbackUrl = `${baseUrl}/auth/callback?next=${encodeURIComponent(destination)}`;
 
-  // VERIFICATION: Prove the sanitization worked
-  console.log('═══════════════════════════════════════════════');
-  console.log('[AUTH] 🔍 ENVIRONMENT VARIABLE SANITIZATION');
-  console.log('[AUTH] Raw env value:', JSON.stringify(process.env.NEXT_PUBLIC_APP_URL));
-  console.log('[AUTH] Sanitized baseUrl:', baseUrl);
-  console.log('[AUTH] Sanitized length:', baseUrl.length, 'chars');
-  console.log('[AUTH] Expected length: 26 chars for https://theroastbook.com');
-  console.log('[AUTH] Last char code:', baseUrl.charCodeAt(baseUrl.length - 1), '(should be 109 for "m")');
-  console.log('═══════════════════════════════════════════════');
-
-  // DIAGNOSTIC: Log exact values being used
-  console.log('═══════════════════════════════════════════════');
-  console.log('[GOOGLE SIGNIN] 🔍 DIAGNOSTIC LOGS');
-  console.log('[GOOGLE SIGNIN] Input nextUrl:', nextUrl);
-  console.log('[GOOGLE SIGNIN] Computed destination:', destination);
-  console.log('[GOOGLE SIGNIN] Final callbackUrl:', callbackUrl);
-  console.log('[GOOGLE SIGNIN] Current window.location.href:', window.location.href);
-  console.log('═══════════════════════════════════════════════');
+  console.log('[GOOGLE SIGNIN] callbackUrl:', callbackUrl);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -121,17 +98,13 @@ export async function signInWithGoogle(nextUrl?: string) {
     throw error;
   }
 
-  console.log('[GOOGLE SIGNIN] ✅ OAuth data:', data);
   return data;
 }
 
 export async function signOut() {
   const supabase = createClient();
 
-  // Track sign-out
   captureEvent(Events.SIGNOUT_CLICKED);
-
-  // Reset PostHog user identity
   resetUser();
 
   await supabase.auth.signOut();
@@ -143,19 +116,16 @@ export async function identifyUserInAnalytics(user: any) {
 
   const adminStatus = isAdmin(user.email);
 
-  // Identify user in PostHog
   identifyUser(user.id, {
     email: user.email,
     name: user.user_metadata?.full_name,
     is_admin: adminStatus,
   });
 
-  // Track completed sign-in
   captureEvent(Events.GOOGLE_SIGNIN_COMPLETED, {
     is_admin: adminStatus,
   });
 
-  // Track admin login separately
   if (adminStatus) {
     captureEvent(Events.ADMIN_LOGIN, {
       email: user.email,
