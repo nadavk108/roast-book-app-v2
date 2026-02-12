@@ -142,15 +142,15 @@ async function generateWithNanoBananaPro(config: ImageGenerationConfig): Promise
         },
       },
       {
-          text: `Edit this image to create a new scene while preserving the person's exact appearance and features.
+          text: `Transform this person into a completely new scene. You MUST preserve their face, facial features, body type, hair color, and hairstyle — but EVERYTHING ELSE must change.
 
 New scene description: ${config.prompt}
 
 CRITICAL RULES:
-- Keep the person's face, features, and appearance IDENTICAL
-- Change ONLY the background, setting, clothing, and scenario
-- Ensure the person remains the central focus
-- OUTPUT MUST BE VERTICAL PORTRAIT ORIENTATION (taller than wide, 9:16 aspect ratio). This is mandatory. Do NOT output landscape or square images.`
+- PRESERVE: face, facial features, body shape, hair color, hairstyle, skin tone, age
+- MUST CHANGE: clothing, outfit, background, setting, pose, scenario. The person must be wearing DIFFERENT clothes than in this photo. This is mandatory.
+- The person must be the central focus of the image
+- OUTPUT MUST BE VERTICAL PORTRAIT ORIENTATION (taller than wide, 9:16 aspect ratio). Do NOT output landscape or square images.`
         },
     ];
 
