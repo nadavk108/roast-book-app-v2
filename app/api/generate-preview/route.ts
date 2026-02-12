@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
         () => generateVisualPrompt({
             quote,
             victimDescription: book.victim_description,
-            imageIndex: i + 3,
+            imageIndex: index,
             totalImages: 8
           }),
         {
