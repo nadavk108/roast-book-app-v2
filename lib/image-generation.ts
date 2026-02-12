@@ -142,16 +142,16 @@ async function generateWithNanoBananaPro(config: ImageGenerationConfig): Promise
         },
       },
       {
-        text: `Edit this image to create a new scene while preserving the person's exact appearance and features.
+          text: `Edit this image to create a new scene while preserving the person's exact appearance and features.
 
 New scene description: ${config.prompt}
 
-IMPORTANT:
+CRITICAL RULES:
 - Keep the person's face, features, and appearance IDENTICAL
 - Change ONLY the background, setting, clothing, and scenario
-- Output as 9:16 portrait aspect ratio
-- Ensure the person remains the central focus`
-      },
+- Ensure the person remains the central focus
+- OUTPUT MUST BE VERTICAL PORTRAIT ORIENTATION (taller than wide, 9:16 aspect ratio). This is mandatory. Do NOT output landscape or square images.`
+        },
     ];
 
     console.log('[NANO-BANANA-PRO] Calling generateContent...');

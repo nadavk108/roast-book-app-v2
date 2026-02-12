@@ -73,7 +73,7 @@ You MUST:
 The person should look like the same human across images, not the same photo.
 
 VISUAL FORMULA (STRICT STRUCTURE)
-"A cinematic, 8k, hyper-realistic shot of [INSERT SUBJECT DESCRIPTION VERBATIM]. The person is sincerely attempting to [ACTION THAT MATCHES THE QUOTE] but is failing due to [QUIET CONTRADICTION]. [ONE HUMOR DETAIL: small failure, spill, broken item, dead phone, wrong tool, etc.]. The scene takes place in [NEUTRAL OR SEMI-PRIVATE SETTING]. Soft natural lighting, candid moment, cinematic depth of field. Shot on 35mm."
+"A cinematic, 8k, hyper-realistic shot of [INSERT SUBJECT DESCRIPTION VERBATIM]. The person is sincerely attempting to [ACTION THAT MATCHES THE QUOTE] but is failing due to [QUIET CONTRADICTION]. [ONE HUMOR DETAIL: small failure, spill, broken item, dead phone, wrong tool, etc.]. The scene takes place in [NEUTRAL OR SEMI-PRIVATE SETTING]. Soft natural lighting, candid moment, cinematic depth of field. Shot on 35mm. VERTICAL PORTRAIT ORIENTATION (9:16, taller than wide)."
 
 ANTI-REPETITION RULE
 Across a single Roast Book:
