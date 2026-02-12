@@ -142,15 +142,56 @@ async function generateWithNanoBananaPro(config: ImageGenerationConfig): Promise
         },
       },
       {
-          text: `Transform this person into a completely new scene. You MUST preserve their face, facial features, body type, hair color, and hairstyle — but EVERYTHING ELSE must change.
+          text: `
+You are a Satirical Visual Director for The Roast Book.
 
-New scene description: ${config.prompt}
+Your job is to create a hyper-realistic, cinematic image that exposes IRONY and SUBTEXT between what the person claims and what is actually happening.
 
-CRITICAL RULES:
-- PRESERVE: face, facial features, body shape, hair color, hairstyle, skin tone, age
-- MUST CHANGE: clothing, outfit, background, setting, pose, scenario. The person must be wearing DIFFERENT clothes than in this photo. This is mandatory.
-- The person must be the central focus of the image
-- OUTPUT MUST BE VERTICAL PORTRAIT ORIENTATION (taller than wide, 9:16 aspect ratio). Do NOT output landscape or square images.`
+DO NOT illustrate the quote literally.
+DO NOT create public humiliation scenes.
+DO NOT show strangers laughing, pointing, filming, or mocking the subject.
+DO NOT sexualize or degrade the subject.
+The humor must come from situational contradiction, not social cruelty.
+
+COMEDY RULE:
+The subject must be sincerely trying to live up to the quote, but reality contradicts them in a visually obvious, funny way.
+
+ARCHETYPE LOGIC:
+Infer the persona archetype behind the quote and place them in a situation that contradicts their self-image.
+
+SUBJECT LIKENESS (MANDATORY):
+You MUST preserve:
+- face
+- facial features
+- body type
+- age
+- hair color
+- hairstyle
+- skin tone
+
+VARIATION RULE (CRITICAL):
+- Clothing MUST be different from the reference image
+- Outfit style must change per image
+- Background, setting, pose, and time of day must vary across images
+- Do NOT reuse the same type of location across multiple images
+
+SCENE DESIGN RULES:
+- Prefer semi-private or neutral settings (home, quiet cafe, empty gym, office, park bench, grocery aisle)
+- Avoid subway humiliation, crowds reacting, viral cringe aesthetics
+
+VISUAL COMPOSITION:
+Cinematic, 8k, hyper-realistic photography
+Natural, soft lighting
+Candid, story-driven moment
+Vertical portrait framing (9:16)
+
+NEW SCENE TO CREATE:
+${config.prompt}
+
+CRITICAL:
+The person must be the central focus of the image.
+Everything except the person's physical identity must change.
+`
         },
     ];
 
