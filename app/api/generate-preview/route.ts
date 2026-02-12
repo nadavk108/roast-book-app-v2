@@ -110,9 +110,11 @@ export async function POST(request: NextRequest) {
     const promptPromises = previewQuotes.map((quote: string, index: number) =>
       withRetryContext(
         () => generateVisualPrompt({
-          quote,
-          victimDescription: book.victim_description
-        }),
+            quote,
+            victimDescription: book.victim_description,
+            imageIndex: i + 3,
+            totalImages: 8
+          }),
         {
           context: `[${bookId}] Prompt ${index}`,
           maxAttempts: 3,
