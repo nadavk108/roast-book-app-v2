@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Home, Share2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { TheEndPage } from '@/components/flipbook/TheEndPage';
 import { isPredominantlyHebrew, getHebrewBookTitle } from '@/lib/hebrew-utils';
@@ -27,12 +27,12 @@ type Slide = {
 export default function BookPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [imagesLoaded, setImagesLoaded] = useState(false);
   const [showArrows, setShowArrows] = useState(false);
+  const startParamApplied = useRef(false);
 
   // Swipe tracking
   const touchStartX = useRef(0);
@@ -43,41 +43,29 @@ export default function BookPage() {
 
   useEffect(() => {
     fetchBook();
-    const interval = setInterval(fetchBook, 3000);
-    return () => clearInterval(interval);
   }, []);
 
-  // Preload all images once book is loaded
+  // Poll only while NOT complete — stop once done
   useEffect(() => {
-    if (!book) return;
+    if (!book || book.status === 'complete') return;
 
-    const imageUrls = [
-      book.cover_image_url,
-      ...book.full_image_urls,
-    ].filter(Boolean);
+    const interval = setInterval(fetchBook, 3000);
+    return () => clearInterval(interval);
+  }, [book?.status]);
 
-    if (imageUrls.length === 0) {
-      setImagesLoaded(true);
-      return;
+  // Apply ?start= param once book is loaded
+  useEffect(() => {
+    if (!book || startParamApplied.current) return;
+    const startParam = searchParams.get('start');
+    if (startParam) {
+      const startIndex = parseInt(startParam, 10);
+      const slides = buildSlides(book);
+      if (!isNaN(startIndex) && startIndex >= 0 && startIndex < slides.length) {
+        setActiveIndex(startIndex);
+      }
+      startParamApplied.current = true;
     }
-
-    let loaded = 0;
-    imageUrls.forEach((url) => {
-      const img = new Image();
-      img.onload = () => {
-        loaded++;
-        if (loaded >= imageUrls.length) setImagesLoaded(true);
-      };
-      img.onerror = () => {
-        loaded++;
-        if (loaded >= imageUrls.length) setImagesLoaded(true);
-      };
-      img.src = url;
-    });
-
-    const timeout = setTimeout(() => setImagesLoaded(true), 5000);
-    return () => clearTimeout(timeout);
-  }, [book]);
+  }, [book, searchParams]);
 
   const fetchBook = async () => {
     try {
@@ -85,24 +73,16 @@ export default function BookPage() {
       if (res.ok) {
         const data = await res.json();
         setBook(data);
-        if (data.status === 'complete') {
-          setGenerating(false);
-          setLoading(false);
-        } else if (data.status === 'paid') {
-          setGenerating(true);
-          setLoading(false);
-        } else {
-          setLoading(false);
-        }
       }
     } catch (error) {
       console.error('Fetch error:', error);
+    } finally {
       setLoading(false);
     }
   };
 
   const handleShare = async () => {
-    const url = window.location.href;
+    const url = window.location.href.split('?')[0]; // Remove query params from shared URL
     const title = `Things ${book?.victim_name} Would Never Say`;
     const text = 'Check out this hilarious roast book!';
 
@@ -198,8 +178,15 @@ export default function BookPage() {
     setTimeout(() => { isSwiping.current = false; }, 10);
   };
 
-  // Loading states
-  if (loading) {
+  // Determine Hebrew
+  const isHebrewBook = book ? (
+    isPredominantlyHebrew(book.victim_name) ||
+    (book.quotes && book.quotes.some(q => isPredominantlyHebrew(q)))
+  ) : false;
+
+  // === SINGLE LOADING SCREEN ===
+  // Covers: initial fetch, generating state, and image preloading
+  if (loading || !book) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center">
         <div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-400 border-t-transparent" />
@@ -207,34 +194,24 @@ export default function BookPage() {
     );
   }
 
-  if (generating) {
+  // Still generating (user navigated here directly, not from preview page)
+  if (book.status !== 'complete' && book.status !== 'preview_ready') {
     return (
       <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8">
         <div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-400 border-t-transparent mb-6" />
         <h2 className="text-2xl font-heading font-black mb-2 text-center text-white">
-          Generating remaining roasts...
+          {isHebrewBook ? 'מייצר את הרוסטים שלך...' : 'Generating your roasts...'}
         </h2>
         <p className="text-gray-400 text-center">
-          This usually takes about 2 minutes. Feel free to close this page and come back later!
+          {isHebrewBook
+            ? 'זה לוקח בערך 2 דקות. אפשר לסגור ולחזור אחר כך!'
+            : 'This usually takes about 2 minutes. Feel free to close and come back later!'}
         </p>
       </div>
     );
   }
 
-  if (!book) return <div className="fixed inset-0 bg-black text-white flex items-center justify-center">Book not found</div>;
-
-  if (!imagesLoaded) {
-    return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-400 border-t-transparent" />
-      </div>
-    );
-  }
-
-  const bookUrl = typeof window !== 'undefined' ? window.location.href : '';
-
-  const isHebrewBook = isPredominantlyHebrew(book.victim_name) ||
-    (book.quotes && book.quotes.some(q => isPredominantlyHebrew(q)));
+  const bookUrl = typeof window !== 'undefined' ? window.location.href.split('?')[0] : '';
 
   const bookTitle = isHebrewBook
     ? getHebrewBookTitle(book.victim_name, book.victim_gender)
@@ -328,9 +305,12 @@ export default function BookPage() {
             <div className="absolute inset-0 border-[20px] border-yellow-400"></div>
             <div className="text-center relative z-10">
               <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-4">
-                A message for you
+                {isHebrewBook ? 'הקדשה אישית' : 'A message for you'}
               </h3>
-              <p className="text-3xl font-heading font-bold text-black transform -rotate-1">
+              <p
+                className="text-3xl font-heading font-bold text-black transform -rotate-1"
+                dir={isHebrewBook ? 'rtl' : 'ltr'}
+              >
                 "{currentSlide.quote}"
               </p>
             </div>

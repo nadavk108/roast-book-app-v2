@@ -131,9 +131,10 @@ export default function PreviewPage() {
         setBook(data);
 
         if (data && data.status === 'complete' && data.slug) {
-          window.location.href = `/book/${data.slug}`;
-          return;
-        }
+            // Jump to first post-preview slide (cover=0, preview1=1, preview2=2, first new=3)
+            window.location.href = `/book/${data.slug}?start=3`;
+            return;
+          }
 
         if (data && (data.status === 'preview_ready' || data.status === 'complete' || data.status === 'paid')) {
           captureEvent(Events.PREVIEW_GENERATED, {
@@ -508,27 +509,31 @@ export default function PreviewPage() {
             )}
 
             <div className="absolute inset-0 flex items-center justify-center p-8 pointer-events-none">
-              <div className="text-center pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-                <div className="text-6xl mb-6">🔒</div>
-                <h2 className="text-2xl font-heading font-black text-white mb-2">
-                  Unlock Full Book
-                </h2>
-                <p className="text-gray-400 mb-8 max-w-sm">
-                  Get all {book.quotes.length} hilarious roasts and share the complete book
-                </p>
-                <Button
-                  onClick={handleCheckout}
-                  disabled={checkingOut}
-                  size="lg"
-                  className="bg-yellow-400 hover:bg-yellow-500 text-black font-heading font-black text-lg px-8 py-6 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
-                >
-                  {checkingOut ? 'Processing...' : 'Unlock Book - $9.99'}
-                </Button>
-                <p className="text-white/50 text-xs mt-4">
-                  ← Tap sides to preview more quotes →
-                </p>
+                <div className="text-center pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+                  <div className="text-6xl mb-6">🔒</div>
+                  <h2 className="text-2xl font-heading font-black text-white mb-2">
+                    {isHebrewBook ? 'פתחו את הספר המלא' : 'Unlock Full Book'}
+                  </h2>
+                  <p className="text-gray-400 mb-8 max-w-sm" dir={isHebrewBook ? 'rtl' : 'ltr'}>
+                    {isHebrewBook
+                      ? `קבלו את כל ${book.quotes.length} הרוסטים ושתפו את הספר המלא`
+                      : `Get all ${book.quotes.length} hilarious roasts and share the complete book`}
+                  </p>
+                  <Button
+                    onClick={handleCheckout}
+                    disabled={checkingOut}
+                    size="lg"
+                    className="bg-yellow-400 hover:bg-yellow-500 text-black font-heading font-black text-lg px-8 py-6 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                  >
+                    {checkingOut
+                      ? (isHebrewBook ? 'מעבד...' : 'Processing...')
+                      : (isHebrewBook ? 'פתחו את הספר - $9.99' : 'Unlock Book - $9.99')}
+                  </Button>
+                  <p className="text-white/50 text-xs mt-4">
+                    {isHebrewBook ? '← הקישו בצדדים לתצוגה מקדימה →' : '← Tap sides to preview more quotes →'}
+                  </p>
+                </div>
               </div>
-            </div>
           </>
         ) : (
           <>
