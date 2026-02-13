@@ -17,10 +17,15 @@ export default function LoginPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Debug logging
-  useEffect(() => {
+ useEffect(() => {
     const errorParam = searchParams.get('error');
     const redirectParam = searchParams.get('redirect');
-    console.log('[LOGIN PAGE] 🔍 Mounted with params:', { error: errorParam, redirect: redirectParam });
+    const verifiedParam = searchParams.get('verified');
+    console.log('[LOGIN PAGE] 🔍 Mounted with params:', { error: errorParam, redirect: redirectParam, verified: verifiedParam });
+
+    if (verifiedParam === 'true') {
+      setSuccessMessage('Email verified! You can now sign in.');
+    }
 
     if (errorParam) {
       console.log('[LOGIN PAGE] ❌ Error from URL params:', errorParam);
