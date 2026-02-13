@@ -26,8 +26,17 @@ export async function POST(request: NextRequest) {
     }
 
     if (book.status !== 'paid') {
-      return NextResponse.json({ error: 'Book not paid' }, { status: 400 });
-    }
+        // GUARD: If already complete or generating, don't re-run
+        if (book.status === 'complete' && book.full_image_urls?.length > 0) {
+          console.log(`[${bookId}] ⚠️ GUARD: Book already complete, skipping`);
+          return NextResponse.json({ success: true, message: 'Already complete', skipped: true });
+        }
+        if (book.status === 'generating_remaining') {
+          console.log(`[${bookId}] ⚠️ GUARD: Already generating, skipping`);
+          return NextResponse.json({ success: true, message: 'Already generating', skipped: true });
+        }
+        return NextResponse.json({ error: 'Book not paid' }, { status: 400 });
+      }
 
     // AWAIT the processing — do NOT fire-and-forget on Vercel
     const result = await processRemainingImages(book);
@@ -56,10 +65,12 @@ async function processRemainingImages(book: any) {
 
     const visualPromptPromises = remainingQuotes.map((quote: string, i: number) =>
       withRetryContext(
-        () => generateVisualPrompt({
-          quote,
-          victimDescription: book.victim_description
-        }),
+       () => generateVisualPrompt({
+            quote,
+            victimDescription: book.victim_description,
+            imageIndex: i + 3,
+            totalImages: 8
+          }),
         {
           context: `[${bookId}] Prompt ${i + 3}`,
           maxAttempts: 3,
@@ -93,7 +104,7 @@ async function processRemainingImages(book: any) {
       const storedUrl = await downloadAndUploadImage(
         imageUrl,
         'roast-books',
-        `generated/${book.slug}/image_${index}.jpg`
+        `generated/${book.slug}/image_${index}_${Date.now()}.jpg`
       );
       console.log(`[${bookId}] ✅ Image ${index} uploaded to storage`);
 

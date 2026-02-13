@@ -82,15 +82,41 @@ export async function POST(request: NextRequest) {
       victimName: book.victim_name
     });
 
-    // CRITICAL: Check if victim data exists
-    if (!book.victim_description) {
-      console.error(`[${bookId}] ❌ MISSING victim_description!`);
-      throw new Error('Book is missing victim_description - cannot generate images');
-    }
-    if (!book.victim_image_url) {
-      console.error(`[${bookId}] ❌ MISSING victim_image_url!`);
-      throw new Error('Book is missing victim_image_url - cannot generate images');
-    }
+    // GUARD: Prevent duplicate generation — if images already exist, return them
+      if (book.preview_image_urls?.length > 0 && book.status === 'preview_ready') {
+        console.log(`[${bookId}] ⚠️ GUARD: Preview images already exist, skipping generation`);
+        return NextResponse.json({
+          success: true,
+          previewUrls: book.preview_image_urls,
+          coverUrl: book.cover_image_url,
+          bookId: bookId,
+          isComplete: false,
+          imageCount: book.preview_image_urls.length,
+          skipped: true,
+        });
+      }
+      if (book.full_image_urls?.length > 0 && book.status === 'complete') {
+        console.log(`[${bookId}] ⚠️ GUARD: Book already complete, skipping generation`);
+        return NextResponse.json({
+          success: true,
+          previewUrls: book.full_image_urls,
+          coverUrl: book.cover_image_url,
+          bookId: bookId,
+          isComplete: true,
+          imageCount: book.full_image_urls.length,
+          skipped: true,
+        });
+      }
+
+      // CRITICAL: Check if victim data exists
+      if (!book.victim_description) {
+        console.error(`[${bookId}] ❌ MISSING victim_description!`);
+        throw new Error('Book is missing victim_description - cannot generate images');
+      }
+      if (!book.victim_image_url) {
+        console.error(`[${bookId}] ❌ MISSING victim_image_url!`);
+        throw new Error('Book is missing victim_image_url - cannot generate images');
+      }
 
     // STEP 3: Determine how many quotes to generate
     const quotesToGenerate = adminMode
@@ -150,7 +176,8 @@ export async function POST(request: NextRequest) {
         console.log(`[${bookId}] ✅ Image ${index} generated from AI`);
 
         // Upload to Supabase storage
-        const storagePath = `generated/${book.slug}/preview_${index}.jpg`;
+        const timestamp = Date.now();
+          const storagePath = `generated/${book.slug}/preview_${index}_${timestamp}.jpg`;
         const storedUrl = await downloadAndUploadImage(
           imageUrl,
           'roast-books',
