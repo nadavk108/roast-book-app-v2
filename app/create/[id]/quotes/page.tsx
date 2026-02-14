@@ -80,7 +80,8 @@ export default function QuotesPage() {
             const res = await fetch('/api/generate-quotes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+               body: JSON.stringify({
+                    bookId: params.id,
                     victimName: book?.victim_name || '',
                     trueTraits: description.trim(),
                 }),
@@ -116,6 +117,7 @@ export default function QuotesPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    bookId: params.id,
                     victimName: book?.victim_name || '',
                     trueTraits: description.trim(),
                 }),
@@ -173,7 +175,7 @@ export default function QuotesPage() {
         setEditText('');
     };
 
-    const handleSubmit = async () => {
+   const handleSubmit = async () => {
         if (selectedQuotes.length < minQuotes) {
             alert(`Please keep at least ${minQuotes} quotes selected`);
             return;
@@ -184,7 +186,6 @@ export default function QuotesPage() {
         // Pad to 8 if needed (non-admin)
         if (!adminMode) {
             while (finalQuotes.length < 8) {
-                // Cycle through existing quotes to pad
                 finalQuotes.push(finalQuotes[finalQuotes.length % selectedQuotes.length]);
             }
             finalQuotes = finalQuotes.slice(0, 8);
@@ -200,27 +201,22 @@ export default function QuotesPage() {
         });
 
         setSaving(true);
-        try {
-            const res = await fetch('/api/generate-preview', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    bookId: bookId,
-                    quotes: finalQuotes,
-                    customGreeting: null,
-                }),
-            });
 
-            if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.error || 'Generation failed');
-            }
+        // Fire generation request without waiting — redirect immediately to progress page
+        fetch('/api/generate-preview', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                bookId: bookId,
+                quotes: finalQuotes,
+                customGreeting: null,
+            }),
+        }).catch((error) => {
+            console.error('[QUOTES] Background generation failed:', error);
+        });
 
-            router.push(`/progress/${bookId}`);
-        } catch (error: any) {
-            alert(error.message || 'Failed to start generation');
-            setSaving(false);
-        }
+        // Redirect instantly — progress page polls for status
+        router.push(`/progress/${bookId}`);
     };
 
     if (loading) {

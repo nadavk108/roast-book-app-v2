@@ -92,12 +92,26 @@ export async function POST(request: NextRequest) {
       const parsed = JSON.parse(quotesResponse.choices[0].message.content || '{"quotes": []}');
       const quotes = parsed.quotes;
 
-      console.log('Generated quotes:', quotes);
+     console.log('Generated quotes:', quotes);
 
-      return NextResponse.json({
-        success: true,
-        quotes,
-      });
+        // Save traits to book if bookId provided
+        if (bookId) {
+          const { error: traitsError } = await supabaseAdmin
+            .from('roast_books')
+            .update({ victim_traits: trueTraits })
+            .eq('id', bookId);
+
+          if (traitsError) {
+            console.error('Failed to save traits:', traitsError);
+          } else {
+            console.log(`[${bookId}] ✅ Saved victim_traits to database`);
+          }
+        }
+
+        return NextResponse.json({
+          success: true,
+          quotes,
+        });
     }
 
     // BookId-based generation (automated flow)
