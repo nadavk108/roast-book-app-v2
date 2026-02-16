@@ -41,22 +41,46 @@ export async function POST(request: NextRequest) {
     console.log('Starting preview generation for book:', bookId);
     console.log('Quotes received:', quotes);
 
-    // STEP 1: Save quotes to database first
-    const { error: updateQuotesError } = await supabaseAdmin
-      .from('roast_books')
-      .update({
-        quotes: quotes,
-        custom_greeting: customGreeting,
-        status: 'analyzing'  // CHANGED: Using 'analyzing' instead of 'generating_images'
-      })
-      .eq('id', bookId);
+    // STEP 1: Save quotes and ATOMICALLY claim the generation lock
+      // Only proceed if status is NOT already generating/ready/complete
+      const { data: lockResult, error: updateQuotesError } = await supabaseAdmin
+        .from('roast_books')
+        .update({
+          quotes: quotes,
+          custom_greeting: customGreeting,
+          status: 'analyzing'
+        })
+        .eq('id', bookId)
+        .not('status', 'in', '("analyzing","preview_ready","generating_remaining","complete")')
+        .select('id')
+        .maybeSingle();
 
-    if (updateQuotesError) {
-      console.error('Failed to save quotes:', updateQuotesError);
-      throw new Error(`Failed to save quotes: ${updateQuotesError.message}`);
-    }
+      if (updateQuotesError) {
+        console.error('Failed to save quotes:', updateQuotesError);
+        throw new Error(`Failed to save quotes: ${updateQuotesError.message}`);
+      }
 
-    console.log('✅ Quotes saved successfully');
+      if (!lockResult) {
+        console.log(`[${bookId}] ⚠️ LOCK: Generation already in progress or complete, skipping`);
+        // Fetch current state and return it
+        const { data: existingBook } = await supabaseAdmin
+          .from('roast_books')
+          .select('preview_image_urls, full_image_urls, cover_image_url, status')
+          .eq('id', bookId)
+          .single();
+
+        return NextResponse.json({
+          success: true,
+          previewUrls: existingBook?.preview_image_urls || existingBook?.full_image_urls || [],
+          coverUrl: existingBook?.cover_image_url,
+          bookId: bookId,
+          isComplete: existingBook?.status === 'complete',
+          imageCount: existingBook?.full_image_urls?.length || existingBook?.preview_image_urls?.length || 0,
+          skipped: true,
+        });
+      }
+
+      console.log('✅ Quotes saved and generation lock acquired');
 
     // STEP 2: Fetch the book data
     const { data: book, error: fetchError } = await supabaseAdmin
@@ -138,6 +162,7 @@ export async function POST(request: NextRequest) {
         () => generateVisualPrompt({
             quote,
             victimDescription: book.victim_description,
+            victimTraits: book.victim_traits || '',
             imageIndex: index,
             totalImages: 8
           }),

@@ -26,7 +26,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (book.status !== 'paid') {
-        // GUARD: If already complete or generating, don't re-run
         if (book.status === 'complete' && book.full_image_urls?.length > 0) {
           console.log(`[${bookId}] ⚠️ GUARD: Book already complete, skipping`);
           return NextResponse.json({ success: true, message: 'Already complete', skipped: true });
@@ -38,8 +37,22 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Book not paid' }, { status: 400 });
       }
 
-    // AWAIT the processing — do NOT fire-and-forget on Vercel
-    const result = await processRemainingImages(book);
+      // ATOMIC LOCK: Only proceed if we can claim the status
+      const { data: lockResult } = await supabaseAdmin
+        .from('roast_books')
+        .update({ status: 'generating_remaining' })
+        .eq('id', bookId)
+        .eq('status', 'paid')
+        .select('id')
+        .maybeSingle();
+
+      if (!lockResult) {
+        console.log(`[${bookId}] ⚠️ LOCK: Status already changed, skipping`);
+        return NextResponse.json({ success: true, message: 'Already processing', skipped: true });
+      }
+
+      // AWAIT the processing — do NOT fire-and-forget on Vercel
+      const result = await processRemainingImages(book);
 
     return NextResponse.json({ success: true, message: 'Generation complete', result });
 
@@ -54,10 +67,8 @@ async function processRemainingImages(book: any) {
 
   console.log(`[${bookId}] ========== GENERATING REMAINING 5 IMAGES ==========`);
 
-  await supabaseAdmin
-    .from('roast_books')
-    .update({ status: 'generating_remaining' })
-    .eq('id', bookId);
+  // Status already set to 'generating_remaining' by atomic lock above
+    console.log(`[${bookId}] Generation lock confirmed, proceeding...`);
 
   try {
     const remainingQuotes = book.quotes.slice(3, 8);
@@ -68,6 +79,7 @@ async function processRemainingImages(book: any) {
        () => generateVisualPrompt({
             quote,
             victimDescription: book.victim_description,
+            victimTraits: book.victim_traits || '',
             imageIndex: i + 3,
             totalImages: 8
           }),
