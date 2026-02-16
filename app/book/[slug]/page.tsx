@@ -337,10 +337,10 @@ export default function BookPage() {
             )}
 
             {currentSlide.type === 'roast' && currentSlide.quote && (
-              <div className="absolute bottom-0 left-0 right-0 pb-safe pb-12">
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
-                <div className="relative z-10 mx-6 mb-6">
-                  <div className="bg-black/40 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl">
+              <div className="absolute bottom-0 left-0 right-0 pb-safe pb-6">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" style={{ height: '150%', bottom: 0, top: 'auto' }} />
+                <div className="relative z-10 mx-4 mb-4">
+                  <div className="bg-black/50 backdrop-blur-md rounded-xl px-5 py-4">
                     <p
                       className="text-xl md:text-2xl font-heading font-bold text-white leading-snug text-center"
                       dir={isPredominantlyHebrew(currentSlide.quote) ? 'rtl' : 'ltr'}
