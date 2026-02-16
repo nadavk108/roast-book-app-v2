@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
           status: 'analyzing'
         })
         .eq('id', bookId)
-        .not('status', 'in', '("analyzing","preview_ready","generating_remaining","complete")')
+        .not('status', 'in', '("preview_ready","generating_remaining","complete")')
         .select('id')
         .maybeSingle();
 
