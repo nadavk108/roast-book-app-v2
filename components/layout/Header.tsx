@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { BrutalButton } from "@/components/ui/brutal-button";
-import { Flame, Menu, X, User, LogOut, BookOpen, ChevronDown, Shield } from "lucide-react";
+import { Flame, Menu, X, User, LogOut, BookOpen, ChevronDown, Shield, BarChart3 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getCurrentUser, signOut, identifyUserInAnalytics } from "@/lib/auth";
 import { captureEvent, Events } from '@/lib/posthog';
@@ -117,6 +117,16 @@ export function Header() {
                             <BookOpen className="h-4 w-4" />
                             <span className="font-medium text-sm">My Books</span>
                           </Link>
+                          {adminMode && (
+                            <Link
+                              href="/admin"
+                              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted transition-colors"
+                              onClick={() => setDropdownOpen(false)}
+                            >
+                              <BarChart3 className="h-4 w-4" />
+                              <span className="font-medium text-sm">Admin Dashboard</span>
+                            </Link>
+                          )}
                           <button
                             onClick={() => {
                               setDropdownOpen(false);
