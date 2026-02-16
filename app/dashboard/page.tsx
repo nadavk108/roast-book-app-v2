@@ -219,7 +219,9 @@ export default async function DashboardPage({
 
                             {/* Link Overlay */}
                             <Link
-                                href={book.status === 'complete' || book.status === 'preview_ready'
+                                href={book.status === 'complete'
+                                    ? `/book/${book.slug}`
+                                    : book.status === 'preview_ready'
                                     ? `/preview/${book.id}`
                                     : `/create/${book.id}/quotes`}
                                 className="absolute inset-0 z-10"
