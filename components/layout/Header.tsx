@@ -231,6 +231,16 @@ export function Header() {
                       <BookOpen className="h-5 w-5" />
                       My Books
                     </Link>
+                    {adminMode && (
+                      <Link
+                        href="/admin"
+                        className="font-heading font-semibold py-2 hover:text-accent flex items-center gap-2"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <BarChart3 className="h-5 w-5" />
+                        Admin Dashboard
+                      </Link>
+                    )}
                     <button
                       onClick={() => {
                         setMobileMenuOpen(false);
