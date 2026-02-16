@@ -130,9 +130,10 @@ export default function PreviewPage() {
         const data = await res.json();
         setBook(data);
 
-        if (data && data.status === 'complete' && data.slug) {
-            // Jump to first post-preview slide (cover=0, preview1=1, preview2=2, first new=3)
-            window.location.href = `/book/${data.slug}?start=3`;
+       if (data && data.status === 'complete' && data.slug) {
+            // Only skip to slide 3 if returning from payment, otherwise start at cover
+            const startParam = isPaymentReturn ? '?start=3' : '';
+            window.location.href = `/book/${data.slug}${startParam}`;
             return;
           }
 
@@ -316,7 +317,7 @@ export default function PreviewPage() {
   const isGenerating = book.status === 'paid' || book.status === 'generating_remaining' || book.status === 'generating_images';
 
   // Personal note screen (shown after payment, during generation)
-  if (showGreetingInput && isPaymentReturn && isGenerating) {
+  if (showGreetingInput && isPaymentReturn) {
     return (
       <div className="fixed inset-0 bg-black flex flex-col">
         {/* Top section with generating indicator */}
