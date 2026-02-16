@@ -181,15 +181,7 @@ export default function QuotesPage() {
             return;
         }
 
-        let finalQuotes = [...selectedQuotes];
-
-        // Pad to 8 if needed (non-admin)
-        if (!adminMode) {
-            while (finalQuotes.length < 8) {
-                finalQuotes.push(finalQuotes[finalQuotes.length % selectedQuotes.length]);
-            }
-            finalQuotes = finalQuotes.slice(0, 8);
-        }
+       const finalQuotes = [...selectedQuotes];
 
         const bookId = params.id || book?.id;
 

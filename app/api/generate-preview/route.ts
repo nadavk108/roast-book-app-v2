@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
             victimDescription: book.victim_description,
             victimTraits: book.victim_traits || '',
             imageIndex: index,
-            totalImages: 8
+            totalImages: book.quotes.length
           }),
         {
           context: `[${bookId}] Prompt ${index}`,

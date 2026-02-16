@@ -71,7 +71,7 @@ async function processRemainingImages(book: any) {
     console.log(`[${bookId}] Generation lock confirmed, proceeding...`);
 
   try {
-    const remainingQuotes = book.quotes.slice(3, 8);
+    const remainingQuotes = book.quotes.slice(3);
     console.log(`[${bookId}] Processing ${remainingQuotes.length} remaining quotes`);
 
     const visualPromptPromises = remainingQuotes.map((quote: string, i: number) =>
@@ -81,7 +81,7 @@ async function processRemainingImages(book: any) {
             victimDescription: book.victim_description,
             victimTraits: book.victim_traits || '',
             imageIndex: i + 3,
-            totalImages: 8
+            totalImages: book.quotes.length
           }),
         {
           context: `[${bookId}] Prompt ${i + 3}`,
