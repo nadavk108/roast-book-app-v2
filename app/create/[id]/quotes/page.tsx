@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
-import { Sparkles, ArrowRight, ArrowLeft, Check, RefreshCw, Plus, X, Pencil, Shield, Loader2 } from 'lucide-react';
+import { Sparkles, ArrowRight, ArrowLeft, RefreshCw, Shield, Loader2, Check } from 'lucide-react';
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth';
-import { isAdminUser, getMinQuotesRequired } from '@/lib/admin';
+import { isAdminUser } from '@/lib/admin';
 import { captureEvent, Events } from '@/lib/posthog';
-import { isPredominantlyHebrew, getHebrewBookTitle } from '@/lib/hebrew-utils';
+import { isPredominantlyHebrew } from '@/lib/hebrew-utils';
 
 export default function QuotesPage() {
     const params = useParams();
@@ -18,20 +18,16 @@ export default function QuotesPage() {
     const [book, setBook] = useState<any>(null);
     const [user, setUser] = useState<any>(null);
 
-    // Step: 'describe' → 'select' → (optional) 'manual'
-    const [step, setStep] = useState<'describe' | 'select' | 'manual'>('describe');
+    // Step: 'describe' → 'select'
+    const [step, setStep] = useState<'describe' | 'select'>('describe');
     const [description, setDescription] = useState('');
     const [generating, setGenerating] = useState(false);
-    const [generatedQuotes, setGeneratedQuotes] = useState<string[]>([]);
-    const [selectedQuotes, setSelectedQuotes] = useState<string[]>([]);
-    const [manualQuote, setManualQuote] = useState('');
+    const [quotes, setQuotes] = useState<string[]>([]);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editText, setEditText] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const adminMode = isAdminUser(user);
-    const minQuotes = Math.max(getMinQuotesRequired(user), 6);
-    const maxQuotes = 8;
 
     const isHebrew = isPredominantlyHebrew(book?.victim_name || '') ||
         isPredominantlyHebrew(description);
@@ -56,10 +52,9 @@ export default function QuotesPage() {
             if (res.ok) {
                 const data = await res.json();
                 setBook(data);
-                // If book already has quotes, go to select step with them pre-selected
+                // If book already has quotes, go to select step
                 if (data.quotes && data.quotes.length > 0) {
-                    setSelectedQuotes(data.quotes.filter((q: string) => q.trim()));
-                    setGeneratedQuotes(data.quotes.filter((q: string) => q.trim()));
+                    setQuotes(data.quotes.filter((q: string) => q.trim()).slice(0, 8));
                     setStep('select');
                 }
             }
@@ -89,13 +84,12 @@ export default function QuotesPage() {
 
             if (!res.ok) throw new Error('Generation failed');
 
-            const { quotes } = await res.json();
-            setGeneratedQuotes(quotes);
-            setSelectedQuotes(quotes); // All selected by default
+            const { quotes: generatedQuotes } = await res.json();
+            setQuotes(generatedQuotes.slice(0, 8)); // Always exactly 8
             setStep('select');
 
             captureEvent(Events.ROAST_ASSISTANT_USED, {
-                quotes_generated: quotes.length,
+                quotes_generated: 8,
                 book_id: params.id,
             });
         } catch (error) {
@@ -125,9 +119,8 @@ export default function QuotesPage() {
 
             if (!res.ok) throw new Error('Generation failed');
 
-            const { quotes } = await res.json();
-            setGeneratedQuotes(quotes);
-            setSelectedQuotes(quotes);
+            const { quotes: generatedQuotes } = await res.json();
+            setQuotes(generatedQuotes.slice(0, 8)); // Always exactly 8
         } catch (error) {
             console.error(error);
             alert('Failed to regenerate. Please try again.');
@@ -136,36 +129,16 @@ export default function QuotesPage() {
         }
     };
 
-    const toggleQuote = (quote: string) => {
-        if (selectedQuotes.includes(quote)) {
-            setSelectedQuotes(selectedQuotes.filter(q => q !== quote));
-        } else {
-            if (selectedQuotes.length >= maxQuotes) return;
-            setSelectedQuotes([...selectedQuotes, quote]);
-        }
-    };
-
-    const removeQuote = (index: number) => {
-        const quote = selectedQuotes[index];
-        setSelectedQuotes(selectedQuotes.filter((_, i) => i !== index));
-    };
-
-    const addManualQuote = () => {
-        if (!manualQuote.trim() || selectedQuotes.length >= maxQuotes) return;
-        setSelectedQuotes([...selectedQuotes, manualQuote.trim()]);
-        setManualQuote('');
-    };
-
     const startEdit = (index: number) => {
         setEditingIndex(index);
-        setEditText(selectedQuotes[index]);
+        setEditText(quotes[index]);
     };
 
     const saveEdit = () => {
         if (editingIndex === null || !editText.trim()) return;
-        const updated = [...selectedQuotes];
+        const updated = [...quotes];
         updated[editingIndex] = editText.trim();
-        setSelectedQuotes(updated);
+        setQuotes(updated);
         setEditingIndex(null);
         setEditText('');
     };
@@ -176,18 +149,10 @@ export default function QuotesPage() {
     };
 
    const handleSubmit = async () => {
-        if (selectedQuotes.length < minQuotes) {
-            alert(`Please keep at least ${minQuotes} quotes selected`);
-            return;
-        }
-
-       const finalQuotes = [...selectedQuotes];
-
         const bookId = params.id || book?.id;
 
         captureEvent(Events.QUOTES_SUBMITTED, {
-            quote_count: finalQuotes.length,
-            original_count: selectedQuotes.length,
+            quote_count: 8,
             is_admin: adminMode,
             book_id: bookId,
         });
@@ -200,7 +165,7 @@ export default function QuotesPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 bookId: bookId,
-                quotes: finalQuotes,
+                quotes: quotes, // Always exactly 8 quotes
                 customGreeting: null,
             }),
         }).catch((error) => {
@@ -319,34 +284,23 @@ export default function QuotesPage() {
                     </div>
                 )}
 
-                {/* ===== STEP 2: SELECT / EDIT QUOTES ===== */}
+                {/* ===== STEP 2: EDIT QUOTES ===== */}
                 {step === 'select' && (
                     <>
-                        <div className="mb-4">
+                        <div className="mb-6">
                             <h1
                                 className="text-2xl font-heading font-black mb-1 text-center"
                                 dir={isHebrew ? 'rtl' : 'ltr'}
                             >
                                 {isHebrew
-                                    ? `בחרו רוסטים ל${victimName}`
-                                    : `Pick roasts for ${victimName}`}
+                                    ? `הרוסטים של ${victimName}`
+                                    : `${victimName}'s Roasts`}
                             </h1>
                             <p className="text-gray-500 text-center text-sm">
                                 {isHebrew
-                                    ? `הקישו כדי לבטל בחירה. מינימום ${minQuotes}, מקסימום ${maxQuotes}.`
-                                    : `Tap to deselect. Keep ${minQuotes}–${maxQuotes} quotes.`}
+                                    ? 'הקישו על ציטוט כדי לערוך אותו'
+                                    : 'Tap any quote to edit it'}
                             </p>
-                        </div>
-
-                        {/* Selected count badge */}
-                        <div className="flex items-center justify-center gap-2 mb-4">
-                            <div className={`px-4 py-1.5 rounded-full border-2 font-heading font-bold text-sm ${
-                                selectedQuotes.length >= minQuotes
-                                    ? 'bg-green-100 border-green-500 text-green-700'
-                                    : 'bg-red-100 border-red-400 text-red-600'
-                            }`}>
-                                {selectedQuotes.length}/{maxQuotes} selected
-                            </div>
                         </div>
 
                         {/* Loading overlay for regeneration */}
@@ -359,32 +313,42 @@ export default function QuotesPage() {
                             </div>
                         )}
 
-                        {/* Quote cards */}
+                        {/* Quote cards - exactly 8, always */}
                         {!generating && (
                             <div className="space-y-3 mb-6">
-                                {generatedQuotes.map((quote, i) => {
-                                    const isSelected = selectedQuotes.includes(quote);
-                                    const selectedIndex = selectedQuotes.indexOf(quote);
+                                {quotes.map((quote, i) => {
                                     const isHebrewQuote = isPredominantlyHebrew(quote);
-                                    const isEditing = editingIndex !== null && selectedQuotes[editingIndex] === quote;
+                                    const isEditing = editingIndex === i;
 
                                     if (isEditing) {
                                         return (
-                                            <div key={i} className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4">
-                                                <input
+                                            <div key={i} className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4 shadow-[2px_2px_0px_0px_#FACC15]">
+                                                <textarea
                                                     value={editText}
                                                     onChange={(e) => setEditText(e.target.value)}
-                                                    className="w-full p-2 border-2 border-black rounded-lg text-sm font-medium bg-white"
+                                                    className="w-full min-h-[80px] p-3 border-2 border-black rounded-lg text-sm font-medium bg-white resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400"
                                                     dir={isPredominantlyHebrew(editText) ? 'rtl' : 'ltr'}
                                                     autoFocus
                                                     onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') saveEdit();
+                                                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveEdit();
                                                         if (e.key === 'Escape') cancelEdit();
                                                     }}
+                                                    onBlur={saveEdit}
                                                 />
                                                 <div className="flex gap-2 mt-2">
-                                                    <button onClick={saveEdit} className="text-xs font-bold text-green-600 hover:underline">Save</button>
-                                                    <button onClick={cancelEdit} className="text-xs font-bold text-gray-400 hover:underline">Cancel</button>
+                                                    <button
+                                                        onClick={saveEdit}
+                                                        className="flex items-center gap-1 text-xs font-bold text-green-600 hover:underline"
+                                                    >
+                                                        <Check className="w-3 h-3" />
+                                                        {isHebrew ? 'שמור' : 'Save'}
+                                                    </button>
+                                                    <button
+                                                        onClick={cancelEdit}
+                                                        className="text-xs font-bold text-gray-400 hover:underline"
+                                                    >
+                                                        {isHebrew ? 'ביטול' : 'Cancel'}
+                                                    </button>
                                                 </div>
                                             </div>
                                         );
@@ -393,162 +357,41 @@ export default function QuotesPage() {
                                     return (
                                         <div
                                             key={i}
-                                            onClick={() => toggleQuote(quote)}
-                                            className={`
-                                                relative p-4 rounded-xl border-2 cursor-pointer transition-all group
-                                                ${isSelected
-                                                    ? 'bg-yellow-50 border-yellow-400 shadow-[2px_2px_0px_0px_#FACC15]'
-                                                    : 'bg-white border-gray-200 opacity-50 hover:opacity-70'
-                                                }
-                                            `}
+                                            onClick={() => startEdit(i)}
+                                            className="relative p-4 rounded-xl border-2 border-yellow-400 bg-yellow-50 shadow-[2px_2px_0px_0px_#FACC15] cursor-pointer transition-all hover:shadow-[4px_4px_0px_0px_#FACC15] hover:-translate-y-0.5 active:shadow-[1px_1px_0px_0px_#FACC15] active:translate-y-0"
                                         >
-                                            <div className="flex items-start gap-3">
-                                                <div className={`
-                                                    w-6 h-6 rounded border-2 shrink-0 mt-0.5 flex items-center justify-center transition-colors
-                                                    ${isSelected
-                                                        ? 'bg-yellow-400 border-black'
-                                                        : 'border-gray-300'
-                                                    }
-                                                `}>
-                                                    {isSelected && <Check className="w-3.5 h-3.5 text-black" />}
-                                                </div>
-                                                <p
-                                                    className="flex-1 text-sm font-medium leading-relaxed"
-                                                    dir={isHebrewQuote ? 'rtl' : 'ltr'}
-                                                    style={{ textAlign: isHebrewQuote ? 'right' : 'left' }}
-                                                >
-                                                    "{quote}"
-                                                </p>
-                                            </div>
-
-                                            {/* Edit button */}
-                                            {isSelected && (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        startEdit(selectedIndex);
-                                                    }}
-                                                    className="absolute top-3 right-3 p-1.5 rounded-lg bg-white/80 border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-100"
-                                                >
-                                                    <Pencil className="w-3 h-3 text-gray-500" />
-                                                </button>
-                                            )}
+                                            <p
+                                                className="text-sm md:text-base font-medium leading-relaxed pr-2"
+                                                dir={isHebrewQuote ? 'rtl' : 'ltr'}
+                                                style={{ textAlign: isHebrewQuote ? 'right' : 'left' }}
+                                            >
+                                                "{quote}"
+                                            </p>
                                         </div>
                                     );
                                 })}
-
-                                {/* Manual quotes (ones not from generated set) */}
-                                {selectedQuotes
-                                    .filter(q => !generatedQuotes.includes(q))
-                                    .map((quote, i) => {
-                                        const actualIndex = selectedQuotes.indexOf(quote);
-                                        const isHebrewQuote = isPredominantlyHebrew(quote);
-                                        const isEditing = editingIndex === actualIndex;
-
-                                        if (isEditing) {
-                                            return (
-                                                <div key={`manual-${i}`} className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4">
-                                                    <input
-                                                        value={editText}
-                                                        onChange={(e) => setEditText(e.target.value)}
-                                                        className="w-full p-2 border-2 border-black rounded-lg text-sm font-medium bg-white"
-                                                        dir={isPredominantlyHebrew(editText) ? 'rtl' : 'ltr'}
-                                                        autoFocus
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') saveEdit();
-                                                            if (e.key === 'Escape') cancelEdit();
-                                                        }}
-                                                    />
-                                                    <div className="flex gap-2 mt-2">
-                                                        <button onClick={saveEdit} className="text-xs font-bold text-green-600 hover:underline">Save</button>
-                                                        <button onClick={cancelEdit} className="text-xs font-bold text-gray-400 hover:underline">Cancel</button>
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
-
-                                        return (
-                                            <div
-                                                key={`manual-${i}`}
-                                                className="relative p-4 rounded-xl border-2 border-yellow-400 bg-yellow-50 shadow-[2px_2px_0px_0px_#FACC15] group"
-                                            >
-                                                <div className="flex items-start gap-3">
-                                                    <div className="w-6 h-6 rounded bg-yellow-400 border-2 border-black shrink-0 mt-0.5 flex items-center justify-center">
-                                                        <Check className="w-3.5 h-3.5 text-black" />
-                                                    </div>
-                                                    <p
-                                                        className="flex-1 text-sm font-medium leading-relaxed"
-                                                        dir={isHebrewQuote ? 'rtl' : 'ltr'}
-                                                        style={{ textAlign: isHebrewQuote ? 'right' : 'left' }}
-                                                    >
-                                                        "{quote}"
-                                                    </p>
-                                                </div>
-                                                <div className="absolute top-3 right-3 flex gap-1">
-                                                    <button
-                                                        onClick={() => startEdit(actualIndex)}
-                                                        className="p-1.5 rounded-lg bg-white/80 border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-100"
-                                                    >
-                                                        <Pencil className="w-3 h-3 text-gray-500" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => removeQuote(actualIndex)}
-                                                        className="p-1.5 rounded-lg bg-white/80 border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50"
-                                                    >
-                                                        <X className="w-3 h-3 text-red-500" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
                             </div>
                         )}
 
-                        {/* Add your own + Regenerate */}
+                        {/* Action buttons */}
                         {!generating && (
-                            <div className="space-y-3 mb-6">
-                                {/* Add manual quote */}
-                                {selectedQuotes.length < maxQuotes && (
-                                    <div className="flex gap-2">
-                                        <input
-                                            value={manualQuote}
-                                            onChange={(e) => setManualQuote(e.target.value)}
-                                            placeholder={isHebrew ? 'הוסיפו ציטוט משלכם...' : 'Add your own quote...'}
-                                            className="flex-1 p-3 rounded-xl border-2 border-gray-200 text-sm focus:outline-none focus:border-black"
-                                            dir={isPredominantlyHebrew(manualQuote) ? 'rtl' : 'ltr'}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') addManualQuote();
-                                            }}
-                                        />
-                                        <button
-                                            onClick={addManualQuote}
-                                            disabled={!manualQuote.trim()}
-                                            className="px-4 rounded-xl border-2 border-black bg-white hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                        >
-                                            <Plus className="w-5 h-5" />
-                                        </button>
-                                    </div>
-                                )}
-
-                                {/* Action buttons */}
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={handleRegenerate}
-                                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-bold transition-colors"
-                                    >
-                                        <RefreshCw className="w-4 h-4" />
-                                        {isHebrew ? 'צרו חדשים' : 'Regenerate'}
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setStep('describe');
-                                        }}
-                                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-bold transition-colors"
-                                    >
-                                        <ArrowLeft className="w-4 h-4" />
-                                        {isHebrew ? 'שנו תיאור' : 'Edit description'}
-                                    </button>
-                                </div>
+                            <div className="flex gap-3 mb-6">
+                                <button
+                                    onClick={handleRegenerate}
+                                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-gray-200 bg-white text-gray-600 hover:bg-gray-50 text-sm font-bold transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)]"
+                                >
+                                    <RefreshCw className="w-4 h-4" />
+                                    {isHebrew ? 'צרו חדשים' : 'Regenerate'}
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setStep('describe');
+                                    }}
+                                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-gray-200 bg-white text-gray-600 hover:bg-gray-50 text-sm font-bold transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)]"
+                                >
+                                    <ArrowLeft className="w-4 h-4" />
+                                    {isHebrew ? 'שנו תיאור' : 'Edit description'}
+                                </button>
                             </div>
                         )}
                     </>
@@ -561,7 +404,7 @@ export default function QuotesPage() {
                     <div className="container mx-auto max-w-2xl pointer-events-auto">
                         <Button
                             onClick={handleSubmit}
-                            disabled={selectedQuotes.length < (adminMode ? 1 : minQuotes) || saving}
+                            disabled={saving}
                             className="w-full text-lg py-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
                             size="lg"
                         >
@@ -572,7 +415,7 @@ export default function QuotesPage() {
                                 </>
                             ) : (
                                 <>
-                                    {adminMode ? 'Generate Full Book' : isHebrew ? 'צרו תצוגה מקדימה' : 'Generate Preview'}
+                                    {isHebrew ? 'צרו את הספר המלא' : 'Generate Full Book'}
                                     <ArrowRight className="ml-2 h-5 w-5" />
                                 </>
                             )}
