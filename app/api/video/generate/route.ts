@@ -2,10 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { createClient } from '@/lib/supabase-server';
 import { isAdminUser } from '@/lib/admin';
-import { generateRoastVideo } from '@/lib/video-generation';
-import { sendVideoReadyEmail } from '@/lib/email';
+import { inngest } from '@/lib/inngest/client';
 
-export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
@@ -33,7 +31,7 @@ export async function POST(request: NextRequest) {
   // Fetch book
   const { data: book, error: fetchError } = await supabaseAdmin
     .from('roast_books')
-    .select('*')
+    .select('id, slug, victim_name, quotes, cover_image_url, full_image_urls, status, video_status, video_url')
     .eq('id', bookId)
     .single();
 
@@ -61,70 +59,29 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // Guard: don't allow duplicate runs (admin-only, so race condition is not a concern)
+  // Guard: don't allow duplicate runs
   if (book.video_status === 'processing') {
     console.log(`[VIDEO] Book ${bookId} is already processing`);
     return NextResponse.json({ error: 'Video generation already in progress' }, { status: 409 });
   }
 
-  // Mark as processing
-  await supabaseAdmin
-    .from('roast_books')
-    .update({ video_status: 'processing', video_error: null })
-    .eq('id', bookId);
-
-  const startMs = Date.now();
-
-  try {
-    const result = await generateRoastVideo({
+  // Send Inngest event and return immediately — generation runs in the background
+  await inngest.send({
+    name: 'video/generation.requested',
+    data: {
       bookId,
       slug: book.slug,
       victimName: book.victim_name,
       quotes: book.quotes.slice(0, 8),
       coverImageUrl: book.cover_image_url,
       fullImageUrls: book.full_image_urls.slice(0, 8),
-    });
+    },
+  });
 
-    // Persist result
-    await supabaseAdmin
-      .from('roast_books')
-      .update({
-        video_status: 'complete',
-        video_url: result.videoUrl,
-        video_generated_at: new Date().toISOString(),
-        video_clip_urls: result.clipUrls,
-        video_error: null,
-      })
-      .eq('id', bookId);
+  console.log(`[VIDEO] Inngest event queued for book ${bookId}`);
 
-    console.log(`[VIDEO] ✅ Success for ${bookId} in ${Math.round(result.generationTimeMs / 1000)}s`);
-
-    // Send email notification (non-fatal)
-    await sendVideoReadyEmail({
-      victimName: book.victim_name,
-      videoUrl: result.videoUrl,
-      bookSlug: book.slug,
-      durationSeconds: result.durationSeconds,
-      generationTimeMs: result.generationTimeMs,
-    });
-
-    return NextResponse.json({
-      videoUrl: result.videoUrl,
-      durationSeconds: result.durationSeconds,
-      generationTimeMs: result.generationTimeMs,
-    });
-
-  } catch (err: any) {
-    console.error(`[VIDEO] ❌ Failed for ${bookId}:`, err);
-
-    await supabaseAdmin
-      .from('roast_books')
-      .update({
-        video_status: 'failed',
-        video_error: err.message || 'Unknown error',
-      })
-      .eq('id', bookId);
-
-    return NextResponse.json({ error: err.message || 'Video generation failed' }, { status: 500 });
-  }
+  return NextResponse.json({
+    queued: true,
+    message: 'Video generation started in background. Poll /api/admin/metrics for status.',
+  });
 }
