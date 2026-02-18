@@ -73,17 +73,17 @@ export default function LoginPage() {
       const result = await signInWithEmail(email, password);
 
       if (result.needsEmailVerification) {
-        setSuccessMessage('Account created! Check your email to verify your account.');
-        setEmailLoading(false);
-      } else if (result.isNewUser) {
-        setSuccessMessage('Account created successfully! Redirecting...');
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 1500);
-      } else {
-        // Existing user signed in
-        router.push('/dashboard');
-      }
+          setSuccessMessage('Account created! Check your email to verify your account.');
+          setEmailLoading(false);
+        } else if (result.isNewUser) {
+          setSuccessMessage('Account created successfully! Redirecting...');
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 1500);
+        } else {
+          // Existing user signed in — hard redirect to pick up session cookie
+          window.location.href = '/dashboard';
+        }
     } catch (err: any) {
       console.error('Email auth error:', err);
 

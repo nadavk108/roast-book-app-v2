@@ -38,12 +38,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
 
 # AI Services (REQUIRED)
-OPENAI_API_KEY          # For vision analysis
-ANTHROPIC_API_KEY       # For quote generation
-REPLICATE_API_TOKEN     # For image generation
-
-# Google Gemini (OPTIONAL - alternative image generation)
-GEMINI_API_KEY
+OPENAI_API_KEY          # For vision analysis, quote generation, and prompt engineering
+GEMINI_API_KEY          # For image generation (edits uploaded photo into new scenes)
 
 # Stripe (REQUIRED)
 STRIPE_SECRET_KEY
@@ -135,17 +131,9 @@ vercel env add SUPABASE_SERVICE_ROLE_KEY production
 vercel env add OPENAI_API_KEY production
 # Paste your OpenAI API key
 
-# Anthropic
-vercel env add ANTHROPIC_API_KEY production
-# Paste your Anthropic API key
-
-# Gemini (optional)
+# Google Gemini
 vercel env add GEMINI_API_KEY production
-# Paste your Gemini API key
-
-# Replicate
-vercel env add REPLICATE_API_TOKEN production
-# Paste your Replicate token
+# Paste your Gemini API key from aistudio.google.com
 
 # Stripe
 vercel env add STRIPE_SECRET_KEY production

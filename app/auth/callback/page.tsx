@@ -10,128 +10,162 @@ export default function AuthCallbackPage() {
   const [status, setStatus] = useState<string>('Completing sign in...');
   const hasRun = useRef(false);
 
-  /**
-   * Wait for Supabase session cookie to be present in browser before redirecting
-   * This prevents middleware race condition where redirect happens before cookie is committed
-   */
   const waitForCookie = (destination: string): Promise<void> => {
     return new Promise((resolve) => {
-      console.log('[AUTH CALLBACK PAGE] 🍪 Waiting for session cookie to be committed...');
       setStatus('Finalizing login...');
-
       let attempts = 0;
-      const maxAttempts = 20; // 20 attempts * 100ms = 2 seconds
+      const maxAttempts = 20;
 
       const checkCookie = setInterval(() => {
         attempts++;
-
-        // Check if Supabase session cookie exists (usually starts with 'sb-')
         const cookies = document.cookie;
         const hasSupabaseCookie = cookies.includes('sb-') && cookies.includes('access-token');
 
-        if (hasSupabaseCookie) {
-          console.log('[AUTH CALLBACK PAGE] ✅ Session cookie confirmed in browser');
-          console.log('[AUTH CALLBACK PAGE] 🔄 Safe to redirect after', attempts * 100, 'ms');
-          clearInterval(checkCookie);
-          resolve();
-        } else if (attempts >= maxAttempts) {
-          // Fallback: Cookie might be HttpOnly (not visible to JS), redirect anyway
-          console.log('[AUTH CALLBACK PAGE] ⏱️  Timeout: Redirecting after 2s (cookie might be HttpOnly)');
+        if (hasSupabaseCookie || attempts >= maxAttempts) {
           clearInterval(checkCookie);
           resolve();
         }
-      }, 100); // Check every 100ms
+      }, 100);
     });
   };
 
   useEffect(() => {
-    // Prevent duplicate runs in React Strict Mode
-    if (hasRun.current) {
-      console.log('[AUTH CALLBACK PAGE] ⏭️  Skipping duplicate run (React Strict Mode)');
-      return;
-    }
+    if (hasRun.current) return;
     hasRun.current = true;
 
     const code = searchParams.get('code');
+    const tokenHash = searchParams.get('token_hash');
+    const type = searchParams.get('type');
     const next = searchParams.get('next') || '/dashboard';
     const origin = window.location.origin;
 
-    // DIAGNOSTIC: Log complete URL and all parameters
-    console.log('═══════════════════════════════════════════════');
-    console.log('[AUTH CALLBACK PAGE] 🔍 DIAGNOSTIC LOGS');
-    console.log('[AUTH CALLBACK PAGE] Full URL:', window.location.href);
-    console.log('[AUTH CALLBACK PAGE] All search params:', Object.fromEntries(searchParams.entries()));
-    console.log('[AUTH CALLBACK PAGE] Code param:', code);
-    console.log('[AUTH CALLBACK PAGE] Next param:', searchParams.get('next'));
-    console.log('[AUTH CALLBACK PAGE] Computed next:', next);
-    console.log('[AUTH CALLBACK PAGE] Origin:', origin);
-    console.log('[AUTH CALLBACK PAGE] Final redirect will be:', `${origin}${next}`);
-    console.log('═══════════════════════════════════════════════');
-
-    if (!code) {
-      console.error('[AUTH CALLBACK PAGE] ❌ No code provided');
-      window.location.href = `${origin}/login?error=no_code`;
-      return;
-    }
+    console.log('[AUTH CALLBACK] URL:', window.location.href);
+    console.log('[AUTH CALLBACK] code:', code, 'token_hash:', !!tokenHash, 'type:', type);
 
     const completeAuth = async () => {
       try {
-        console.log('[AUTH CALLBACK PAGE] Creating Supabase client...');
         const supabase = createClient();
 
-        console.log('[AUTH CALLBACK PAGE] 🔄 Exchanging code for session...');
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        // === FLOW 1: Email verification (token_hash + type) ===
+        if (tokenHash && type) {
+          console.log('[AUTH CALLBACK] Email verification flow, type:', type);
+          setStatus('Verifying your email...');
 
-        if (error) {
-          console.error('[AUTH CALLBACK PAGE] ⚠️  Error exchanging code:', error.message);
+          const { data, error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: type as any,
+          });
 
-          // SAFETY CHECK: Code might be already used (React Strict Mode double-run)
-          // Check if session exists anyway before failing
-          console.log('[AUTH CALLBACK PAGE] 🔍 Safety check: Checking for existing session...');
-          const { data: sessionData } = await supabase.auth.getSession();
+          if (verifyError) {
+            console.error('[AUTH CALLBACK] Verify error:', verifyError.message);
 
-          if (sessionData?.session) {
-            console.log('[AUTH CALLBACK PAGE] ✅ Session exists! First run succeeded, ignoring error.');
-            console.log('[AUTH CALLBACK PAGE] ✅ Session for:', sessionData.session.user?.email);
+            // Check if already verified (link clicked twice)
+            const { data: sessionData } = await supabase.auth.getSession();
+            if (sessionData?.session) {
+              console.log('[AUTH CALLBACK] Already verified, session exists');
+              setStatus('Email verified! Redirecting...');
+              await waitForCookie(`${origin}${next}`);
+              window.location.assign(`${origin}${next}`);
+              return;
+            }
 
-            // Wait for cookie to be committed before redirecting
-            await waitForCookie(`${origin}${next}`);
-
-            console.log('═══════════════════════════════════════════════');
-            console.log('[AUTH CALLBACK PAGE] 🚀 ABOUT TO REDIRECT');
-            console.log('[AUTH CALLBACK PAGE] Redirect URL:', `${origin}${next}`);
-            console.log('[AUTH CALLBACK PAGE] Cookies in browser:', document.cookie.substring(0, 200) + '...');
-            console.log('═══════════════════════════════════════════════');
-            window.location.assign(`${origin}${next}`);
+            setError(verifyError.message);
+            setStatus('Verification failed');
+            setTimeout(() => {
+              window.location.href = `${origin}/login?error=verification_failed&message=${encodeURIComponent(verifyError.message)}`;
+            }, 2000);
             return;
           }
 
-          // Both exchange failed AND no session exists - real error
-          console.error('[AUTH CALLBACK PAGE] ❌ No session found. Auth truly failed.');
-          setError(error.message);
-          setTimeout(() => {
-            window.location.href = `${origin}/login?error=auth_failed`;
-          }, 2000);
+          if (data?.session) {
+            console.log('[AUTH CALLBACK] Email verified for:', data.session.user?.email);
+            setStatus('Email verified! Redirecting...');
+            await waitForCookie(`${origin}${next}`);
+            window.location.assign(`${origin}${next}`);
+          } else {
+            // Verified but no session — user needs to sign in
+            console.log('[AUTH CALLBACK] Verified but no session, redirect to login');
+            setStatus('Email verified! Please sign in.');
+            setTimeout(() => {
+              window.location.href = `${origin}/login?verified=true`;
+            }, 1500);
+          }
           return;
         }
 
-        if (data?.session) {
-          console.log('[AUTH CALLBACK PAGE] ✅ Session established for:', data.user?.email);
+        // === FLOW 2: OAuth code exchange (Google) ===
+        if (code) {
+          console.log('[AUTH CALLBACK] OAuth code exchange flow');
 
-          // Wait for cookie to be committed before redirecting
-          await waitForCookie(`${origin}${next}`);
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
-          console.log('[AUTH CALLBACK PAGE] 🔄 Hard redirect to:', `${origin}${next}`);
-          window.location.assign(`${origin}${next}`);
-        } else {
-          console.error('[AUTH CALLBACK PAGE] ❌ No session in response');
-          setError('Failed to establish session');
-          setTimeout(() => {
-            window.location.href = `${origin}/login?error=no_session`;
-          }, 2000);
+          if (exchangeError) {
+            console.error('[AUTH CALLBACK] Exchange error:', exchangeError.message);
+
+            // Safety check: session might already exist
+            const { data: sessionData } = await supabase.auth.getSession();
+            if (sessionData?.session) {
+              console.log('[AUTH CALLBACK] Session exists despite error');
+              await waitForCookie(`${origin}${next}`);
+              window.location.assign(`${origin}${next}`);
+              return;
+            }
+
+            setError(exchangeError.message);
+            setTimeout(() => {
+              window.location.href = `${origin}/login?error=auth_failed`;
+            }, 2000);
+            return;
+          }
+
+          if (data?.session) {
+            console.log('[AUTH CALLBACK] Session established for:', data.user?.email);
+            await waitForCookie(`${origin}${next}`);
+            window.location.assign(`${origin}${next}`);
+          } else {
+            setError('Failed to establish session');
+            setTimeout(() => {
+              window.location.href = `${origin}/login?error=no_session`;
+            }, 2000);
+          }
+          return;
         }
+
+        // === FLOW 3: No code or token — check URL hash (implicit flow) ===
+        // Some Supabase configs use hash-based tokens
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+
+        if (accessToken && refreshToken) {
+          console.log('[AUTH CALLBACK] Hash-based token flow');
+          const { data, error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (sessionError) {
+            setError(sessionError.message);
+            setTimeout(() => {
+              window.location.href = `${origin}/login?error=session_failed`;
+            }, 2000);
+            return;
+          }
+
+          if (data?.session) {
+            setStatus('Signed in! Redirecting...');
+            await waitForCookie(`${origin}${next}`);
+            window.location.assign(`${origin}${next}`);
+            return;
+          }
+        }
+
+        // Nothing worked
+        console.error('[AUTH CALLBACK] No code, token_hash, or hash tokens found');
+        window.location.href = `${origin}/login?error=no_code`;
+
       } catch (err: any) {
-        console.error('[AUTH CALLBACK PAGE] ❌ Exception:', err);
+        console.error('[AUTH CALLBACK] Exception:', err);
         setError(err.message || 'Authentication failed');
         setTimeout(() => {
           window.location.href = `${origin}/login?error=exception`;
@@ -158,11 +192,7 @@ export default function AuthCallbackPage() {
           <>
             <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <h1 className="text-2xl font-bold mb-2">{status}</h1>
-            <p className="text-gray-600 text-sm">
-              {status === 'Finalizing login...'
-                ? 'Securing your session...'
-                : 'Please wait a moment'}
-            </p>
+            <p className="text-gray-600 text-sm">Please wait a moment</p>
           </>
         )}
       </div>

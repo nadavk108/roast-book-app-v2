@@ -5,25 +5,28 @@
 CREATE TABLE IF NOT EXISTS roast_books (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   created_at TIMESTAMPTZ DEFAULT NOW(),
+  user_id UUID REFERENCES auth.users,
   victim_name TEXT NOT NULL,
+  victim_gender TEXT DEFAULT 'neutral',
   victim_image_url TEXT NOT NULL,
   victim_description TEXT,
-  victim_gender TEXT DEFAULT 'neutral',
+  victim_traits TEXT,
   quotes TEXT[] NOT NULL DEFAULT '{}',
   custom_greeting TEXT,
-  status TEXT NOT NULL DEFAULT 'analyzing',
+  status TEXT NOT NULL DEFAULT 'uploaded',
+  cover_image_url TEXT,
   preview_image_urls TEXT[] NOT NULL DEFAULT '{}',
   full_image_urls TEXT[] NOT NULL DEFAULT '{}',
-  cover_image_url TEXT,
   slug TEXT NOT NULL UNIQUE,
   stripe_session_id TEXT,
   stripe_payment_intent TEXT,
-  CONSTRAINT status_check CHECK (status IN ('analyzing', 'preview_ready', 'paid', 'complete', 'failed'))
+  CONSTRAINT status_check CHECK (status IN ('uploaded', 'analyzing', 'analyzed', 'preview_ready', 'paid', 'generating_remaining', 'complete', 'failed'))
 );
 
 -- Create indexes for faster lookups
 CREATE INDEX IF NOT EXISTS idx_roast_books_slug ON roast_books(slug);
 CREATE INDEX IF NOT EXISTS idx_roast_books_stripe_session ON roast_books(stripe_session_id);
+CREATE INDEX IF NOT EXISTS idx_roast_books_user_id ON roast_books(user_id);
 CREATE INDEX IF NOT EXISTS idx_roast_books_status ON roast_books(status);
 CREATE INDEX IF NOT EXISTS idx_roast_books_created_at ON roast_books(created_at DESC);
 

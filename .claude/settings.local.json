@@ -30,7 +30,12 @@
       "Bash(git init:*)",
       "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch:*)",
       "Bash(git pull:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(vercel env:*)",
+      "Bash(git push:*)",
+      "WebFetch(domain:fal.ai)",
+      "Bash(npx tsc:*)",
+      "Bash(git diff:*)"
     ]
   }
 }

@@ -37,15 +37,10 @@ npm install
 2. Create new API key
 3. Add $10 to your account (Billing)
 
-### Anthropic
-1. Go to [console.anthropic.com](https://console.anthropic.com)
+### Google AI Studio (Gemini)
+1. Go to [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
 2. Create API key
-3. Add $10 credit
-
-### Replicate
-1. Go to [replicate.com/account/api-tokens](https://replicate.com/account/api-tokens)
-2. Create token
-3. Add $10 credit
+3. Free tier available with generous limits
 
 ### Stripe
 1. Go to [dashboard.stripe.com/test/apikeys](https://dashboard.stripe.com/test/apikeys)
@@ -69,11 +64,8 @@ SUPABASE_SERVICE_ROLE_KEY=eyJxxxx
 # From OpenAI
 OPENAI_API_KEY=sk-proj-xxxx
 
-# From Anthropic
-ANTHROPIC_API_KEY=sk-ant-xxxx
-
-# From Replicate
-REPLICATE_API_TOKEN=r8_xxxx
+# From Google AI Studio
+GEMINI_API_KEY=xxxx
 
 # From Stripe
 STRIPE_SECRET_KEY=sk_test_xxxx

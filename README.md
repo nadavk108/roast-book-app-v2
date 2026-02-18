@@ -15,10 +15,11 @@ A Next.js application that generates personalized AI-powered roast books with 8 
 - **Frontend**: Next.js 14 (App Router) + React + Tailwind CSS
 - **Database**: Supabase (Postgres + Storage)
 - **AI Services**:
-  - OpenAI GPT-4o (vision analysis)
-  - OpenAI GPT-4o-mini (prompt engineering)
-  - Anthropic Claude Sonnet 4 (quote generation)
-  - Replicate Flux Pro (image generation)
+  - OpenAI GPT-4o-mini + Vision API (photo analysis for physical description)
+  - OpenAI GPT-4o-mini (quote generation via "identity betrayal" comedy engine)
+  - OpenAI GPT-4o-mini (prompt engineering via "comedy through contradiction" system)
+  - Google Gemini 3 Pro Image Preview / nano-banana-pro (image generation by editing uploaded photo)
+  - DALL-E 3 (fallback if Gemini fails)
 - **Payment**: Stripe Checkout + Webhooks
 - **Deployment**: Vercel (recommended)
 
@@ -44,7 +45,7 @@ roast-book-app/
 │   ├── supabase.ts            # Database client
 │   ├── image-generation.ts    # Image gen abstraction
 │   ├── vision-analysis.ts     # GPT-4o vision
-│   ├── quote-generation.ts    # Claude quotes
+│   ├── quote-generation.ts    # GPT-4o-mini identity betrayal quotes
 │   ├── prompt-engineering.ts  # Visual prompt creation
 │   ├── stripe.ts              # Payment processing
 │   └── utils.ts               # Helper functions
@@ -59,8 +60,7 @@ roast-book-app/
 2. Accounts created:
    - Supabase (free tier)
    - OpenAI API
-   - Anthropic API
-   - Replicate API
+   - Google AI Studio (for Gemini API key)
    - Stripe
 
 ### Step 1: Clone and Install
@@ -82,24 +82,27 @@ npm install
 CREATE TABLE roast_books (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   created_at TIMESTAMPTZ DEFAULT NOW(),
+  user_id UUID REFERENCES auth.users,
   victim_name TEXT NOT NULL,
+  victim_gender TEXT DEFAULT 'neutral',
   victim_image_url TEXT NOT NULL,
   victim_description TEXT,
   quotes TEXT[] NOT NULL DEFAULT '{}',
   custom_greeting TEXT,
-  status TEXT NOT NULL DEFAULT 'analyzing',
+  status TEXT NOT NULL DEFAULT 'uploaded',
+  cover_image_url TEXT,
   preview_image_urls TEXT[] NOT NULL DEFAULT '{}',
   full_image_urls TEXT[] NOT NULL DEFAULT '{}',
-  cover_image_url TEXT,
   slug TEXT NOT NULL UNIQUE,
   stripe_session_id TEXT,
   stripe_payment_intent TEXT,
-  CONSTRAINT status_check CHECK (status IN ('analyzing', 'preview_ready', 'paid', 'complete', 'failed'))
+  CONSTRAINT status_check CHECK (status IN ('uploaded', 'analyzing', 'analyzed', 'preview_ready', 'paid', 'generating_remaining', 'complete', 'failed'))
 );
 
 -- Create index for faster lookups
 CREATE INDEX idx_roast_books_slug ON roast_books(slug);
 CREATE INDEX idx_roast_books_stripe_session ON roast_books(stripe_session_id);
+CREATE INDEX idx_roast_books_user_id ON roast_books(user_id);
 ```
 
 ### Step 3: Get API Keys
@@ -108,13 +111,9 @@ CREATE INDEX idx_roast_books_stripe_session ON roast_books(stripe_session_id);
 - Create an API key
 - Add $10 credit to your account
 
-**Anthropic** (https://console.anthropic.com/)
-- Create an API key
-- Add $10 credit
-
-**Replicate** (https://replicate.com/account/api-tokens)
-- Create an API token
-- Add $10 credit
+**Google AI Studio** (https://aistudio.google.com/app/apikey)
+- Create an API key for Gemini
+- Free tier available with generous limits
 
 **Stripe** (https://dashboard.stripe.com/test/apikeys)
 - Get your Test Secret Key and Publishable Key
@@ -139,11 +138,8 @@ SUPABASE_SERVICE_ROLE_KEY=eyJxxxx...
 # OpenAI
 OPENAI_API_KEY=sk-proj-xxxx
 
-# Anthropic
-ANTHROPIC_API_KEY=sk-ant-xxxx
-
-# Replicate
-REPLICATE_API_TOKEN=r8_xxxx
+# Google Gemini
+GEMINI_API_KEY=xxxx
 
 # Stripe
 STRIPE_SECRET_KEY=sk_test_xxxx
@@ -196,32 +192,32 @@ In Vercel Dashboard:
 
 | Service | Cost | Notes |
 |---------|------|-------|
-| Image Generation (8×) | $0.24 | Replicate Flux Pro @ $0.03/image |
-| Vision Analysis | $0.01 | GPT-4o |
-| Quote Generation | $0.02 | Claude Sonnet 4 |
-| Prompt Engineering (8×) | $0.04 | GPT-4o-mini |
+| Image Generation (8×) | ~$0.00 | Google Gemini (free tier) |
+| Vision Analysis | $0.01 | GPT-4o-mini + Vision |
+| Quote Generation | $0.01 | GPT-4o-mini |
+| Prompt Engineering (8×) | $0.02 | GPT-4o-mini |
 | Storage & Hosting | $0.01 | Supabase + Vercel |
-| **Total COGS** | **$0.32** | |
+| **Total COGS** | **~$0.05** | |
 | **Selling Price** | $9.99 | |
-| **Gross Margin** | $9.67 | 97% |
-| **Net Margin (after Stripe)** | $9.38 | 94% |
+| **Gross Margin** | $9.94 | 99.5% |
+| **Net Margin (after Stripe)** | $9.65 | 96.6% |
 
-## 🔧 Switching Image Providers
+## 🎭 Comedy System
 
-The code is designed to easily swap image generation providers:
+The app uses a two-layer comedy approach:
 
-**In `lib/image-generation.ts`:**
+**1. Quote Generation - "Identity Betrayal"**
+- AI flips the friend's real traits into things they'd NEVER say
+- Example: pizza lover → "I've been really into clean eating lately"
+- Generated by GPT-4o-mini from user personality descriptions
 
-```typescript
-// Change this line:
-const ACTIVE_PROVIDER: ImageProvider = 'replicate-flux-pro';
+**2. Image Prompts - "Comedy Through Contradiction"**
+- Subject sincerely attempts to live up to the quote
+- Reality quietly contradicts them
+- Humor = subject vs reality, NOT subject vs society
+- System lives in: `lib/prompt-engineering.ts`
 
-// To use cheaper option:
-const ACTIVE_PROVIDER: ImageProvider = 'replicate-flux-dev'; // $0.01/image
-
-// Or to use Gemini (when implemented):
-const ACTIVE_PROVIDER: ImageProvider = 'gemini'; // $1.44/image
-```
+**Strictly Banned:** Crowds mocking, people laughing/pointing, phones filming, subway humiliation, viral-cringe aesthetics, sexual framing
 
 ## 📝 Testing the Flow
 
@@ -249,8 +245,9 @@ Use test card: `4242 4242 4242 4242`
 ## 🐛 Troubleshooting
 
 ### Images not generating
-- Check Replicate API token is valid
-- Check you have credit in Replicate account
+- Check Gemini API key is valid
+- Check you have quota in Google AI Studio
+- Verify images are 9:16 portrait (not landscape)
 - Look at Vercel function logs
 
 ### Webhook not working
