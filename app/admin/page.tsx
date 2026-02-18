@@ -511,28 +511,28 @@ export default function AdminPage() {
                           href={book.videoUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[10px] px-2 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded font-bold"
+                          className="text-xs px-3 py-1.5 bg-emerald-500 text-white rounded-lg font-bold"
                         >
                           ▶ Video
                         </a>
                       ) : book.videoStatus === 'processing' || videoGenerating?.bookId === book.id ? (
-                        <span className="text-[10px] px-2 py-1 bg-yellow-400/10 text-yellow-400 rounded font-bold flex items-center gap-1">
-                          <span className="animate-spin inline-block">⟳</span> ~90s
+                        <span className="text-xs px-3 py-1.5 bg-yellow-400/20 text-yellow-400 rounded-lg font-bold flex items-center gap-1">
+                          <span className="animate-spin inline-block">⟳</span>
                         </span>
                       ) : book.videoStatus === 'failed' ? (
                         <button
                           onClick={() => handleGenerateVideo(book.id, book.name)}
-                          className="text-[10px] px-2 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded font-bold"
+                          className="text-xs px-3 py-1.5 bg-red-500 text-white rounded-lg font-bold"
                         >
-                          ❌ Retry
+                          Retry
                         </button>
                       ) : (
                         <button
                           onClick={() => handleGenerateVideo(book.id, book.name)}
                           disabled={videoGenerating !== null}
-                          className="text-[10px] px-2 py-1 bg-white/10 text-white/70 border border-white/20 rounded font-bold disabled:opacity-40"
+                          className="text-xs px-3 py-1.5 bg-yellow-400 text-black rounded-lg font-bold disabled:opacity-40"
                         >
-                          🎬 Gen
+                          🎬
                         </button>
                       )}
                     </div>
