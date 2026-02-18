@@ -54,11 +54,20 @@ export async function generateRoastVideo(input: VideoGenerationInput): Promise<V
   console.log(`${ctx} ✅ Phase 1 complete: ${1 + quotes.length} PNG cards uploaded`);
 
   // ── Phase 2: Hailuo animated clips (cover + 8 images, in parallel) ───────────
+  // Cover:       Ken Burns (no end frame — pure cover showcase)
+  // Image[0..6]: start→end frame transitions (image[i] morphs into image[i+1])
+  // Image[7]:    Ken Burns (last image, no next frame to transition to)
   console.log(`${ctx} Phase 2: Generating ${1 + fullImageUrls.length} Hailuo animated clips...`);
 
   const [coverHailuoUrl, ...imageClipUrls] = await Promise.all([
     generateHailuoClip(coverImageUrl, `${ctx}[cover-hailuo]`),
-    ...fullImageUrls.map((url, i) => generateHailuoClip(url, `${ctx}[hailuo-${i + 1}]`)),
+    ...fullImageUrls.map((url, i) =>
+      generateHailuoClip(
+        url,
+        `${ctx}[hailuo-${i + 1}]`,
+        i < fullImageUrls.length - 1 ? fullImageUrls[i + 1] : undefined, // end frame = next image
+      )
+    ),
   ]);
 
   console.log(`${ctx} ✅ Phase 2 complete: ${1 + fullImageUrls.length} animated clips ready`);

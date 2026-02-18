@@ -20,19 +20,23 @@ function extractUrl(fileOrUrl: unknown): string {
 
 /**
  * Generate an animated 6-second video clip from a static image using Hailuo-02.
+ * When endImageUrl is provided, Hailuo animates FROM imageUrl TO endImageUrl,
+ * creating a fluid transition between shots.
  * Returns the URL of the generated video on Fal's CDN.
  */
 export async function generateHailuoClip(
   imageUrl: string,
-  context: string
+  context: string,
+  endImageUrl?: string
 ): Promise<string> {
   return withRetryContext(
     async () => {
-      console.log(`${context} Calling Hailuo-02 for: ...${imageUrl.slice(-40)}`);
+      console.log(`${context} Calling Hailuo-02${endImageUrl ? ' (start→end)' : ' (Ken Burns)'}`);
 
       const result = await fal.subscribe('fal-ai/minimax/hailuo-02/standard/image-to-video', {
         input: {
           image_url: imageUrl,
+          ...(endImageUrl ? { end_image_url: endImageUrl } : {}),
           duration: '6',
           resolution: '768P',
           prompt: MOTION_PROMPT,
