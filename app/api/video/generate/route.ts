@@ -61,19 +61,17 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // Atomic lock: only proceed if video_status is null or 'failed'
-  const { data: lockResult } = await supabaseAdmin
-    .from('roast_books')
-    .update({ video_status: 'processing', video_error: null })
-    .eq('id', bookId)
-    .or('video_status.is.null,video_status.eq.failed')
-    .select('id')
-    .maybeSingle();
-
-  if (!lockResult) {
-    console.log(`[VIDEO] Lock failed for ${bookId} — already processing`);
+  // Guard: don't allow duplicate runs (admin-only, so race condition is not a concern)
+  if (book.video_status === 'processing') {
+    console.log(`[VIDEO] Book ${bookId} is already processing`);
     return NextResponse.json({ error: 'Video generation already in progress' }, { status: 409 });
   }
+
+  // Mark as processing
+  await supabaseAdmin
+    .from('roast_books')
+    .update({ video_status: 'processing', video_error: null })
+    .eq('id', bookId);
 
   const startMs = Date.now();
 
