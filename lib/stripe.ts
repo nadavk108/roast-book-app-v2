@@ -1,10 +1,6 @@
 import Stripe from 'stripe';
 
-const stripeKey = (process.env.STRIPE_SECRET_KEY || '').trim();
-
-if (!stripeKey) {
-  throw new Error('Missing STRIPE_SECRET_KEY');
-}
+const stripeKey = (process.env.STRIPE_SECRET_KEY || 'placeholder-stripe-key').trim();
 
 const stripe = new Stripe(stripeKey, {
   apiVersion: '2024-12-18.acacia',
