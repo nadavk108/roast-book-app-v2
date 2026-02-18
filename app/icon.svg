@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Yellow rounded square with black border — matches the logo container exactly -->
+  <!-- bg-primary = #FACC14, border-foreground = #0D0D0D, border-3 = 3px, rounded-xl = rx7 at this scale -->
+  <rect x="1" y="1" width="30" height="30" rx="7" fill="#FACC14" stroke="#0D0D0D" stroke-width="2.5"/>
+  <!-- Lucide Flame v0.323.0 — scaled to 58% of container (matches h-7 w-7 inside h-12 w-12 in the site header) -->
+  <!-- Scale 0.792 = 19/24, centered at (16,16): translate(16-12*0.792, 16-12*0.792) = translate(6.5, 6.5) -->
+  <path
+    transform="translate(6.5, 6.5) scale(0.792)"
+    fill="#0D0D0D"
+    d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"
+  />
+</svg>
