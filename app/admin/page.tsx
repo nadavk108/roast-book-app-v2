@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { isAdminUser } from '@/lib/admin';
@@ -8,6 +8,129 @@ import {
   RefreshCw, TrendingUp, DollarSign, Image, Users,
   ChevronRight, AlertTriangle, CheckCircle, Clock, XCircle, Eye
 } from 'lucide-react';
+
+// Video generation phases with cumulative progress %
+const VIDEO_PHASES = [
+  { label: 'Generating quote cards',    endPct: 8,  durationMs: 5_000 },
+  { label: 'Animating images (Hailuo)', endPct: 50, durationMs: 35_000 },
+  { label: 'Creating static clips',     endPct: 65, durationMs: 12_000 },
+  { label: 'Merging 18 clips',          endPct: 82, durationMs: 15_000 },
+  { label: 'Adding background music',   endPct: 90, durationMs: 6_000 },
+  { label: 'Uploading to storage',      endPct: 99, durationMs: 8_000 },
+];
+
+function VideoProgressModal({ bookName }: { bookName: string }) {
+  const [progress, setProgress] = useState(0);
+  const [phaseIndex, setPhaseIndex] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const startRef = useRef(Date.now());
+  const frameRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const startMs = Date.now();
+    startRef.current = startMs;
+
+    // Tick elapsed every second
+    const elapsedInterval = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startMs) / 1000));
+    }, 1000);
+
+    // Animate progress through phases
+    let currentPhase = 0;
+    let phaseStart = startMs;
+    const startPct = 0;
+
+    function tick() {
+      const now = Date.now();
+      if (currentPhase >= VIDEO_PHASES.length) return;
+
+      const phase = VIDEO_PHASES[currentPhase];
+      const prevEndPct = currentPhase === 0 ? 0 : VIDEO_PHASES[currentPhase - 1].endPct;
+      const phaseElapsed = now - phaseStart;
+      const phaseFraction = Math.min(phaseElapsed / phase.durationMs, 0.98);
+      const pct = prevEndPct + phaseFraction * (phase.endPct - prevEndPct);
+
+      setProgress(Math.min(pct, 99));
+      setPhaseIndex(currentPhase);
+
+      if (phaseElapsed >= phase.durationMs) {
+        currentPhase++;
+        phaseStart = now;
+      }
+
+      frameRef.current = setTimeout(tick, 120);
+    }
+
+    tick();
+
+    return () => {
+      clearInterval(elapsedInterval);
+      if (frameRef.current) clearTimeout(frameRef.current);
+    };
+  }, []);
+
+  const currentPhaseLabel = VIDEO_PHASES[Math.min(phaseIndex, VIDEO_PHASES.length - 1)].label;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-6">
+      <div className="w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl overflow-hidden">
+
+        {/* Yellow top bar */}
+        <div className="h-1.5 bg-yellow-400" />
+
+        <div className="p-8">
+          {/* Icon + title */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-full bg-yellow-400/10 border border-yellow-400/30 flex items-center justify-center text-xl">
+              🎬
+            </div>
+            <div>
+              <p className="text-white font-bold text-sm">Generating Video</p>
+              <p className="text-white/40 text-xs truncate max-w-[200px]">{bookName}</p>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="mb-3">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-white/50 text-xs">{currentPhaseLabel}</span>
+              <span className="text-white font-bold text-sm">{Math.round(progress)}%</span>
+            </div>
+            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-yellow-400 rounded-full transition-all duration-100"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Phase dots */}
+          <div className="flex gap-1.5 mb-6">
+            {VIDEO_PHASES.map((p, i) => (
+              <div
+                key={i}
+                className={`flex-1 h-1 rounded-full transition-all duration-500 ${
+                  i < phaseIndex ? 'bg-yellow-400' :
+                  i === phaseIndex ? 'bg-yellow-400/60' :
+                  'bg-white/10'
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Time */}
+          <div className="flex items-center justify-between text-xs text-white/30">
+            <span>{elapsed}s elapsed</span>
+            <span>~90s total</span>
+          </div>
+        </div>
+
+        {/* Yellow bottom bar */}
+        <div className="h-1.5 bg-yellow-400" />
+      </div>
+    </div>
+  );
+}
 
 type Metrics = {
   funnel: {
@@ -49,6 +172,8 @@ type Metrics = {
     createdAt: string;
     isAdmin: boolean;
     hasPaid: boolean;
+    videoStatus: 'processing' | 'complete' | 'failed' | null;
+    videoUrl: string | null;
   }[];
   uniqueUsers: number;
   lastUpdated: string;
@@ -71,6 +196,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [authorized, setAuthorized] = useState(false);
+  const [videoGenerating, setVideoGenerating] = useState<{ bookId: string; bookName: string } | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -109,6 +235,27 @@ export default function AdminPage() {
     fetchMetrics();
   };
 
+  const handleGenerateVideo = async (bookId: string, bookName: string) => {
+    setVideoGenerating({ bookId, bookName });
+    try {
+      const res = await fetch('/api/video/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+      if (data.videoUrl) {
+        window.open(data.videoUrl, '_blank');
+      }
+    } catch (err: any) {
+      alert(`Video generation failed: ${err.message}`);
+    } finally {
+      setVideoGenerating(null);
+      fetchMetrics();
+    }
+  };
+
   if (!authorized || loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -135,6 +282,7 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-black text-white pb-20">
+      {videoGenerating && <VideoProgressModal bookName={videoGenerating.bookName} />}
       {/* Header */}
       <div className="sticky top-0 z-50 bg-black/90 backdrop-blur-xl border-b border-white/10">
         <div className="flex items-center justify-between px-4 py-3 pt-safe">
@@ -354,6 +502,41 @@ export default function AdminPage() {
                       <span className="text-white/30 text-[10px]">{timeAgo}</span>
                     </div>
                   </div>
+
+                  {/* Video controls (complete books only) */}
+                  {book.status === 'complete' && (
+                    <div className="flex-shrink-0" onClick={e => e.stopPropagation()}>
+                      {book.videoStatus === 'complete' && book.videoUrl ? (
+                        <a
+                          href={book.videoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[10px] px-2 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded font-bold"
+                        >
+                          ▶ Video
+                        </a>
+                      ) : book.videoStatus === 'processing' || videoGenerating?.bookId === book.id ? (
+                        <span className="text-[10px] px-2 py-1 bg-yellow-400/10 text-yellow-400 rounded font-bold flex items-center gap-1">
+                          <span className="animate-spin inline-block">⟳</span> ~90s
+                        </span>
+                      ) : book.videoStatus === 'failed' ? (
+                        <button
+                          onClick={() => handleGenerateVideo(book.id, book.name)}
+                          className="text-[10px] px-2 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded font-bold"
+                        >
+                          ❌ Retry
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleGenerateVideo(book.id, book.name)}
+                          disabled={videoGenerating !== null}
+                          className="text-[10px] px-2 py-1 bg-white/10 text-white/70 border border-white/20 rounded font-bold disabled:opacity-40"
+                        >
+                          🎬 Gen
+                        </button>
+                      )}
+                    </div>
+                  )}
 
                   {/* Arrow */}
                   {(book.status === 'complete' || book.status === 'preview_ready') && (

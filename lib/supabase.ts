@@ -36,6 +36,11 @@ export type Database = {
           slug: string;
           stripe_session_id: string | null;
           stripe_payment_intent: string | null;
+          video_status: 'processing' | 'complete' | 'failed' | null;
+          video_url: string | null;
+          video_generated_at: string | null;
+          video_clip_urls: string[];
+          video_error: string | null;
         };
         Insert: {
           id?: string;
@@ -52,6 +57,11 @@ export type Database = {
           slug: string;
           stripe_session_id?: string | null;
           stripe_payment_intent?: string | null;
+          video_status?: 'processing' | 'complete' | 'failed' | null;
+          video_url?: string | null;
+          video_generated_at?: string | null;
+          video_clip_urls?: string[];
+          video_error?: string | null;
         };
         Update: {
           id?: string;
@@ -68,6 +78,11 @@ export type Database = {
           slug?: string;
           stripe_session_id?: string | null;
           stripe_payment_intent?: string | null;
+          video_status?: 'processing' | 'complete' | 'failed' | null;
+          video_url?: string | null;
+          video_generated_at?: string | null;
+          video_clip_urls?: string[];
+          video_error?: string | null;
         };
       };
     };
