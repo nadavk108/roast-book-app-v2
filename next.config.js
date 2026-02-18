@@ -12,7 +12,7 @@ const nextConfig = {
   // Skip static optimization for pages with useSearchParams
   experimental: {
     missingSuspenseWithCSRBailout: false,
-    serverComponentsExternalPackages: ['sharp'],
+    serverComponentsExternalPackages: ['sharp', '@resvg/resvg-js'],
   },
   images: {
     remotePatterns: [
