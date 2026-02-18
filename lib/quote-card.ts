@@ -20,9 +20,9 @@ function getFonts() {
     return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
   };
   _fonts = [
-    { name: 'Lora', data: load('lora-latin-400-normal.woff2'), weight: 400, style: 'normal' },
-    { name: 'Lora', data: load('lora-latin-400-italic.woff2'), weight: 400, style: 'italic' },
-    { name: 'Lora', data: load('lora-latin-700-normal.woff2'), weight: 700, style: 'normal' },
+    { name: 'Lora', data: load('lora-latin-400-normal.woff'), weight: 400, style: 'normal' },
+    { name: 'Lora', data: load('lora-latin-400-italic.woff'), weight: 400, style: 'italic' },
+    { name: 'Lora', data: load('lora-latin-700-normal.woff'), weight: 700, style: 'normal' },
   ];
   return _fonts;
 }
