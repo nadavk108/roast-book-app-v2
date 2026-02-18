@@ -1,155 +1,109 @@
+import React from 'react';
+import satori from 'satori';
 import sharp from 'sharp';
+import { readFileSync } from 'fs';
+import path from 'path';
 import { supabaseAdmin } from './supabase';
 
-const CARD_WIDTH = 432;
-const CARD_HEIGHT = 768;
+const CARD_W = 432;
+const CARD_H = 768;
 
-/**
- * Wrap text into lines of at most maxChars characters, breaking at word boundaries.
- */
-function wrapText(text: string, maxChars: number): string[] {
-  const words = text.split(' ');
-  const lines: string[] = [];
-  let current = '';
+// Cache font buffers across calls — loaded once per Lambda warm instance
+let _fonts: { name: string; data: ArrayBuffer; weight: number; style: 'normal' | 'italic' }[] | null = null;
 
-  for (const word of words) {
-    const candidate = current ? `${current} ${word}` : word;
-    if (candidate.length <= maxChars) {
-      current = candidate;
-    } else {
-      if (current) lines.push(current);
-      current = word;
-    }
-  }
-  if (current) lines.push(current);
-  return lines;
+function getFonts() {
+  if (_fonts) return _fonts;
+  const dir = path.join(process.cwd(), 'node_modules/@fontsource/lora/files');
+  const load = (file: string): ArrayBuffer => {
+    const buf = readFileSync(path.join(dir, file));
+    // Convert Node Buffer → ArrayBuffer (safe for whole-file reads)
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+  };
+  _fonts = [
+    { name: 'Lora', data: load('lora-latin-400-normal.woff2'), weight: 400, style: 'normal' },
+    { name: 'Lora', data: load('lora-latin-400-italic.woff2'), weight: 400, style: 'italic' },
+    { name: 'Lora', data: load('lora-latin-700-normal.woff2'), weight: 700, style: 'normal' },
+  ];
+  return _fonts;
 }
 
-/**
- * Build SVG tspan elements for multiline text, centered vertically around startY.
- */
-function buildTspans(lines: string[], x: number, startY: number, lineHeight: number): string {
-  return lines
-    .map(
-      (line, i) =>
-        `<tspan x="${x}" dy="${i === 0 ? 0 : lineHeight}">${escapeXml(line)}</tspan>`
-    )
-    .join('');
-}
-
-function escapeXml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-}
-
-/**
- * Generate a dark quote card PNG for a single quote + name.
- * 432×768px, #0d0d0d background, serif italic white quote, gray attribution.
- */
-export async function generateQuoteCardPng(quote: string, victimName: string): Promise<Buffer> {
-  const lines = wrapText(quote, 22);
-  const lineHeight = 52;
-  const totalTextHeight = lines.length * lineHeight;
-  const quoteStartY = Math.floor((CARD_HEIGHT - totalTextHeight) / 2) - 20;
-
-  const tspans = buildTspans(lines, CARD_WIDTH / 2, quoteStartY, lineHeight);
-  const attributionY = quoteStartY + totalTextHeight + 48;
-
-  const svg = `
-<svg xmlns="http://www.w3.org/2000/svg" width="${CARD_WIDTH}" height="${CARD_HEIGHT}">
-  <defs>
-    <style>
-      .quote { font-family: Georgia, 'Times New Roman', serif; font-size: 40px; font-style: italic; fill: #FFFFFF; }
-      .attribution { font-family: Georgia, 'Times New Roman', serif; font-size: 22px; fill: #888888; }
-    </style>
-  </defs>
-
-  <!-- Background -->
-  <rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" fill="#0d0d0d"/>
-
-  <!-- Top accent line -->
-  <rect x="40" y="60" width="${CARD_WIDTH - 80}" height="1" fill="#FFFFFF" opacity="0.15"/>
-
-  <!-- Bottom accent line -->
-  <rect x="40" y="${CARD_HEIGHT - 60}" width="${CARD_WIDTH - 80}" height="1" fill="#FFFFFF" opacity="0.15"/>
-
-  <!-- Quote text -->
-  <text class="quote" text-anchor="middle" dominant-baseline="auto" x="${CARD_WIDTH / 2}" y="${quoteStartY}">
-    ${tspans}
-  </text>
-
-  <!-- Attribution -->
-  <text class="attribution" text-anchor="middle" x="${CARD_WIDTH / 2}" y="${attributionY}">— ${escapeXml(victimName)}, allegedly</text>
-</svg>`.trim();
-
+async function renderToPng(el: React.ReactElement): Promise<Buffer> {
+  // satori converts JSX → SVG with text as paths (no fontconfig needed)
+  const svg = await satori(el, { width: CARD_W, height: CARD_H, fonts: getFonts() });
+  // sharp converts path-only SVG → PNG (no text elements, so no fontconfig needed)
   return sharp(Buffer.from(svg)).png().toBuffer();
 }
 
 /**
- * Generate the cover title card PNG.
- * 432×768px, black background, yellow accent bars, title text.
+ * Cover title card: black bg, yellow bars, "Things [Name] Would Never Say"
  */
 export async function generateCoverTitleCardPng(victimName: string): Promise<Buffer> {
-  const titleLines = wrapText(`Things ${victimName} Would Never Say`, 18);
-  const lineHeight = 62;
-  const totalTitleHeight = titleLines.length * lineHeight;
-  const titleStartY = Math.floor((CARD_HEIGHT - totalTitleHeight) / 2);
+  return renderToPng(
+    React.createElement(
+      'div',
+      { style: { width: '100%', height: '100%', backgroundColor: '#000000', display: 'flex', flexDirection: 'column' } },
 
-  const tspans = buildTspans(titleLines, CARD_WIDTH / 2, titleStartY, lineHeight);
+      // Top yellow bar
+      React.createElement('div', { style: { width: '100%', height: 8, backgroundColor: '#FACC15', flexShrink: 0 } }),
 
-  const svg = `
-<svg xmlns="http://www.w3.org/2000/svg" width="${CARD_WIDTH}" height="${CARD_HEIGHT}">
-  <defs>
-    <style>
-      .subtitle { font-family: Georgia, 'Times New Roman', serif; font-size: 18px; letter-spacing: 4px; fill: #FACC15; }
-      .title { font-family: Georgia, 'Times New Roman', serif; font-size: 52px; font-weight: bold; fill: #FFFFFF; }
-    </style>
-  </defs>
+      // Center content
+      React.createElement(
+        'div',
+        { style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 48px' } },
 
-  <!-- Background -->
-  <rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" fill="#000000"/>
+        React.createElement('p', {
+          style: { color: '#FACC15', fontSize: 13, letterSpacing: 4, fontFamily: 'Lora', margin: '0 0 28px 0', textAlign: 'center' },
+        }, 'A ROAST BOOK'),
 
-  <!-- Top yellow bar -->
-  <rect x="0" y="0" width="${CARD_WIDTH}" height="8" fill="#FACC15"/>
+        React.createElement('p', {
+          style: { color: '#ffffff', fontSize: 40, fontWeight: 700, fontFamily: 'Lora', textAlign: 'center', lineHeight: 1.3, margin: 0 },
+        }, `Things ${victimName} Would Never Say`),
+      ),
 
-  <!-- Bottom yellow bar -->
-  <rect x="0" y="${CARD_HEIGHT - 8}" width="${CARD_WIDTH}" height="8" fill="#FACC15"/>
+      // Bottom yellow bar
+      React.createElement('div', { style: { width: '100%', height: 8, backgroundColor: '#FACC15', flexShrink: 0 } }),
+    )
+  );
+}
 
-  <!-- Subtitle -->
-  <text class="subtitle" text-anchor="middle" x="${CARD_WIDTH / 2}" y="${titleStartY - 50}">A ROAST BOOK</text>
+/**
+ * Quote card: dark bg, opening quote mark, italic quote, gray attribution.
+ */
+export async function generateQuoteCardPng(quote: string, victimName: string): Promise<Buffer> {
+  return renderToPng(
+    React.createElement(
+      'div',
+      { style: { width: '100%', height: '100%', backgroundColor: '#0d0d0d', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 48px' } },
 
-  <!-- Title -->
-  <text class="title" text-anchor="middle" dominant-baseline="auto" x="${CARD_WIDTH / 2}" y="${titleStartY}">
-    ${tspans}
-  </text>
-</svg>`.trim();
+      // Opening quote mark
+      React.createElement('p', {
+        style: { color: '#FACC15', fontSize: 80, lineHeight: 1, fontFamily: 'Lora', fontStyle: 'italic', margin: '0 0 8px 0', alignSelf: 'flex-start' },
+      }, '\u201C'),
 
-  return sharp(Buffer.from(svg)).png().toBuffer();
+      // Quote text
+      React.createElement('p', {
+        style: { color: '#ffffff', fontSize: 34, fontStyle: 'italic', fontFamily: 'Lora', textAlign: 'center', lineHeight: 1.5, margin: '0 0 36px 0' },
+      }, quote),
+
+      // Attribution
+      React.createElement('p', {
+        style: { color: '#888888', fontSize: 18, fontFamily: 'Lora', textAlign: 'center', margin: 0 },
+      }, `\u2014 ${victimName}, allegedly`),
+    )
+  );
 }
 
 /**
  * Upload a PNG Buffer to Supabase Storage and return the public URL.
  */
-export async function uploadPngToStorage(
-  buffer: Buffer,
-  slug: string,
-  filename: string
-): Promise<string> {
-  const path = `generated/${slug}/${filename}`;
-
+export async function uploadPngToStorage(buffer: Buffer, slug: string, filename: string): Promise<string> {
+  const storagePath = `generated/${slug}/${filename}`;
   const { error } = await supabaseAdmin.storage
     .from('roast-books')
-    .upload(path, buffer, {
-      contentType: 'image/png',
-      upsert: true,
-    });
+    .upload(storagePath, buffer, { contentType: 'image/png', upsert: true });
 
   if (error) throw new Error(`Failed to upload ${filename}: ${error.message}`);
 
-  const { data } = supabaseAdmin.storage.from('roast-books').getPublicUrl(path);
+  const { data } = supabaseAdmin.storage.from('roast-books').getPublicUrl(storagePath);
   return data.publicUrl;
 }
