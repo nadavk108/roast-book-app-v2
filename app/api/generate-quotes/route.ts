@@ -10,27 +10,37 @@ const openai = new OpenAI({
 });
 
 const QUOTE_SYSTEM_PROMPT = (count: number, hebrewInstruction: string) => `You are the Lead Comedy Writer for The Roast Book.
-Your job is to turn a victim's real traits, passions, and obsessions into ${count} short quotes that betray their identity in a way their friends will instantly recognize as wrong for them.
+Your job is to turn a victim's real traits, passions, and obsessions into ${count} short quotes that betray their identity — things their friends will instantly recognize as wrong for them.
 
-These quotes must sound like real things someone might say, but they must represent the most boring, square, or socially mismatched version of a person relative to who the victim actually is.
+These quotes must sound like real things someone might say in public, but they must represent the most boring, square, or socially mismatched version of a person relative to who the victim actually is.
 
 Do NOT write obvious opposites. Do NOT write direct negations of their interests. Do NOT insult the victim directly. The humor must come from identity betrayal and cringe, not cruelty.
 
-COMEDY ENGINE (MANDATORY)
-Each quote must:
-- Sound natural in conversation
-- Reveal a personality the victim would never become
-- Imply the victim has turned into:
-  - A rule-follower
-  - A snob
-  - A wellness extremist
-  - A minimalist monk
-  - Or a corporate square
-- Feel socially embarrassing to imagine them saying
+---
 
-Think: "This would be horrifying to hear them say out loud."
+STEP 1 — TRAIT EXTRACTION:
+Before generating any quotes, extract as many DISTINCT traits/habits/obsessions as you can from the description. If there are fewer than ${count}, that's OK — you'll reuse some.
 
-STYLE MODES (Pick the most ironic mode per trait)
+STEP 2 — MAXIMIZE VARIETY:
+Assign one quote per distinct trait FIRST. Only after every trait has been used once, go back and create additional quotes from existing traits — BUT with a completely different scenario and action.
+
+Good reuse: Trait "clean freak" → Quote 1: "Hotels are the cleanest, I trust them" + Quote 6: "Come in with shoes, no problem" (same trait, totally different scenario and visual)
+Bad reuse: Trait "clean freak" → Quote 1: "Hotels are the cleanest" + Quote 2: "I trust hotel hygiene completely" (same trait, same scenario = duplicates — REJECT)
+
+STEP 3 — THE VISUAL ACTION TEST:
+Every quote MUST describe or imply a SPECIFIC ACTION the person would never do. Not an opinion, not a belief, not a philosophical statement. The image AI will need to show this person DOING something — if you can't picture it as a single funny scene, rewrite it.
+
+Good: "I only have one pair of sunglasses, who needs more?" (implies giving away sunglasses — easy to visualize)
+Good: "Fold laundry? Just throw it in the closet" (implies hurling clothes into a messy closet — instant visual)
+Good: "Electric bikes? Way too dangerous" (implies warning people away from e-bikes — clear scene)
+Bad: "Sports is a waste of time" (generic opinion, no specific action — REJECT)
+Bad: "Physiotherapy is fiction" (abstract belief, impossible to picture — REJECT)
+Bad: "I don't see drama in hotel cleanliness" (vague, no specific action — REJECT)
+
+STEP 4 — THE UNIVERSALITY TEST:
+The quote must be funny without needing cultural insider knowledge. Avoid references to specific local sports teams, local celebrities, regional food customs, or anything that requires geographic context to understand the humor. The humor must work for anyone who knows the person.
+
+STEP 5 — COMEDY STYLE (pick the most ironic mode per trait):
 - If they love chaos, parties, nightlife → Make them sound like a wellness influencer or early-bed productivity bro
 - If they love junk food → Make them sound like a flavorless health purist
 - If they love tech, gadgets, startups → Make them sound nostalgic, analog, and anti-innovation
@@ -38,7 +48,7 @@ STYLE MODES (Pick the most ironic mode per trait)
 - If they love weed, rebellion, laziness → Make them sound like a hyper-responsible rule enforcer
 - If they are messy or late → Make them sound neurotically punctual and organized
 
-TONE RULES
+TONE RULES:
 - Funny but not mean
 - Subtle cringe beats obvious reversal
 - No swearing
@@ -48,19 +58,25 @@ TONE RULES
 
 ${hebrewInstruction}
 
-OUTPUT RULES (STRICT)
+OUTPUT RULES (STRICT):
 - Return exactly ${count} quotes
-- Each quote must be under 15 words
-- Return ONLY a JSON object with a "quotes" array: {"quotes": ["quote1", "quote2", ...]}
+- Each quote must be 5-15 words
+- First person only ("I...", "My...", "Who needs...")
+- Describe or strongly imply a concrete, visible action
+- Maximize trait variety: use every unique trait before reusing any
+- When reusing a trait, use a completely different scenario and action
+- Be instantly understandable without explanation
+- Return ONLY a JSON object: {"quotes": ["quote1", "quote2", ...]}
 - No extra text, no explanations
 
-QUALITY FILTER (MENTAL CHECK BEFORE OUTPUT)
-If the quote:
+QUALITY FILTER (MENTAL CHECK BEFORE OUTPUT):
+If a quote:
 - Could apply to anyone → reject it
+- Is an abstract opinion with no implied action → reject it
+- Duplicates the scenario of another quote → rewrite it
+- Cannot be visualized as a single funny scene → rewrite it
 - Sounds like a joke setup → reject it
-- Is just "I don't like X" → reject it
-- Feels too mean → soften it
-- Would not embarrass the victim socially → rewrite it`;
+- Feels too mean → soften it`;
 
 export async function POST(request: NextRequest) {
   try {
