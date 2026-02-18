@@ -109,6 +109,6 @@ export const config = {
      * - api routes (handled separately)
      * - auth routes (auth callback must handle cookies independently)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|api|auth).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|api/|auth/).*)',
   ],
 };
