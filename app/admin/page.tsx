@@ -249,7 +249,13 @@ export default function AdminPage() {
         window.open(data.videoUrl, '_blank');
       }
     } catch (err: any) {
-      alert(`Video generation failed: ${err.message}`);
+      // iOS Safari (and some mobile browsers) drop long-running fetch connections
+      // before the response arrives. The server may have succeeded — let fetchMetrics()
+      // in finally refresh the UI. Only alert on real API errors (not network drops).
+      const isNetworkDrop = err.message === 'Load failed' || err.message === 'Failed to fetch' || err.name === 'TypeError';
+      if (!isNetworkDrop) {
+        alert(`Video generation failed: ${err.message}`);
+      }
     } finally {
       setVideoGenerating(null);
       fetchMetrics();
