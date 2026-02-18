@@ -104,6 +104,51 @@ export async function createStaticClip(
 }
 
 /**
+ * Overlay a transparent PNG image on top of a video clip for its full duration.
+ * Uses FFmpeg compose with two tracks: base video + image overlay (alpha-composited on top).
+ * Returns the URL of the composited video.
+ */
+export async function overlayTextOnVideo(
+  videoUrl: string,
+  overlayUrl: string,
+  durationMs: number,
+  context: string,
+): Promise<string> {
+  return withRetryContext(
+    async () => {
+      console.log(`${context} Overlaying text on clip`);
+
+      const result = await fal.subscribe('fal-ai/ffmpeg-api/compose', {
+        input: {
+          tracks: [
+            {
+              id: 'base',
+              type: 'video',
+              keyframes: [{ timestamp: 0, duration: durationMs, url: videoUrl }],
+            },
+            {
+              id: 'overlay',
+              type: 'image',
+              keyframes: [{ timestamp: 0, duration: durationMs, url: overlayUrl }],
+            },
+          ],
+        },
+        logs: false,
+      });
+
+      const videoOut = extractUrl(result.data.video_url ?? result.data.video);
+      console.log(`${context} ✅ Text overlay complete`);
+      return videoOut;
+    },
+    {
+      context,
+      maxAttempts: 3,
+      initialDelayMs: 3000,
+    },
+  );
+}
+
+/**
  * Merge multiple video clip URLs into a single video.
  * videoUrls must be in the final desired order.
  * Returns the URL of the merged video.
