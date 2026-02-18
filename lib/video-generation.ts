@@ -4,10 +4,9 @@ import {
   generateHailuoClip, 
   mergeVideoClips, 
   addBackgroundMusic,
-  createStaticClip,
-  overlayTextOnVideo,
   uploadPngToSupabase
 } from './fal-client';
+import { fal } from '@fal-ai/client';
 
 export type VideoGenerationInput = {
   bookId: string;
@@ -78,7 +77,7 @@ export async function generateRoastVideo(input: VideoGenerationInput): Promise<V
   let mergedVideoUrl = await mergeVideoClips(clipUrls, `${ctx}[merge]`);
   console.log(`${ctx} ✅ Phase 2 complete`);
 
-  // ── Phase 3: Generate text overlays and composite on top ─────────────────────
+  // ── Phase 3: Generate text overlays and upload to Supabase ───────────────────
   console.log(`${ctx} Phase 3: Generating Hebrew text overlays...`);
 
   // Generate all overlay PNGs (cover has title only, scenes have title + quote)
@@ -96,36 +95,61 @@ export async function generateRoastVideo(input: VideoGenerationInput): Promise<V
 
   console.log(`${ctx} ✅ Phase 3 complete: ${overlayUrls.length} text overlays uploaded`);
 
-  // ── Phase 4: Composite text overlays on merged video ──────────────────────────
-  console.log(`${ctx} Phase 4: Compositing text overlays onto video...`);
+  // ── Phase 4: Composite ALL text overlays onto video in ONE operation ──────────
+  console.log(`${ctx} Phase 4: Compositing ${overlayUrls.length} text overlays onto video...`);
   
-  // Calculate timing for each overlay (cover = 3s, rest = 6s each)
   const COVER_DURATION_MS = 3000;
   const CLIP_DURATION_MS = 6000;
   
-  let currentVideoUrl = mergedVideoUrl;
+  // Build FFmpeg compose tracks: base video + all overlay images with timestamps
+  const tracks: any[] = [
+    {
+      id: 'base',
+      type: 'video',
+      url: mergedVideoUrl,
+    },
+  ];
   
+  // Add each text overlay as a separate image track with timing
   for (let i = 0; i < overlayUrls.length; i++) {
     const startTimeMs = i === 0 ? 0 : COVER_DURATION_MS + (i - 1) * CLIP_DURATION_MS;
     const durationMs = i === 0 ? COVER_DURATION_MS : CLIP_DURATION_MS;
     
-    currentVideoUrl = await overlayTextOnVideo(
-      currentVideoUrl,
-      overlayUrls[i],
-      startTimeMs,
-      durationMs,
-      `${ctx}[text-${i}]`
-    );
+    tracks.push({
+      id: `overlay-${i}`,
+      type: 'image',
+      url: overlayUrls[i],
+      keyframes: [
+        { timestamp: startTimeMs, duration: durationMs },
+      ],
+    });
   }
   
-  console.log(`${ctx} ✅ Phase 4 complete: Text overlays composited`);
+  // Single FFmpeg call to composite all overlays
+  const result = await fal.subscribe('fal-ai/ffmpeg-api/compose', {
+    input: { tracks },
+    logs: false,
+  });
+  
+  function extractUrl(fileOrUrl: unknown): string {
+    if (typeof fileOrUrl === 'string') return fileOrUrl;
+    if (fileOrUrl && typeof fileOrUrl === 'object' && 'url' in fileOrUrl) {
+      return (fileOrUrl as { url: string }).url;
+    }
+    throw new Error(`Cannot extract URL from: ${JSON.stringify(fileOrUrl)}`);
+  }
+  
+  const currentVideoUrl = extractUrl(result.data.video_url ?? result.data.video);
+  
+  console.log(`${ctx} ✅ Phase 4 complete: All text overlays composited`);
 
   // ── Phase 5: Background music (non-fatal) ────────────────────────────────────
+  let finalVideoUrl = currentVideoUrl;
   const musicUrl = (process.env.VIDEO_BACKGROUND_MUSIC_URL || '').trim();
   if (musicUrl) {
     console.log(`${ctx} Phase 5: Overlaying background music...`);
     try {
-      currentVideoUrl = await addBackgroundMusic(currentVideoUrl, musicUrl, `${ctx}[music]`);
+      finalVideoUrl = await addBackgroundMusic(currentVideoUrl, musicUrl, `${ctx}[music]`);
       console.log(`${ctx} ✅ Phase 5 complete`);
     } catch (err: any) {
       console.warn(`${ctx} ⚠️ Phase 5 SKIPPED (non-fatal): ${err.message}`);
@@ -136,7 +160,7 @@ export async function generateRoastVideo(input: VideoGenerationInput): Promise<V
 
   // ── Phase 6: Upload to Supabase Storage ──────────────────────────────────────
   console.log(`${ctx} Phase 6: Uploading final video to Supabase...`);
-  const storedVideoUrl = await downloadAndUploadVideo(currentVideoUrl, slug, ctx);
+  const storedVideoUrl = await downloadAndUploadVideo(finalVideoUrl, slug, ctx);
 
   const generationTimeMs = Date.now() - startMs;
   const durationSeconds = COVER_DURATION_MS / 1000 + (clipUrls.length - 1) * (CLIP_DURATION_MS / 1000);
