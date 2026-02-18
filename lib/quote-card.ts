@@ -13,7 +13,7 @@ let _fonts: { name: string; data: ArrayBuffer; weight: number; style: 'normal' |
 
 function getFonts() {
   if (_fonts) return _fonts;
-  const dir = path.join(process.cwd(), 'node_modules/@fontsource/lora/files');
+  const dir = path.join(process.cwd(), 'public', 'fonts');
   const load = (file: string): ArrayBuffer => {
     const buf = readFileSync(path.join(dir, file));
     // Convert Node Buffer → ArrayBuffer (safe for whole-file reads)
