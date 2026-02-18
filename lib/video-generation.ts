@@ -129,13 +129,22 @@ async function downloadAndUploadVideo(videoUrl: string, slug: string, ctx: strin
   if (!response.ok) throw new Error(`Failed to download video from Fal: ${response.status}`);
   const buffer = Buffer.from(await response.arrayBuffer());
 
-  console.log(`${ctx} Downloaded ${(buffer.length / 1024 / 1024).toFixed(1)}MB video`);
+  const sizeMb = buffer.length / 1024 / 1024;
+  console.log(`${ctx} Downloaded ${sizeMb.toFixed(1)}MB video`);
 
   const { error } = await supabaseAdmin.storage
     .from('roast-books')
     .upload(storagePath, buffer, { contentType: 'video/mp4', upsert: true });
 
-  if (error) throw new Error(`Failed to upload video to Supabase: ${error.message}`);
+  if (error) {
+    // If Supabase rejects due to file size limit, fall back to Fal CDN URL.
+    // Fix: raise the bucket file size limit in Supabase Dashboard → Storage → roast-books → Edit.
+    if (error.message?.toLowerCase().includes('exceeded') || error.message?.toLowerCase().includes('size')) {
+      console.warn(`${ctx} ⚠️ Supabase upload rejected (${sizeMb.toFixed(1)}MB exceeds limit). Storing Fal CDN URL directly. Raise the bucket file size limit in Supabase to fix permanently.`);
+      return videoUrl;
+    }
+    throw new Error(`Failed to upload video to Supabase: ${error.message}`);
+  }
 
   const { data } = supabaseAdmin.storage.from('roast-books').getPublicUrl(storagePath);
   return data.publicUrl;
