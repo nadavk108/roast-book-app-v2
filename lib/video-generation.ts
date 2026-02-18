@@ -95,51 +95,54 @@ export async function generateRoastVideo(input: VideoGenerationInput): Promise<V
 
   console.log(`${ctx} ✅ Phase 3 complete: ${overlayUrls.length} text overlays uploaded`);
 
-  // ── Phase 4: Composite ALL text overlays onto video in ONE operation ──────────
+ // ── Phase 4: Composite text overlays onto video sequentially ──────────────────
 console.log(`${ctx} Phase 4: Compositing ${overlayUrls.length} text overlays onto video...`);
 
 const COVER_DURATION_MS = 3000;
 const CLIP_DURATION_MS = 6000;
 
-// Build FFmpeg compose tracks: base video + all overlay images with timestamps
-const tracks = [
-  {
-    id: 'base',
-    type: 'video' as const,
-    url: mergedVideoUrl,
-  },
-];
+let currentVideoUrl = mergedVideoUrl;
 
-// Add each text overlay as a separate image track with timing
+// We need to overlay each text one at a time because FFmpeg compose 
+// doesn't support multiple image tracks with different timestamps
 for (let i = 0; i < overlayUrls.length; i++) {
   const startTimeMs = i === 0 ? 0 : COVER_DURATION_MS + (i - 1) * CLIP_DURATION_MS;
   const durationMs = i === 0 ? COVER_DURATION_MS : CLIP_DURATION_MS;
   
-  tracks.push({
-    id: `overlay-${i}`,
-    type: 'image' as const,
-    url: overlayUrls[i],
-    keyframes: [
-      { timestamp: startTimeMs, duration: durationMs },
-    ],
+  console.log(`${ctx}[overlay-${i}] Compositing text at ${startTimeMs}ms for ${durationMs}ms`);
+  
+  const result = await fal.subscribe('fal-ai/ffmpeg-api/compose', {
+    input: {
+      tracks: [
+        {
+          id: 'base',
+          type: 'video' as const,
+          url: currentVideoUrl,
+        },
+        {
+          id: 'overlay',
+          type: 'image' as const,
+          url: overlayUrls[i],
+          keyframes: [
+            { timestamp: startTimeMs, duration: durationMs },
+          ],
+        },
+      ],
+    },
+    logs: false,
   });
-}
-
-// Single FFmpeg call to composite all overlays
-const result = await fal.subscribe('fal-ai/ffmpeg-api/compose', {
-  input: { tracks },
-  logs: false,
-});
-
-function extractUrl(fileOrUrl: unknown): string {
-  if (typeof fileOrUrl === 'string') return fileOrUrl;
-  if (fileOrUrl && typeof fileOrUrl === 'object' && 'url' in fileOrUrl) {
-    return (fileOrUrl as { url: string }).url;
+  
+  function extractUrl(fileOrUrl: unknown): string {
+    if (typeof fileOrUrl === 'string') return fileOrUrl;
+    if (fileOrUrl && typeof fileOrUrl === 'object' && 'url' in fileOrUrl) {
+      return (fileOrUrl as { url: string }).url;
+    }
+    throw new Error(`Cannot extract URL from: ${JSON.stringify(fileOrUrl)}`);
   }
-  throw new Error(`Cannot extract URL from: ${JSON.stringify(fileOrUrl)}`);
+  
+  currentVideoUrl = extractUrl(result.data.video_url ?? result.data.video);
+  console.log(`${ctx}[overlay-${i}] ✅ Text composited`);
 }
-
-const currentVideoUrl = extractUrl(result.data.video_url ?? result.data.video);
 
 console.log(`${ctx} ✅ Phase 4 complete: All text overlays composited`);
 
