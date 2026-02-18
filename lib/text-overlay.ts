@@ -131,20 +131,37 @@ export async function generateTextOverlayPng(
 }
 
 /**
- * Upload a transparent overlay PNG to Supabase Storage.
- * Returns a public URL Fal.ai can fetch.
+ * Download a source image, resize to 432×768, composite the text overlay on top,
+ * upload the result to Supabase Storage, and return a public URL for Hailuo.
+ *
+ * This burns the text directly into the image — no external video compositing needed.
+ * Hailuo then animates the text-burned image with Ken Burns effect.
  */
-export async function uploadOverlayToStorage(
-  buffer: Buffer,
+export async function burnOverlayIntoImage(
+  sourceImageUrl: string,
+  overlayBuffer: Buffer,
   slug: string,
   filename: string,
 ): Promise<string> {
+  // Download source image
+  const response = await fetch(sourceImageUrl);
+  if (!response.ok) throw new Error(`Failed to download source image: ${response.status}`);
+  const sourceBuffer = Buffer.from(await response.arrayBuffer());
+
+  // Resize source to 432×768 (9:16), composite transparent overlay on top
+  const burned = await sharp(sourceBuffer)
+    .resize(FRAME_W, FRAME_H, { fit: 'cover', position: 'centre' })
+    .composite([{ input: overlayBuffer, blend: 'over' }])
+    .jpeg({ quality: 95 })
+    .toBuffer();
+
+  // Upload to Supabase — Hailuo needs a public URL
   const storagePath = `generated/${slug}/${filename}`;
   const { error } = await supabaseAdmin.storage
     .from('roast-books')
-    .upload(storagePath, buffer, { contentType: 'image/png', upsert: true });
+    .upload(storagePath, burned, { contentType: 'image/jpeg', upsert: true });
 
-  if (error) throw new Error(`Failed to upload overlay ${filename}: ${error.message}`);
+  if (error) throw new Error(`Failed to upload burned image ${filename}: ${error.message}`);
 
   const { data } = supabaseAdmin.storage.from('roast-books').getPublicUrl(storagePath);
   return data.publicUrl;

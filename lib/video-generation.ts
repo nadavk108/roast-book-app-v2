@@ -1,6 +1,6 @@
 import { supabaseAdmin } from './supabase';
-import { generateTextOverlayPng, uploadOverlayToStorage } from './text-overlay';
-import { generateHailuoClip, overlayTextOnVideo, mergeVideoClips, addBackgroundMusic } from './fal-client';
+import { generateTextOverlayPng, burnOverlayIntoImage } from './text-overlay';
+import { generateHailuoClip, mergeVideoClips, addBackgroundMusic } from './fal-client';
 
 export type VideoGenerationInput = {
   bookId: string;
@@ -21,19 +21,21 @@ export type VideoGenerationResult = {
 /**
  * Full video pipeline. Structure:
  *
- * [Cover 6s]     — Ken Burns on cover image, Hebrew title only (no quote)
- * [Scene 1 6s]   — image[0]→image[1] transition, title + quote 1 overlaid
- * [Scene 2 6s]   — image[1]→image[2] transition, title + quote 2 overlaid
+ * [Cover 6s]    — cover image + Hebrew title burned in, Ken Burns
+ * [Scene 1 6s]  — image[0] + title + quote 1 burned in, Ken Burns
+ * [Scene 2 6s]  — image[1] + title + quote 2 burned in, Ken Burns
  * ...
- * [Scene 8 6s]   — image[7] Ken Burns, title + quote 8 overlaid
+ * [Scene 8 6s]  — image[7] + title + quote 8 burned in, Ken Burns
  *
  * Total: 9 clips × 6s = 54s
- * Text burns directly into each clip — no separate quote card clips.
  *
- * Phase 1 (parallel): Generate 9 transparent text overlay PNGs → upload to Supabase
- * Phase 2 (parallel): Generate 9 Hailuo animated clips
- * Phase 3 (parallel): Composite text overlay onto each Hailuo clip
- * Phase 4: Merge 9 composited clips in order
+ * Text is burned into each source image locally via sharp (reliable, no external API).
+ * Hailuo then animates each text-burned image with Ken Burns effect.
+ *
+ * Phase 1 (parallel): Generate 9 transparent text overlay PNGs (satori + Heebo Hebrew font)
+ * Phase 2 (parallel): Download source images, composite overlays, upload text-burned images
+ * Phase 3 (parallel): Hailuo animates each text-burned image (Ken Burns, 6s each)
+ * Phase 4: Merge 9 clips in order
  * Phase 5: Overlay background music (non-fatal)
  * Phase 6: Download from Fal CDN → upload to Supabase Storage
  */
@@ -42,63 +44,56 @@ export async function generateRoastVideo(input: VideoGenerationInput): Promise<V
   const ctx = `[${bookId}]`;
   const startMs = Date.now();
 
+  const allSourceUrls = [coverImageUrl, ...fullImageUrls]; // 9 images total
+  const allQuotes = [undefined, ...quotes] as (string | undefined)[]; // cover has no quote
+
   console.log(`${ctx} ========== VIDEO GENERATION START ==========`);
   console.log(`${ctx} Book: "${victimName}", ${quotes.length} quotes, ${fullImageUrls.length} images`);
 
-  // ── Phase 1: Generate transparent text overlay PNGs ──────────────────────────
-  console.log(`${ctx} Phase 1: Generating ${1 + fullImageUrls.length} text overlay PNGs...`);
+  // ── Phase 1: Generate text overlay PNGs (satori, Hebrew RTL) ─────────────────
+  console.log(`${ctx} Phase 1: Generating ${allSourceUrls.length} text overlay PNGs...`);
 
-  const overlayPngs = await Promise.all([
-    generateTextOverlayPng(victimName),                              // cover: title only
-    ...quotes.map(q => generateTextOverlayPng(victimName, q)),      // scenes: title + quote
-  ]);
+  const overlayBuffers = await Promise.all(
+    allQuotes.map(q => generateTextOverlayPng(victimName, q))
+  );
 
-  const overlayUrls = await Promise.all(
-    overlayPngs.map((buf, i) =>
-      uploadOverlayToStorage(
-        buf,
+  console.log(`${ctx} ✅ Phase 1 complete`);
+
+  // ── Phase 2: Burn text overlays into source images (sharp, locally) ───────────
+  // Downloads each source image, composites the overlay, uploads to Supabase.
+  // Hailuo needs a public URL — burning locally avoids any FFmpeg overlay API.
+  console.log(`${ctx} Phase 2: Burning text into ${allSourceUrls.length} source images...`);
+
+  const burnedImageUrls = await Promise.all(
+    allSourceUrls.map((sourceUrl, i) =>
+      burnOverlayIntoImage(
+        sourceUrl,
+        overlayBuffers[i],
         slug,
-        i === 0 ? 'overlay_cover.png' : `overlay_scene_${i}.png`,
+        i === 0 ? 'burned_cover.jpg' : `burned_scene_${i}.jpg`,
       )
     )
   );
 
-  console.log(`${ctx} ✅ Phase 1 complete: ${overlayUrls.length} overlays uploaded`);
+  console.log(`${ctx} ✅ Phase 2 complete: ${burnedImageUrls.length} text-burned images uploaded`);
 
-  // ── Phase 2: Hailuo animated clips (cover + 8 images, in parallel) ───────────
-  // Cover:       Ken Burns (no end frame — pure cover showcase)
-  // Image[0..6]: start→end frame transitions (image[i] morphs into image[i+1])
-  // Image[7]:    Ken Burns (last image, no next frame)
-  console.log(`${ctx} Phase 2: Generating ${1 + fullImageUrls.length} Hailuo animated clips...`);
+  // ── Phase 3: Hailuo animates each text-burned image (Ken Burns, no morphing) ──
+  // Ken Burns keeps text sharp throughout. No end_image_url — morphing between
+  // images with different text would look bad.
+  console.log(`${ctx} Phase 3: Generating ${burnedImageUrls.length} Hailuo animated clips...`);
 
-  const [coverHailuoUrl, ...imageClipUrls] = await Promise.all([
-    generateHailuoClip(coverImageUrl, `${ctx}[cover-hailuo]`),
-    ...fullImageUrls.map((url, i) =>
-      generateHailuoClip(
-        url,
-        `${ctx}[hailuo-${i + 1}]`,
-        i < fullImageUrls.length - 1 ? fullImageUrls[i + 1] : undefined,
-      )
-    ),
-  ]);
-
-  const rawClipUrls = [coverHailuoUrl, ...imageClipUrls];
-  console.log(`${ctx} ✅ Phase 2 complete: ${rawClipUrls.length} animated clips ready`);
-
-  // ── Phase 3: Composite text overlays onto each clip ──────────────────────────
-  console.log(`${ctx} Phase 3: Compositing text overlays onto ${rawClipUrls.length} clips...`);
-
-  const composited = await Promise.all(
-    rawClipUrls.map((clipUrl, i) =>
-      overlayTextOnVideo(clipUrl, overlayUrls[i], 6000, `${ctx}[overlay-${i}]`)
+  const clipUrls = await Promise.all(
+    burnedImageUrls.map((url, i) =>
+      generateHailuoClip(url, `${ctx}[hailuo-${i}]`)
+      // No end_image_url — Ken Burns keeps text legible throughout
     )
   );
 
-  console.log(`${ctx} ✅ Phase 3 complete: ${composited.length} clips with text ready`);
+  console.log(`${ctx} ✅ Phase 3 complete: ${clipUrls.length} animated clips ready`);
 
-  // ── Phase 4: Merge all composited clips ──────────────────────────────────────
-  console.log(`${ctx} Phase 4: Merging ${composited.length} clips...`);
-  let finalVideoUrl = await mergeVideoClips(composited, `${ctx}[merge]`);
+  // ── Phase 4: Merge all clips ──────────────────────────────────────────────────
+  console.log(`${ctx} Phase 4: Merging ${clipUrls.length} clips...`);
+  let finalVideoUrl = await mergeVideoClips(clipUrls, `${ctx}[merge]`);
   console.log(`${ctx} ✅ Phase 4 complete`);
 
   // ── Phase 5: Background music (non-fatal) ────────────────────────────────────
@@ -120,11 +115,11 @@ export async function generateRoastVideo(input: VideoGenerationInput): Promise<V
   const storedVideoUrl = await downloadAndUploadVideo(finalVideoUrl, slug, ctx);
 
   const generationTimeMs = Date.now() - startMs;
-  const durationSeconds = rawClipUrls.length * 6; // 9 × 6 = 54s
+  const durationSeconds = clipUrls.length * 6; // 9 × 6 = 54s
 
   console.log(`${ctx} ========== VIDEO COMPLETE in ${Math.round(generationTimeMs / 1000)}s ==========`);
 
-  return { videoUrl: storedVideoUrl, durationSeconds, generationTimeMs, clipUrls: composited };
+  return { videoUrl: storedVideoUrl, durationSeconds, generationTimeMs, clipUrls };
 }
 
 async function downloadAndUploadVideo(videoUrl: string, slug: string, ctx: string): Promise<string> {
