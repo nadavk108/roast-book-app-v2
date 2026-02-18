@@ -4,8 +4,7 @@ import { withRetryContext } from './retry';
 // @fal-ai/client reads FAL_KEY from env automatically — no fal.config() needed.
 
 const MOTION_PROMPT =
-  'Gentle cinematic Ken Burns effect: slow pan or zoom, no text distortion, subject preserved, ' +
-  'natural movement, portrait orientation maintained, photorealistic.';
+  'Cinematic motion: gentle slow Ken Burns zoom or pan. Subject preserved. Portrait orientation maintained.';
 
 /**
  * Extract a URL from a fal File output (which may be a string or { url: string }).
@@ -59,92 +58,6 @@ export async function generateHailuoClip(
       maxAttempts: 3,
       initialDelayMs: 5000,
     }
-  );
-}
-
-/**
- * Convert a static PNG image into a short video clip via Fal FFmpeg compose.
- * durationMs: clip duration in milliseconds (e.g. 3000 for 3 seconds).
- * Returns the URL of the generated video clip.
- */
-export async function createStaticClip(
-  imageUrl: string,
-  durationMs: number,
-  context: string
-): Promise<string> {
-  return withRetryContext(
-    async () => {
-      console.log(`${context} Creating static clip from: ...${imageUrl.slice(-40)}`);
-
-      const result = await fal.subscribe('fal-ai/ffmpeg-api/compose', {
-        input: {
-          tracks: [
-            {
-              id: 'video',
-              type: 'video',
-              keyframes: [
-                { timestamp: 0, duration: durationMs, url: imageUrl },
-              ],
-            },
-          ],
-        },
-        logs: false,
-      });
-
-      const videoUrl = extractUrl(result.data.video_url);
-      console.log(`${context} ✅ Static clip ready`);
-      return videoUrl;
-    },
-    {
-      context,
-      maxAttempts: 3,
-      initialDelayMs: 3000,
-    }
-  );
-}
-
-/**
- * Overlay a transparent PNG image on top of a video clip for its full duration.
- * Uses FFmpeg compose with two tracks: base video + image overlay (alpha-composited on top).
- * Returns the URL of the composited video.
- */
-export async function overlayTextOnVideo(
-  videoUrl: string,
-  overlayUrl: string,
-  durationMs: number,
-  context: string,
-): Promise<string> {
-  return withRetryContext(
-    async () => {
-      console.log(`${context} Overlaying text on clip`);
-
-      const result = await fal.subscribe('fal-ai/ffmpeg-api/compose', {
-        input: {
-          tracks: [
-            {
-              id: 'base',
-              type: 'video',
-              keyframes: [{ timestamp: 0, duration: durationMs, url: videoUrl }],
-            },
-            {
-              id: 'overlay',
-              type: 'image',
-              keyframes: [{ timestamp: 0, duration: durationMs, url: overlayUrl }],
-            },
-          ],
-        },
-        logs: false,
-      });
-
-      const videoOut = extractUrl(result.data.video_url ?? result.data.video);
-      console.log(`${context} ✅ Text overlay complete`);
-      return videoOut;
-    },
-    {
-      context,
-      maxAttempts: 3,
-      initialDelayMs: 3000,
-    },
   );
 }
 
@@ -211,5 +124,79 @@ export async function addBackgroundMusic(
       maxAttempts: 2,
       initialDelayMs: 3000,
     }
+  );
+}
+
+/**
+ * Upload a PNG buffer to Supabase and return public URL.
+ * Used for text overlay PNGs that will be composited on video.
+ */
+export async function uploadPngToSupabase(
+  buffer: Buffer,
+  slug: string,
+  filename: string,
+  context: string,
+): Promise<string> {
+  const { supabaseAdmin } = await import('./supabase');
+  
+  const storagePath = `generated/${slug}/${filename}`;
+  const { error } = await supabaseAdmin.storage
+    .from('roast-books')
+    .upload(storagePath, buffer, { contentType: 'image/png', upsert: true });
+
+  if (error) throw new Error(`${context} Failed to upload PNG: ${error.message}`);
+
+  const { data } = supabaseAdmin.storage.from('roast-books').getPublicUrl(storagePath);
+  console.log(`${context} ✅ PNG uploaded`);
+  return data.publicUrl;
+}
+
+/**
+ * Overlay a transparent PNG on top of a video at a specific timestamp.
+ * Uses FFmpeg compose to layer the overlay image on top of base video.
+ * startTimeMs: when the overlay should appear (milliseconds from video start)
+ * durationMs: how long the overlay should stay visible
+ */
+export async function overlayTextOnVideo(
+  videoUrl: string,
+  overlayPngUrl: string,
+  startTimeMs: number,
+  durationMs: number,
+  context: string,
+): Promise<string> {
+  return withRetryContext(
+    async () => {
+      console.log(`${context} Overlaying text at ${startTimeMs}ms for ${durationMs}ms`);
+      
+      const result = await fal.subscribe('fal-ai/ffmpeg-api/compose', {
+        input: {
+          tracks: [
+            {
+              id: 'base',
+              type: 'video',
+              url: videoUrl,
+            },
+            {
+              id: 'overlay',
+              type: 'image',
+              url: overlayPngUrl,
+              keyframes: [
+                { timestamp: startTimeMs, duration: durationMs },
+              ],
+            },
+          ],
+        },
+        logs: false,
+      });
+
+      const videoOut = extractUrl(result.data.video_url ?? result.data.video);
+      console.log(`${context} ✅ Text overlay complete`);
+      return videoOut;
+    },
+    {
+      context,
+      maxAttempts: 3,
+      initialDelayMs: 3000,
+    },
   );
 }

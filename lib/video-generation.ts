@@ -1,6 +1,13 @@
 import { supabaseAdmin } from './supabase';
-import { generateTextOverlayPng, burnOverlayIntoImage } from './text-overlay';
-import { generateHailuoClip, mergeVideoClips, addBackgroundMusic } from './fal-client';
+import { generateTextOverlayPng } from './text-overlay';
+import { 
+  generateHailuoClip, 
+  mergeVideoClips, 
+  addBackgroundMusic,
+  createStaticClip,
+  overlayTextOnVideo,
+  uploadPngToSupabase
+} from './fal-client';
 
 export type VideoGenerationInput = {
   bookId: string;
@@ -19,89 +26,106 @@ export type VideoGenerationResult = {
 };
 
 /**
- * Full video pipeline. Structure:
- *
- * [Cover 6s]    — cover image + Hebrew title burned in, Ken Burns
- * [Scene 1 6s]  — image[0] + title + quote 1 burned in, Ken Burns
- * [Scene 2 6s]  — image[1] + title + quote 2 burned in, Ken Burns
+ * NEW PIPELINE (text overlays AFTER video generation):
+ * 
+ * Shot 0: Cover image (static 3s) → animate to fullImages[0]
+ * Shot 1: fullImages[0] → fullImages[1] (6s each)
+ * Shot 2: fullImages[1] → fullImages[2]
  * ...
- * [Scene 8 6s]  — image[7] + title + quote 8 burned in, Ken Burns
- *
- * Total: 9 clips × 6s = 54s
- *
- * Text is burned into each source image locally via sharp (reliable, no external API).
- * Hailuo then animates each text-burned image with Ken Burns effect.
- *
- * Phase 1 (parallel): Generate 9 transparent text overlay PNGs (satori + Heebo Hebrew font)
- * Phase 2 (parallel): Download source images, composite overlays, upload text-burned images
- * Phase 3 (parallel): Hailuo animates each text-burned image (Ken Burns, 6s each)
- * Phase 4: Merge 9 clips in order
- * Phase 5: Overlay background music (non-fatal)
- * Phase 6: Download from Fal CDN → upload to Supabase Storage
+ * Shot 8: fullImages[7] → Ken Burns
+ * 
+ * Then overlay Hebrew text on top of merged video using transparent PNGs.
  */
 export async function generateRoastVideo(input: VideoGenerationInput): Promise<VideoGenerationResult> {
   const { bookId, slug, victimName, quotes, coverImageUrl, fullImageUrls } = input;
   const ctx = `[${bookId}]`;
   const startMs = Date.now();
 
-  const allSourceUrls = [coverImageUrl, ...fullImageUrls]; // 9 images total
-  const allQuotes = [undefined, ...quotes] as (string | undefined)[]; // cover has no quote
-
   console.log(`${ctx} ========== VIDEO GENERATION START ==========`);
   console.log(`${ctx} Book: "${victimName}", ${quotes.length} quotes, ${fullImageUrls.length} images`);
 
-  // ── Phase 1: Generate text overlay PNGs (satori, Hebrew RTL) ─────────────────
-  console.log(`${ctx} Phase 1: Generating ${allSourceUrls.length} text overlay PNGs...`);
+  // ── Phase 1: Generate clean Hailuo clips (NO text burned in) ─────────────────
+  console.log(`${ctx} Phase 1: Generating Hailuo clips from clean images...`);
+  
+  const clipPromises: Promise<string>[] = [];
 
+  // Clip 0: Cover (static 3s) → fullImages[0]
+  clipPromises.push(
+    generateHailuoClip(coverImageUrl, `${ctx}[clip-0-cover]`, fullImageUrls[0])
+  );
+
+  // Clips 1-7: fullImages[i] → fullImages[i+1]
+  for (let i = 0; i < fullImageUrls.length - 1; i++) {
+    clipPromises.push(
+      generateHailuoClip(fullImageUrls[i], `${ctx}[clip-${i + 1}]`, fullImageUrls[i + 1])
+    );
+  }
+
+  // Clip 8: fullImages[7] → Ken Burns (no end frame)
+  clipPromises.push(
+    generateHailuoClip(
+      fullImageUrls[fullImageUrls.length - 1], 
+      `${ctx}[clip-${fullImageUrls.length}]`,
+      undefined
+    )
+  );
+
+  const clipUrls = await Promise.all(clipPromises);
+  console.log(`${ctx} ✅ Phase 1 complete: ${clipUrls.length} clean clips ready`);
+
+  // ── Phase 2: Merge all clips ──────────────────────────────────────────────────
+  console.log(`${ctx} Phase 2: Merging ${clipUrls.length} clips...`);
+  let mergedVideoUrl = await mergeVideoClips(clipUrls, `${ctx}[merge]`);
+  console.log(`${ctx} ✅ Phase 2 complete`);
+
+  // ── Phase 3: Generate text overlays and composite on top ─────────────────────
+  console.log(`${ctx} Phase 3: Generating Hebrew text overlays...`);
+
+  // Generate all overlay PNGs (cover has title only, scenes have title + quote)
+  const allQuotes: (string | undefined)[] = [undefined, ...quotes];
   const overlayBuffers = await Promise.all(
     allQuotes.map(q => generateTextOverlayPng(victimName, q))
   );
 
-  console.log(`${ctx} ✅ Phase 1 complete`);
-
-  // ── Phase 2: Burn text overlays into source images (sharp, locally) ───────────
-  // Downloads each source image, composites the overlay, uploads to Supabase.
-  // Hailuo needs a public URL — burning locally avoids any FFmpeg overlay API.
-  console.log(`${ctx} Phase 2: Burning text into ${allSourceUrls.length} source images...`);
-
-  const burnedImageUrls = await Promise.all(
-    allSourceUrls.map((sourceUrl, i) =>
-      burnOverlayIntoImage(
-        sourceUrl,
-        overlayBuffers[i],
-        slug,
-        i === 0 ? 'burned_cover.jpg' : `burned_scene_${i}.jpg`,
-      )
+  // Upload overlay PNGs to Supabase to get public URLs
+  const overlayUrls = await Promise.all(
+    overlayBuffers.map((buffer, i) =>
+      uploadPngToSupabase(buffer, slug, `overlay_${i}.png`, `${ctx}[overlay-${i}]`)
     )
   );
 
-  console.log(`${ctx} ✅ Phase 2 complete: ${burnedImageUrls.length} text-burned images uploaded`);
+  console.log(`${ctx} ✅ Phase 3 complete: ${overlayUrls.length} text overlays uploaded`);
 
-  // ── Phase 3: Hailuo animates each text-burned image (Ken Burns, no morphing) ──
-  // Ken Burns keeps text sharp throughout. No end_image_url — morphing between
-  // images with different text would look bad.
-  console.log(`${ctx} Phase 3: Generating ${burnedImageUrls.length} Hailuo animated clips...`);
-
-  const clipUrls = await Promise.all(
-    burnedImageUrls.map((url, i) =>
-      generateHailuoClip(url, `${ctx}[hailuo-${i}]`)
-      // No end_image_url — Ken Burns keeps text legible throughout
-    )
-  );
-
-  console.log(`${ctx} ✅ Phase 3 complete: ${clipUrls.length} animated clips ready`);
-
-  // ── Phase 4: Merge all clips ──────────────────────────────────────────────────
-  console.log(`${ctx} Phase 4: Merging ${clipUrls.length} clips...`);
-  let finalVideoUrl = await mergeVideoClips(clipUrls, `${ctx}[merge]`);
-  console.log(`${ctx} ✅ Phase 4 complete`);
+  // ── Phase 4: Composite text overlays on merged video ──────────────────────────
+  console.log(`${ctx} Phase 4: Compositing text overlays onto video...`);
+  
+  // Calculate timing for each overlay (cover = 3s, rest = 6s each)
+  const COVER_DURATION_MS = 3000;
+  const CLIP_DURATION_MS = 6000;
+  
+  let currentVideoUrl = mergedVideoUrl;
+  
+  for (let i = 0; i < overlayUrls.length; i++) {
+    const startTimeMs = i === 0 ? 0 : COVER_DURATION_MS + (i - 1) * CLIP_DURATION_MS;
+    const durationMs = i === 0 ? COVER_DURATION_MS : CLIP_DURATION_MS;
+    
+    currentVideoUrl = await overlayTextOnVideo(
+      currentVideoUrl,
+      overlayUrls[i],
+      startTimeMs,
+      durationMs,
+      `${ctx}[text-${i}]`
+    );
+  }
+  
+  console.log(`${ctx} ✅ Phase 4 complete: Text overlays composited`);
 
   // ── Phase 5: Background music (non-fatal) ────────────────────────────────────
   const musicUrl = (process.env.VIDEO_BACKGROUND_MUSIC_URL || '').trim();
   if (musicUrl) {
     console.log(`${ctx} Phase 5: Overlaying background music...`);
     try {
-      finalVideoUrl = await addBackgroundMusic(finalVideoUrl, musicUrl, `${ctx}[music]`);
+      currentVideoUrl = await addBackgroundMusic(currentVideoUrl, musicUrl, `${ctx}[music]`);
       console.log(`${ctx} ✅ Phase 5 complete`);
     } catch (err: any) {
       console.warn(`${ctx} ⚠️ Phase 5 SKIPPED (non-fatal): ${err.message}`);
@@ -110,12 +134,12 @@ export async function generateRoastVideo(input: VideoGenerationInput): Promise<V
     console.log(`${ctx} Phase 5: Skipped (VIDEO_BACKGROUND_MUSIC_URL not set)`);
   }
 
-  // ── Phase 6: Download from Fal CDN → upload to Supabase Storage ──────────────
+  // ── Phase 6: Upload to Supabase Storage ──────────────────────────────────────
   console.log(`${ctx} Phase 6: Uploading final video to Supabase...`);
-  const storedVideoUrl = await downloadAndUploadVideo(finalVideoUrl, slug, ctx);
+  const storedVideoUrl = await downloadAndUploadVideo(currentVideoUrl, slug, ctx);
 
   const generationTimeMs = Date.now() - startMs;
-  const durationSeconds = clipUrls.length * 6; // 9 × 6 = 54s
+  const durationSeconds = COVER_DURATION_MS / 1000 + (clipUrls.length - 1) * (CLIP_DURATION_MS / 1000);
 
   console.log(`${ctx} ========== VIDEO COMPLETE in ${Math.round(generationTimeMs / 1000)}s ==========`);
 
@@ -137,10 +161,8 @@ async function downloadAndUploadVideo(videoUrl: string, slug: string, ctx: strin
     .upload(storagePath, buffer, { contentType: 'video/mp4', upsert: true });
 
   if (error) {
-    // If Supabase rejects due to file size limit, fall back to Fal CDN URL.
-    // Fix: raise the bucket file size limit in Supabase Dashboard → Storage → roast-books → Edit.
     if (error.message?.toLowerCase().includes('exceeded') || error.message?.toLowerCase().includes('size')) {
-      console.warn(`${ctx} ⚠️ Supabase upload rejected (${sizeMb.toFixed(1)}MB exceeds limit). Storing Fal CDN URL directly. Raise the bucket file size limit in Supabase to fix permanently.`);
+      console.warn(`${ctx} ⚠️ ${sizeMb.toFixed(1)}MB exceeds Supabase limit — storing Fal CDN URL directly`);
       return videoUrl;
     }
     throw new Error(`Failed to upload video to Supabase: ${error.message}`);
