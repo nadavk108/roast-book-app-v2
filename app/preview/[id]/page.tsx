@@ -46,10 +46,7 @@ export default function PreviewPage() {
   const [greetingText, setGreetingText] = useState('');
   const [greetingSaved, setGreetingSaved] = useState(false);
   const [savingGreeting, setSavingGreeting] = useState(false);
-
-  // Backup trigger: if webhook's fire-and-forget was killed by Vercel, the client
-  // recovers by calling generate-remaining directly. Atomic lock prevents double-processing.
-  const generateTriggeredRef = useRef(false);
+  const [generationTimedOut, setGenerationTimedOut] = useState(false);
 
   // Swipe tracking
   const touchStartX = useRef(0);
@@ -103,38 +100,78 @@ export default function PreviewPage() {
     }
   }, [book, searchParams, paymentTracked, adminMode]);
 
-  // Client-side backup trigger for generate-remaining.
-  // Fires once when book.status === 'paid' — covers the case where the webhook's
-  // fire-and-forget was killed by Vercel before generate-remaining could start.
-  // The atomic lock in generate-remaining guarantees whichever fires first wins.
+  // Payment flow: trigger generation on mount, poll every 5s, timeout after 4 minutes.
+  // Runs once when book first loads (book?.id dep). The atomic lock in generate-remaining
+  // ensures only one invocation wins even if Stripe retries or the user refreshes.
   useEffect(() => {
-    if (book?.status === 'paid' && !generateTriggeredRef.current) {
-      generateTriggeredRef.current = true;
-      console.log('[Preview] Firing generate-remaining backup trigger for book', book.id);
-      fetch('/api/generate-remaining', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookId: book.id }),
-      }).catch(err => {
-        console.warn('[Preview] Backup generate-remaining trigger failed:', err);
-      });
-    }
-  }, [book?.status, book?.id]);
+    if (!book?.id || !isPaymentReturn) return;
+    if (book.status !== 'paid' && book.status !== 'generating_remaining') return;
 
-  // Polling
-  useEffect(() => {
-    let pollInterval: NodeJS.Timeout | null = null;
+    const bookId = book.id;
+    const controller = new AbortController();
+    const TIMEOUT_MS = 4 * 60 * 1000; // 4 minutes
+    const startTime = Date.now();
 
-    if (book && (book.status === 'paid' || book.status === 'generating_images' || book.status === 'generating_remaining')) {
-      pollInterval = setInterval(() => {
-        fetchBook();
-      }, 3000);
-    }
+    // Trigger generation — properly handled, not fire-and-forget
+    (async () => {
+      try {
+        const res = await fetch('/api/generate-remaining', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bookId }),
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          console.error('[Preview] generate-remaining error:', res.status, await res.text());
+        } else {
+          console.log('[Preview] generate-remaining completed:', await res.json());
+        }
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error('[Preview] generate-remaining request failed:', err.message);
+        }
+      }
+    })();
+
+    // Poll every 5 seconds until complete or timed out
+    const pollInterval = setInterval(async () => {
+      if (Date.now() - startTime > TIMEOUT_MS) {
+        clearInterval(pollInterval);
+        setGenerationTimedOut(true);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/book/${bookId}`);
+        if (!res.ok) return;
+        const data: Book = await res.json();
+        setBook(data);
+
+        if (data.status === 'complete' && (data.full_image_urls?.length ?? 0) >= 8) {
+          clearInterval(pollInterval);
+          window.location.href = `/book/${data.slug}?start=3`;
+        }
+      } catch (err) {
+        console.error('[Preview] Poll error:', err);
+      }
+    }, 5000);
 
     return () => {
-      if (pollInterval) clearInterval(pollInterval);
+      controller.abort();
+      clearInterval(pollInterval);
     };
-  }, [book?.status]);
+  }, [book?.id, isPaymentReturn]);
+
+  // Non-payment polling: admin or users viewing a book mid-generation
+  useEffect(() => {
+    if (isPaymentReturn) return;
+    if (!book) return;
+    const isGenerating = book.status === 'paid' || book.status === 'generating_images' || book.status === 'generating_remaining';
+    if (!isGenerating) return;
+
+    const pollInterval = setInterval(() => fetchBook(), 3000);
+    return () => clearInterval(pollInterval);
+  }, [book?.status, isPaymentReturn]);
 
   const loadUser = async () => {
     try {
@@ -413,6 +450,28 @@ export default function PreviewPage() {
 
   // Generating state (after greeting saved/skipped, or if no greeting prompt)
   if (isPaymentReturn && isGenerating) {
+    if (generationTimedOut) {
+      return (
+        <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8">
+          <div className="text-5xl mb-6">⏱️</div>
+          <h2 className="text-2xl font-heading font-black mb-2 text-center text-white">
+            {isHebrewBook ? 'זה לוקח יותר מהרגיל...' : 'This is taking longer than expected'}
+          </h2>
+          <p className="text-gray-400 text-center mb-8 max-w-sm">
+            {isHebrewBook
+              ? 'הרוסטים שלך עוד מייצרים. נשלח לך מייל כשזה מוכן.'
+              : 'Your roasts are still generating. We\'ll email you when they\'re ready.'}
+          </p>
+          <a
+            href="mailto:support@theroastbook.com"
+            className="bg-yellow-400 text-black font-heading font-black px-6 py-4 rounded-xl text-sm hover:bg-yellow-300 transition-colors"
+          >
+            {isHebrewBook ? 'צור קשר' : 'Contact us'}
+          </a>
+        </div>
+      );
+    }
+
     return (
       <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8">
         <div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-400 border-t-transparent mb-6" />

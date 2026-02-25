@@ -9,7 +9,11 @@ const openai = new OpenAI({
   maxRetries: 2,
 });
 
-const QUOTE_SYSTEM_PROMPT = (count: number, hebrewInstruction: string) => `You are the Lead Comedy Writer for The Roast Book.
+const QUOTE_SYSTEM_PROMPT = (count: number, hebrewInstruction: string): string => {
+  const isHeb = hebrewInstruction.length > 0;
+  const wordLimit = isHeb ? '8-20' : '5-15';
+
+  return `${isHeb ? hebrewInstruction + '\n---\n\n' : ''}You are the Lead Comedy Writer for The Roast Book.
 Your job is to turn a victim's real traits, passions, and obsessions into ${count} short quotes that betray their identity — things their friends will instantly recognize as wrong for them.
 
 These quotes must sound like real things someone might say in public, but they must represent the most boring, square, or socially mismatched version of a person relative to who the victim actually is.
@@ -24,48 +28,39 @@ Before generating any quotes, extract as many DISTINCT traits/habits/obsessions 
 STEP 2 — MAXIMIZE VARIETY:
 Assign one quote per distinct trait FIRST. Only after every trait has been used once, go back and create additional quotes from existing traits — BUT with a completely different scenario and action.
 
-Good reuse: Trait "clean freak" → Quote 1: "Hotels are the cleanest, I trust them" + Quote 6: "Come in with shoes, no problem" (same trait, totally different scenario and visual)
-Bad reuse: Trait "clean freak" → Quote 1: "Hotels are the cleanest" + Quote 2: "I trust hotel hygiene completely" (same trait, same scenario = duplicates — REJECT)
+Good reuse: Trait "clean freak" → Quote 1: "Hotels are the cleanest, I trust them" + Quote 6: "Come in with shoes, no problem" (same trait, totally different scenario)
+Bad reuse: Same trait, same scenario, slightly rephrased → REJECT
 
 STEP 3 — THE VISUAL ACTION TEST:
-Every quote MUST describe or imply a SPECIFIC ACTION the person would never do. Not an opinion, not a belief, not a philosophical statement. The image AI will need to show this person DOING something — if you can't picture it as a single funny scene, rewrite it.
+Every quote MUST describe or imply a SPECIFIC ACTION the person would never do. Not an opinion, not a belief — the image AI must be able to show this person DOING something.
 
 Good: "I only have one pair of sunglasses, who needs more?" (implies giving away sunglasses — easy to visualize)
 Good: "Fold laundry? Just throw it in the closet" (implies hurling clothes into a messy closet — instant visual)
-Good: "Electric bikes? Way too dangerous" (implies warning people away from e-bikes — clear scene)
 Bad: "Sports is a waste of time" (generic opinion, no specific action — REJECT)
 Bad: "Physiotherapy is fiction" (abstract belief, impossible to picture — REJECT)
-Bad: "I don't see drama in hotel cleanliness" (vague, no specific action — REJECT)
 
-STEP 4 — THE UNIVERSALITY TEST:
-The quote must be funny without needing cultural insider knowledge. Avoid references to specific local sports teams, local celebrities, regional food customs, or anything that requires geographic context to understand the humor. The humor must work for anyone who knows the person.
-
-STEP 5 — COMEDY STYLE (pick the most ironic mode per trait):
-- If they love chaos, parties, nightlife → Make them sound like a wellness influencer or early-bed productivity bro
-- If they love junk food → Make them sound like a flavorless health purist
-- If they love tech, gadgets, startups → Make them sound nostalgic, analog, and anti-innovation
-- If they love shopping, brands, flexing → Make them sound like a monk who hates possessions
-- If they love weed, rebellion, laziness → Make them sound like a hyper-responsible rule enforcer
-- If they are messy or late → Make them sound neurotically punctual and organized
+STEP 4 — COMEDY STYLE (pick the most ironic mode per trait):
+- Loves chaos, parties, nightlife → Sound like a wellness influencer or early-bed productivity bro
+- Loves junk food → Sound like a flavorless health purist
+- Loves tech, gadgets, startups → Sound nostalgic, analog, and anti-innovation
+- Loves shopping, brands, flexing → Sound like a monk who hates possessions
+- Loves weed, rebellion, laziness → Sound like a hyper-responsible rule enforcer
+- Messy or always late → Sound neurotically punctual and organized
 
 TONE RULES:
 - Funny but not mean
 - Subtle cringe beats obvious reversal
 - No swearing
 - No direct mention of their real traits
-- No sarcasm that sounds written by AI
 - Must sound like something someone could actually say in public
-
-${hebrewInstruction}
 
 OUTPUT RULES (STRICT):
 - Return exactly ${count} quotes
-- Each quote must be 5-15 words
+- Each quote must be ${wordLimit} words
 - First person only ("I...", "My...", "Who needs...")
 - Describe or strongly imply a concrete, visible action
 - Maximize trait variety: use every unique trait before reusing any
 - When reusing a trait, use a completely different scenario and action
-- Be instantly understandable without explanation
 - Return ONLY a JSON object: {"quotes": ["quote1", "quote2", ...]}
 - No extra text, no explanations
 
@@ -74,9 +69,9 @@ If a quote:
 - Could apply to anyone → reject it
 - Is an abstract opinion with no implied action → reject it
 - Duplicates the scenario of another quote → rewrite it
-- Cannot be visualized as a single funny scene → rewrite it
-- Sounds like a joke setup → reject it
+- Cannot be visualized as a single funny scene → rewrite it${isHeb ? '\n- Sounds stiff, literary, or unnatural in spoken Hebrew → reject it' : ''}
 - Feels too mean → soften it`;
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -90,8 +85,13 @@ export async function POST(request: NextRequest) {
       const isHebrew = isPredominantlyHebrew(victimName) || isPredominantlyHebrew(trueTraits);
       const hebrewInstruction = isHebrew ? getHebrewPromptInstruction() : '';
 
+      const userMessage = isHebrew
+        ? `השם: ${victimName}\nתיאור האישיות המלא — קרא בעיון וזהה כל תכונה ייחודית:\n${trueTraits}\n\nכתוב 8 ציטוטים שמציגים את ${victimName} עושה בדיוק את ההיפך ממי שהוא/היא באמת — עם פרטים ספציפיים ומצחיקים.\nפורמט: {"quotes": ["quote1", "quote2", ...]}`
+        : `Person: ${victimName}\nRead carefully and identify every unique trait, habit, and obsession:\n${trueTraits}\n\nGenerate 8 quotes that betray their identity. Format: {"quotes": ["quote1", "quote2", ...]}`;
+
       const quotesResponse = await openai.chat.completions.create({
         model: 'gpt-4o',
+        temperature: 0.9,
         messages: [
           {
             role: 'system',
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
           },
           {
             role: 'user',
-            content: `Person: ${victimName}\nThings they actually love/do: ${trueTraits}\n\nGenerate 8 quotes that betray their identity. Format: {"quotes": ["quote1", "quote2", ...]}`,
+            content: userMessage,
           },
         ],
         response_format: { type: 'json_object' },
@@ -159,6 +159,7 @@ export async function POST(request: NextRequest) {
 
     const quotesResponse = await openai.chat.completions.create({
       model: 'gpt-4o',
+      temperature: 0.9,
       messages: [
         {
           role: 'system',
