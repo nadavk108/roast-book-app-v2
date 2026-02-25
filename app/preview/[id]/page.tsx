@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
-import { Lock, Shield, Home, Share2, Send, X } from 'lucide-react';
+import { Shield, Home, Share2, Send } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
 import { isAdminUser } from '@/lib/admin';
 import { captureEvent, Events } from '@/lib/posthog';
@@ -53,6 +53,8 @@ export default function PreviewPage() {
   const touchStartY = useRef(0);
   const touchEndX = useRef(0);
   const isSwiping = useRef(false);
+  const isTransitioningRef = useRef(false);
+  const [imagesPreloaded, setImagesPreloaded] = useState(false);
 
   const adminMode = isAdminUser(user);
   const isPaymentReturn = searchParams.get('payment') === 'success';
@@ -100,42 +102,22 @@ export default function PreviewPage() {
     }
   }, [book, searchParams, paymentTracked, adminMode]);
 
-  // Payment flow: trigger generation on mount, poll every 5s, timeout after 4 minutes.
-  // Runs once when book first loads (book?.id dep). The atomic lock in generate-remaining
-  // ensures only one invocation wins even if Stripe retries or the user refreshes.
+  // Payment flow: poll for paid status, then trigger generation, then poll for completion.
+  // Waits for Stripe webhook to set status='paid' before calling generate-remaining,
+  // avoiding the race condition where the API rejects with "Book not paid".
   useEffect(() => {
     if (!book?.id || !isPaymentReturn) return;
-    if (book.status !== 'paid' && book.status !== 'generating_remaining') return;
 
     const bookId = book.id;
-    const controller = new AbortController();
-    const TIMEOUT_MS = 4 * 60 * 1000; // 4 minutes
+    const TIMEOUT_MS = 4 * 60 * 1000;
     const startTime = Date.now();
+    let generationTriggered = false;
 
-    // Trigger generation — properly handled, not fire-and-forget
-    (async () => {
-      try {
-        const res = await fetch('/api/generate-remaining', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ bookId }),
-          signal: controller.signal,
-        });
-        if (!res.ok) {
-          console.error('[Preview] generate-remaining error:', res.status, await res.text());
-        } else {
-          console.log('[Preview] generate-remaining completed:', await res.json());
-        }
-      } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          console.error('[Preview] generate-remaining request failed:', err.message);
-        }
-      }
-    })();
+    console.log('[Preview] Payment return detected, starting poll for book:', bookId);
 
-    // Poll every 5 seconds until complete or timed out
     const pollInterval = setInterval(async () => {
       if (Date.now() - startTime > TIMEOUT_MS) {
+        console.log('[Preview] Timed out waiting for generation');
         clearInterval(pollInterval);
         setGenerationTimedOut(true);
         return;
@@ -147,19 +129,42 @@ export default function PreviewPage() {
         const data: Book = await res.json();
         setBook(data);
 
-        if (data.status === 'complete' && (data.full_image_urls?.length ?? 0) >= 8) {
+        console.log('[Preview] Poll status:', data.status, 'generationTriggered:', generationTriggered);
+
+        if (data.status === 'generating_remaining' || data.status === 'generating_images') {
+          generationTriggered = true;
+        }
+
+        if (data.status === 'complete' && (data.full_image_urls?.length ?? 0) > 0) {
           clearInterval(pollInterval);
           window.location.href = `/book/${data.slug}?start=3`;
+          return;
+        }
+
+        if (data.status === 'paid' && !generationTriggered) {
+          generationTriggered = true;
+          console.log('[Preview] Status is paid, calling /api/generate-remaining');
+
+          try {
+            const genRes = await fetch('/api/generate-remaining', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ bookId }),
+            });
+            console.log('[Preview] generate-remaining response:', genRes.status);
+            if (!genRes.ok) {
+              console.error('[Preview] generate-remaining error:', await genRes.text());
+            }
+          } catch (err: any) {
+            console.error('[Preview] generate-remaining request failed:', err.message);
+          }
         }
       } catch (err) {
         console.error('[Preview] Poll error:', err);
       }
-    }, 5000);
+    }, 3000);
 
-    return () => {
-      controller.abort();
-      clearInterval(pollInterval);
-    };
+    return () => clearInterval(pollInterval);
   }, [book?.id, isPaymentReturn]);
 
   // Non-payment polling: admin or users viewing a book mid-generation
@@ -302,16 +307,37 @@ export default function PreviewPage() {
   };
 
   // Navigation
+  const pages = useMemo(() => book ? buildPages(book, adminMode) : [], [book, adminMode]);
+
   const goToNext = useCallback(() => {
-    if (book) {
-      const pages = buildPages(book, isAdminUser(user));
-      setActiveIndex((prev) => Math.min(prev + 1, pages.length - 1));
-    }
-  }, [book, user]);
+    if (isTransitioningRef.current) return;
+    isTransitioningRef.current = true;
+    setActiveIndex((prev) => Math.min(prev + 1, pages.length - 1));
+    setTimeout(() => { isTransitioningRef.current = false; }, 300);
+  }, [pages.length]);
 
   const goToPrev = useCallback(() => {
+    if (isTransitioningRef.current) return;
+    isTransitioningRef.current = true;
     setActiveIndex((prev) => Math.max(prev - 1, 0));
+    setTimeout(() => { isTransitioningRef.current = false; }, 300);
   }, []);
+
+  // Preload all images so navigation is instant
+  useEffect(() => {
+    if (!book) return;
+    const urls = pages.map(p => p.imageUrl).filter(Boolean) as string[];
+    if (urls.length === 0) { setImagesPreloaded(true); return; }
+    let loaded = 0;
+    urls.forEach(url => {
+      const img = new window.Image();
+      img.onload = img.onerror = () => {
+        loaded++;
+        if (loaded === urls.length) setImagesPreloaded(true);
+      };
+      img.src = url;
+    });
+  }, [book?.id]);
 
   const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isSwiping.current) return;
@@ -354,16 +380,6 @@ export default function PreviewPage() {
       </div>
     );
   }
-
-  const isPaid = book.status === 'paid' || book.status === 'complete' || book.status === 'generating_remaining';
-  const isAdminBook = book.user_email === 'nadavkarlinski@gmail.com';
-  const showAllImages = isPaid || adminMode || isAdminBook;
-
-  const imageUrls = (showAllImages && book.full_image_urls?.length > 0)
-    ? book.full_image_urls
-    : book.preview_image_urls;
-
-  const pages = buildPages(book, adminMode);
 
   const isHebrewBook = isPredominantlyHebrew(book.victim_name) ||
     (book.quotes && book.quotes.some(q => isPredominantlyHebrew(q)));
@@ -506,6 +522,14 @@ export default function PreviewPage() {
     );
   }
 
+  if (!imagesPreloaded) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-400 border-t-transparent" />
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-black overflow-hidden">
       {/* Progress Bars */}
@@ -561,28 +585,41 @@ export default function PreviewPage() {
         </div>
       )}
 
-      {/* Main Content Area */}
+      {/* All image layers pre-rendered for instant switching */}
+      {pages.map((page, i) => (
+        <div
+          key={i}
+          className="absolute inset-0"
+          style={{
+            visibility: i === activeIndex ? 'visible' : 'hidden',
+            zIndex: i === activeIndex ? 1 : 0,
+            willChange: 'transform',
+          }}
+        >
+          {page.type === 'locked' ? (
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900" />
+          ) : page.imageUrl ? (
+            <img
+              src={page.imageUrl}
+              alt="Roast slide"
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{ willChange: 'transform' }}
+              loading="eager"
+            />
+          ) : null}
+        </div>
+      ))}
+
+      {/* Interactive layer — tap, swipe, content overlays */}
       <div
-        className="absolute inset-0 cursor-pointer"
+        className="absolute inset-0 z-10 cursor-pointer"
         onClick={handleTap}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Background Image */}
-        {currentPage.imageUrl && currentPage.type !== 'locked' && (
-          <img
-            src={currentPage.imageUrl}
-            alt="Roast slide"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-        )}
-
-        {/* Slide Content */}
         {currentPage.type === 'locked' ? (
           <>
-            <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900" />
-
             {currentPage.quote && (
               <div className="absolute bottom-0 left-0 right-0 pb-safe pb-12">
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
@@ -600,31 +637,31 @@ export default function PreviewPage() {
             )}
 
             <div className="absolute inset-0 flex items-center justify-center p-8 pointer-events-none">
-                <div className="text-center pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-                  <div className="text-6xl mb-6">🔒</div>
-                  <h2 className="text-2xl font-heading font-black text-white mb-2">
-                    {isHebrewBook ? 'פתחו את הספר המלא' : 'Unlock Full Book'}
-                  </h2>
-                  <p className="text-gray-400 mb-8 max-w-sm" dir={isHebrewBook ? 'rtl' : 'ltr'}>
-                    {isHebrewBook
-                      ? `קבלו את כל ${book.quotes.length} הרוסטים ושתפו את הספר המלא`
-                      : `Get all ${book.quotes.length} hilarious roasts and share the complete book`}
-                  </p>
-                  <Button
-                    onClick={handleCheckout}
-                    disabled={checkingOut}
-                    size="lg"
-                    className="bg-yellow-400 hover:bg-yellow-500 text-black font-heading font-black text-lg px-8 py-6 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
-                  >
-                    {checkingOut
-                      ? (isHebrewBook ? 'מעבד...' : 'Processing...')
-                      : (isHebrewBook ? 'פתחו את הספר - $9.99' : 'Unlock Book - $9.99')}
-                  </Button>
-                  <p className="text-white/50 text-xs mt-4">
-                    {isHebrewBook ? '← הקישו בצדדים לתצוגה מקדימה →' : '← Tap sides to preview more quotes →'}
-                  </p>
-                </div>
+              <div className="text-center pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="text-6xl mb-6">🔒</div>
+                <h2 className="text-2xl font-heading font-black text-white mb-2">
+                  {isHebrewBook ? 'פתחו את הספר המלא' : 'Unlock Full Book'}
+                </h2>
+                <p className="text-gray-400 mb-8 max-w-sm" dir={isHebrewBook ? 'rtl' : 'ltr'}>
+                  {isHebrewBook
+                    ? `קבלו את כל ${book.quotes.length} הרוסטים ושתפו את הספר המלא`
+                    : `Get all ${book.quotes.length} hilarious roasts and share the complete book`}
+                </p>
+                <Button
+                  onClick={handleCheckout}
+                  disabled={checkingOut}
+                  size="lg"
+                  className="bg-yellow-400 hover:bg-yellow-500 text-black font-heading font-black text-lg px-8 py-6 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                >
+                  {checkingOut
+                    ? (isHebrewBook ? 'מעבד...' : 'Processing...')
+                    : (isHebrewBook ? 'פתחו את הספר - $9.99' : 'Unlock Book - $9.99')}
+                </Button>
+                <p className="text-white/50 text-xs mt-4">
+                  {isHebrewBook ? '← הקישו בצדדים לתצוגה מקדימה →' : '← Tap sides to preview more quotes →'}
+                </p>
               </div>
+            </div>
           </>
         ) : (
           <>
