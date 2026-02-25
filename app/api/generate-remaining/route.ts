@@ -25,17 +25,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Book not found' }, { status: 404 });
     }
 
-    if (book.status !== 'paid') {
-        if (book.status === 'complete' && book.full_image_urls?.length > 0) {
-          console.log(`[${bookId}] ⚠️ GUARD: Book already complete, skipping`);
-          return NextResponse.json({ success: true, message: 'Already complete', skipped: true });
-        }
-        if (book.status === 'generating_remaining') {
-          console.log(`[${bookId}] ⚠️ GUARD: Already generating, skipping`);
-          return NextResponse.json({ success: true, message: 'Already generating', skipped: true });
-        }
-        return NextResponse.json({ error: 'Book not paid' }, { status: 400 });
+    // Handle stale generating_remaining lock (stuck >10 min → treat as failed, allow retry)
+    if (book.status === 'generating_remaining') {
+      const updatedAt = new Date(book.updated_at);
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+
+      if (updatedAt > tenMinutesAgo) {
+        console.log(`[${bookId}] ⚠️ GUARD: Already generating (fresh lock), skipping`);
+        return NextResponse.json({ success: true, message: 'Already generating', skipped: true });
       }
+
+      // Stale lock — reset to paid and fall through to re-acquire
+      console.log(`[${bookId}] ⚠️ STALE LOCK: generating_remaining for >10min, resetting to paid`);
+      const { error: resetError } = await supabaseAdmin
+        .from('roast_books')
+        .update({ status: 'paid' })
+        .eq('id', bookId)
+        .eq('status', 'generating_remaining');
+
+      if (resetError) {
+        console.error(`[${bookId}] Failed to reset stale lock:`, resetError);
+        return NextResponse.json({ error: 'Failed to reset stale lock' }, { status: 500 });
+      }
+
+      book.status = 'paid'; // allow fall-through to atomic lock below
+    }
+
+    if (book.status === 'complete' && book.full_image_urls?.length > 0) {
+      console.log(`[${bookId}] ⚠️ GUARD: Book already complete, skipping`);
+      return NextResponse.json({ success: true, message: 'Already complete', skipped: true });
+    }
+
+    if (book.status !== 'paid') {
+      return NextResponse.json({ error: 'Book not paid' }, { status: 400 });
+    }
 
       // ATOMIC LOCK: Only proceed if we can claim the status
       const { data: lockResult } = await supabaseAdmin

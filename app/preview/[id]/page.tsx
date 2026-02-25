@@ -47,6 +47,10 @@ export default function PreviewPage() {
   const [greetingSaved, setGreetingSaved] = useState(false);
   const [savingGreeting, setSavingGreeting] = useState(false);
 
+  // Backup trigger: if webhook's fire-and-forget was killed by Vercel, the client
+  // recovers by calling generate-remaining directly. Atomic lock prevents double-processing.
+  const generateTriggeredRef = useRef(false);
+
   // Swipe tracking
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
@@ -98,6 +102,24 @@ export default function PreviewPage() {
       setPaymentTracked(true);
     }
   }, [book, searchParams, paymentTracked, adminMode]);
+
+  // Client-side backup trigger for generate-remaining.
+  // Fires once when book.status === 'paid' — covers the case where the webhook's
+  // fire-and-forget was killed by Vercel before generate-remaining could start.
+  // The atomic lock in generate-remaining guarantees whichever fires first wins.
+  useEffect(() => {
+    if (book?.status === 'paid' && !generateTriggeredRef.current) {
+      generateTriggeredRef.current = true;
+      console.log('[Preview] Firing generate-remaining backup trigger for book', book.id);
+      fetch('/api/generate-remaining', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookId: book.id }),
+      }).catch(err => {
+        console.warn('[Preview] Backup generate-remaining trigger failed:', err);
+      });
+    }
+  }, [book?.status, book?.id]);
 
   // Polling
   useEffect(() => {

@@ -56,31 +56,20 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Webhook] Book ${bookId} marked as paid`);
 
-    // Trigger remaining image generation
-    try {
-      const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://theroastbook.com').trim();
-      const generateUrl = `${baseUrl}/api/generate-remaining`;
+    // Fire-and-forget — do NOT await; webhook must return 200 to Stripe immediately.
+    // generate-remaining runs as its own serverless function with maxDuration=300.
+    const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://theroastbook.com').trim();
+    const generateUrl = `${baseUrl}/api/generate-remaining`;
 
-      console.log(`[Webhook] Triggering remaining generation: ${generateUrl}`);
+    console.log(`[Webhook] Firing generate-remaining (no-wait): ${generateUrl}`);
 
-      const response = await fetch(generateUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ bookId }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`[Webhook] Generate-remaining failed: ${response.status} ${errorText}`);
-      } else {
-        const result = await response.json();
-        console.log(`[Webhook] ✅ Generate-remaining triggered:`, result);
-      }
-    } catch (triggerError) {
-      console.error(`[Webhook] Error triggering generate-remaining:`, triggerError);
-    }
+    fetch(generateUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bookId }),
+    }).catch(err => {
+      console.error(`[Webhook] Error triggering generate-remaining:`, err);
+    });
   }
 
   return NextResponse.json({ received: true });

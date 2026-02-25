@@ -1,5 +1,63 @@
 import { Resend } from 'resend';
 
+export async function sendUserVideoReadyEmail(params: {
+  to: string;
+  victimName: string;
+  slug: string;
+}) {
+  const { to, victimName, slug } = params;
+  const bookUrl = `https://theroastbook.com/book/${slug}`;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body style="margin:0;padding:0;background:#0d0d0d;font-family:Georgia,serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0d0d0d;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="480" cellpadding="0" cellspacing="0" style="background:#111;border-radius:16px;overflow:hidden;border:1px solid #333;">
+          <tr><td style="background:#FACC15;height:8px;"></td></tr>
+          <tr>
+            <td style="padding:40px 40px 32px;">
+              <p style="margin:0 0 12px;color:#FACC15;font-size:13px;letter-spacing:3px;text-transform:uppercase;">Video Ready</p>
+              <h1 style="margin:0 0 16px;color:#fff;font-size:28px;font-weight:bold;line-height:1.3;">
+                Your Roast Book video for ${victimName} is ready!
+              </h1>
+              <p style="margin:0 0 32px;color:#aaa;font-size:16px;line-height:1.6;">
+                Great news! Your Roast Book video is ready to watch.
+              </p>
+              <a href="${bookUrl}" style="display:block;background:#FACC15;color:#000;text-align:center;padding:16px 24px;border-radius:12px;font-size:16px;font-weight:bold;text-decoration:none;margin-bottom:32px;">
+                ▶ Watch Your Video
+              </a>
+              <p style="margin:0;color:#555;font-size:13px;">The Roast Book Team</p>
+            </td>
+          </tr>
+          <tr><td style="background:#FACC15;height:8px;"></td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+
+  const resendClient = new Resend((process.env.RESEND_API_KEY || '').trim());
+  const { error } = await resendClient.emails.send({
+    from: 'The Roast Book <noreply@theroastbook.com>',
+    to,
+    subject: `Your Roast Book video for ${victimName} is ready! 🎥`,
+    html,
+  });
+
+  if (error) {
+    throw new Error(`Resend error: ${JSON.stringify(error)}`);
+  }
+}
+
 const resend = new Resend((process.env.RESEND_API_KEY || 'placeholder-resend-key').trim());
 
 export async function sendVideoReadyEmail(params: {

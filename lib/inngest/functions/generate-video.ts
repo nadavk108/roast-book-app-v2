@@ -1,6 +1,7 @@
 import { inngest } from '../client';
 import { supabaseAdmin } from '../../supabase';
 import { generateRoastVideo } from '../../video-generation';
+import { sendUserVideoReadyEmail } from '../../email';
 
 export const generateVideoFunction = inngest.createFunction(
   {
@@ -57,15 +58,47 @@ export const generateVideoFunction = inngest.createFunction(
         .eq('id', bookId);
     });
 
-    // Step 4: Log completion (email notifications to be added later)
-    await step.run('log-completion', async () => {
+    // Step 4: Notify user via email
+    const notification = await step.run('notify-user', async () => {
       console.log(`${ctx} ✅ Video ready in ${Math.round(result.generationTimeMs / 1000)}s`);
-      console.log(`${ctx} URL: ${result.videoUrl}`);
+
+      // Fetch user_id from roast_books
+      const { data: book, error: bookError } = await supabaseAdmin
+        .from('roast_books')
+        .select('user_id')
+        .eq('id', bookId)
+        .single();
+
+      if (bookError || !book?.user_id) {
+        const msg = bookError?.message || 'No user_id on book';
+        console.warn(`${ctx} Could not fetch user_id: ${msg}`);
+        return { notified: false, error: msg };
+      }
+
+      // Fetch email from auth.users
+      const { data: { user }, error: userError } = await supabaseAdmin.auth.admin.getUserById(book.user_id);
+
+      if (userError || !user?.email) {
+        const msg = userError?.message || 'No email for user';
+        console.warn(`${ctx} Could not fetch user email: ${msg}`);
+        return { notified: false, error: msg };
+      }
+
+      // Send email — non-fatal on failure
+      try {
+        await sendUserVideoReadyEmail({ to: user.email, victimName, slug });
+        console.log(`${ctx} Email sent to ${user.email}`);
+        return { notified: true, email: user.email };
+      } catch (err: any) {
+        console.error(`${ctx} Email notification failed: ${err.message}`);
+        return { notified: false, error: err.message };
+      }
     });
 
     return {
       videoUrl: result.videoUrl,
       durationSeconds: result.durationSeconds,
+      notification,
     };
   },
 );
