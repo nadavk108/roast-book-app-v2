@@ -174,9 +174,16 @@
     );
   }
 
-  /* RTL Support Preparation */
+  /* RTL Support */
   [dir="rtl"] .rtl-flip {
     transform: scaleX(-1);
+  }
+}
+
+@layer base {
+  html[dir="rtl"] {
+    direction: rtl;
+    text-align: right;
   }
 
   /* Shimmer animation for progress bars */

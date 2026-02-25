@@ -454,10 +454,16 @@ export default function PreviewPage() {
       return (
         <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8">
           <div className="text-5xl mb-6">⏱️</div>
-          <h2 className="text-2xl font-heading font-black mb-2 text-center text-white">
+          <h2
+            className="text-2xl font-heading font-black mb-2 text-center text-white"
+            dir={isHebrewBook ? 'rtl' : 'ltr'}
+          >
             {isHebrewBook ? 'זה לוקח יותר מהרגיל...' : 'This is taking longer than expected'}
           </h2>
-          <p className="text-gray-400 text-center mb-8 max-w-sm">
+          <p
+            className="text-gray-400 text-center mb-8 max-w-sm"
+            dir={isHebrewBook ? 'rtl' : 'ltr'}
+          >
             {isHebrewBook
               ? 'הרוסטים שלך עוד מייצרים. נשלח לך מייל כשזה מוכן.'
               : 'Your roasts are still generating. We\'ll email you when they\'re ready.'}
@@ -475,17 +481,20 @@ export default function PreviewPage() {
     return (
       <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8">
         <div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-400 border-t-transparent mb-6" />
-        <h2 className="text-2xl font-heading font-black mb-2 text-center text-white">
+        <h2
+          className="text-2xl font-heading font-black mb-2 text-center text-white"
+          dir={isHebrewBook ? 'rtl' : 'ltr'}
+        >
           {isHebrewBook ? 'מייצר את הרוסטים שלך...' : 'Generating your roasts...'}
         </h2>
-        <p className="text-gray-400 text-center">
+        <p className="text-gray-400 text-center" dir={isHebrewBook ? 'rtl' : 'ltr'}>
           {isHebrewBook
             ? 'זה לוקח בערך 2 דקות. אפשר לסגור ולחזור אחר כך!'
             : 'This usually takes about 2 minutes. Feel free to close and come back later!'}
         </p>
         {greetingSaved && greetingText.trim() && (
           <div className="mt-6 bg-white/5 border border-white/10 rounded-xl px-4 py-3 max-w-sm">
-            <p className="text-white/40 text-xs mb-1">
+            <p className="text-white/40 text-xs mb-1" dir={isHebrewBook ? 'rtl' : 'ltr'}>
               {isHebrewBook ? 'ההקדשה שלך:' : 'Your note:'}
             </p>
             <p className="text-white/80 text-sm" dir={isHebrewBook ? 'rtl' : 'ltr'}>

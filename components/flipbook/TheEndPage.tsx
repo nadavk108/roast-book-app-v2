@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Share2, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { isPredominantlyHebrew } from '@/lib/hebrew-utils';
 
 type TheEndPageProps = {
   victimName: string;
@@ -146,7 +147,13 @@ export function TheEndPage({ victimName, bookUrl }: TheEndPageProps) {
         {/* Attribution */}
         <div className="mt-8 space-y-1">
           <p className="text-sm text-gray-400">
-            Made with 🔥 for <span className="text-white font-bold">{victimName}</span>
+            Made with 🔥 for{' '}
+            <span
+              className="text-white font-bold"
+              dir={isPredominantlyHebrew(victimName) ? 'rtl' : 'ltr'}
+            >
+              {victimName}
+            </span>
           </p>
           <p className="text-xs text-gray-500">
             <a

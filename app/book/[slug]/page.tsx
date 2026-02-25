@@ -199,10 +199,13 @@ export default function BookPage() {
     return (
       <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8">
         <div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-400 border-t-transparent mb-6" />
-        <h2 className="text-2xl font-heading font-black mb-2 text-center text-white">
+        <h2
+          className="text-2xl font-heading font-black mb-2 text-center text-white"
+          dir={isHebrewBook ? 'rtl' : 'ltr'}
+        >
           {isHebrewBook ? 'מייצר את הרוסטים שלך...' : 'Generating your roasts...'}
         </h2>
-        <p className="text-gray-400 text-center">
+        <p className="text-gray-400 text-center" dir={isHebrewBook ? 'rtl' : 'ltr'}>
           {isHebrewBook
             ? 'זה לוקח בערך 2 דקות. אפשר לסגור ולחזור אחר כך!'
             : 'This usually takes about 2 minutes. Feel free to close and come back later!'}
@@ -304,7 +307,10 @@ export default function BookPage() {
           <div className="absolute inset-0 bg-white flex items-center justify-center p-8">
             <div className="absolute inset-0 border-[20px] border-yellow-400"></div>
             <div className="text-center relative z-10">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-4">
+              <h3
+                className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-4"
+                dir={isHebrewBook ? 'rtl' : 'ltr'}
+              >
                 {isHebrewBook ? 'הקדשה אישית' : 'A message for you'}
               </h3>
               <p
