@@ -13,6 +13,18 @@ const openai = new OpenAI({
 // ============================================
 const ACTIVE_PROMPT_STYLE: 'contradiction' | 'satirical' | 'direct' = 'direct';
 
+// Deterministic outfit per image index — forces variety and prevents Gemini from repeating clothing
+const CLOTHING_BY_INDEX: readonly string[] = [
+  'a bright Hawaiian shirt, cargo shorts, and white sneakers',
+  'a full formal business suit with tie and dress shoes',
+  'athletic gym clothes — a tank top, running shorts, and trainers',
+  "a chef's white coat and apron over a plain t-shirt",
+  'smart casual — an open button-down shirt and chinos',
+  'home loungewear — sweatpants, an oversized hoodie, and slippers',
+  'outdoors hiking gear — a fleece jacket, waterproof trousers, and boots',
+  'a black tie tuxedo completely out of place for the situation',
+];
+
 type VisualPromptInput = {
   quote: string;
   victimDescription: string;
@@ -152,26 +164,18 @@ EXAMPLES OF TRANSLATION:
 OUTPUT:
 Write ONLY the final visual prompt description. No explanation. No commentary.${antiRepetitionNote}`;
 }
+
 // ============================================
 // STYLE C: "Direct Contradiction" (show the obvious opposite)
 // ============================================
 function getDirectPrompt(antiRepetitionNote: string, imageIndex?: number, totalImages?: number): string {
+  const forcedOutfit = imageIndex !== undefined ? CLOTHING_BY_INDEX[imageIndex % 8] : CLOTHING_BY_INDEX[0];
+
   const varietyNote = (imageIndex !== undefined && totalImages)
     ? `\n\nVARIETY: You are generating image ${imageIndex + 1} of ${totalImages} for this book.
 - Each image MUST have a different setting (indoor/outdoor, home/work/public/nature)
-- Each image MUST show a COMPLETELY DIFFERENT OUTFIT. Do NOT keep the clothing from the reference photo. Explicitly describe new clothing in your prompt (e.g., "wearing a tailored navy suit", "in gym shorts and a tank top", "dressed in a chef's apron over a t-shirt"). The outfit should match the scene and contradict expectations.
 - Each image MUST use a different camera angle (close-up, medium, wide, over-shoulder)
-- Each image MUST have different lighting/time of day
-
-OUTFIT ROTATION (use the image index to pick):
-1: Casual streetwear (hoodie, jeans, sneakers)
-2: Formal/business (suit, dress shirt, blazer)
-3: Athletic/sportswear (gym clothes, running gear)
-4: Work uniform or costume matching the scene (chef coat, lab coat, overalls)
-5: Smart casual (button-down, chinos)
-6: Loungewear/home clothes (sweatpants, t-shirt, slippers)
-7: Outdoorsy (hiking gear, flannel, boots)
-8: Over-the-top/absurd (tuxedo at a BBQ, suit at the beach)`
+- Each image MUST have different lighting/time of day`
     : '';
 
   return `You are a Visual Comedy Writer for a photo book called "Things [Name] Would Never Say."
@@ -207,6 +211,8 @@ WHAT KILLS THE JOKE:
 ❌ Random props that don't relate to the quote (unexplained clocks, signs, weather)
 ❌ The person looking embarrassed, confused, or aware of the irony
 ❌ Crowds watching, laughing, or reacting
+❌ Cartoon elements, clipart, illustrations, animated characters, or any non-photographic style
+❌ Metaphorical creatures or symbolic objects (no cartoon bears for "bear market", no literal lightbulbs for "ideas")
 
 SUBJECT LIKENESS (MANDATORY):
 You will receive a "Subject Description" with physical details.
@@ -217,10 +223,9 @@ You will receive a "Subject Description" with physical details.
 CONTEXT: You may also receive the person's real personality traits. These tell you WHY this quote is funny (because they're the opposite in real life), but do NOT show their real traits. Show the QUOTE's version of them.
 
 OUTFIT RULES:
-- Each image MUST have a different outfit that fits the scene naturally
+- The outfit for this image is pre-assigned and MUST be used exactly as given
 - Do NOT keep the clothing from the reference photo
-- Describe normal, realistic clothing — not costumey (no chef jackets unless the quote is about cooking professionally, no hard hats unless the quote is about construction)
-- Think: what would a normal person wear in this situation?
+- Do NOT substitute a different outfit even if it seems more fitting for the scene
 
 SETTING RULES:
 - Each image MUST be in a COMPLETELY DIFFERENT location
@@ -228,10 +233,11 @@ SETTING RULES:
 - Use varied environments: home, outdoor, office, restaurant, gym, store, street, park, car, bathroom, etc.
 
 OUTPUT FORMAT:
-"A cinematic, 8k, hyper-realistic photograph of [SUBJECT DESCRIPTION — same face and build, wearing SPECIFIC OUTFIT that fits the scene]. [They are SINCERELY and ENTHUSIASTICALLY doing what the quote says, pushed to absurd extreme]. [SPECIFIC SETTING]. [1-2 visual details that amplify the absurdity]. [Camera angle and lighting]. Shot on 35mm film. VERTICAL PORTRAIT ORIENTATION (9:16)."
+"A cinematic, 8k, hyper-realistic PHOTOGRAPH (strictly photorealistic, NO illustration, NO cartoon, NO clipart) of [SUBJECT DESCRIPTION — same face and build, wearing ${forcedOutfit}]. [They are SINCERELY and ENTHUSIASTICALLY doing what the quote says, pushed to absurd extreme]. [SPECIFIC SETTING]. [1-2 visual details that amplify the absurdity]. [Camera angle and lighting]. Shot on 35mm film. VERTICAL PORTRAIT ORIENTATION (9:16)."
 
 Write ONLY the visual prompt. No explanation.${varietyNote}${antiRepetitionNote}`;
 }
+
 /**
  * Transform a quote into a visual prompt.
  * Switch between styles by changing ACTIVE_PROMPT_STYLE at the top of this file.
@@ -240,6 +246,7 @@ export async function generateVisualPrompt(input: VisualPromptInput): Promise<st
   const { quote, victimDescription, victimTraits, imageIndex, totalImages } = input;
 
   const antiRepetitionNote = getAntiRepetitionNote(imageIndex, totalImages);
+  const forcedOutfit = CLOTHING_BY_INDEX[(imageIndex ?? 0) % 8];
 
   let systemPrompt: string;
   if (ACTIVE_PROMPT_STYLE === 'direct') {
@@ -263,6 +270,8 @@ Input Quote: "${quote}"`;
 Person's Real Traits & Habits (use this to determine what reality to show — this is what they ACTUALLY do):
 ${victimTraits}`;
   }
+
+  userPrompt += `\n\nMANDATORY OUTFIT FOR THIS IMAGE: The subject must be wearing ${forcedOutfit}. Do not change this. Do not substitute. Include this exact clothing description verbatim in your output prompt.`;
 
   const response = await openai.chat.completions.create({
     model: 'gpt-4o-mini',
