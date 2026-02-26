@@ -32,6 +32,9 @@ test-*.js
 # vercel
 .vercel
 
+# Claude Code local settings (may contain API keys)
+.claude/settings.local.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

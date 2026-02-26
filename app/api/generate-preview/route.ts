@@ -41,23 +41,29 @@ export async function POST(request: NextRequest) {
     console.log('Starting preview generation for book:', bookId);
     console.log('Quotes received:', quotes);
 
-    // STEP 1: Save quotes and ATOMICALLY claim the generation lock
-      // Only proceed if status is NOT already generating/ready/complete
-      const { data: lockResult, error: updateQuotesError } = await supabaseAdmin
+    // STEP 1: ATOMICALLY claim the generation lock and save quotes
+    // Only proceed if status is NOT already generating/ready/complete
+    // Only overwrite quotes if this request includes them (progress-page retries send existing DB quotes)
+    const lockUpdate: Record<string, unknown> = {
+      status: 'generating_prompts',
+    };
+    if (quotes.length > 0) {
+      lockUpdate.quotes = quotes;
+      lockUpdate.custom_greeting = customGreeting;
+    }
+    console.log(`[${bookId}] Attempting lock with update:`, JSON.stringify(lockUpdate));
+
+    const { data: lockResult, error: updateQuotesError } = await supabaseAdmin
         .from('roast_books')
-        .update({
-          quotes: quotes,
-          custom_greeting: customGreeting,
-          status: 'analyzing'
-        })
+        .update(lockUpdate)
         .eq('id', bookId)
-        .not('status', 'in', '("preview_ready","generating_remaining","complete")')
+        .not('status', 'in', '("generating_prompts","generating_images","preview_ready","generating_remaining","complete")')
         .select('id')
         .maybeSingle();
 
       if (updateQuotesError) {
-        console.error('Failed to save quotes:', updateQuotesError);
-        throw new Error(`Failed to save quotes: ${updateQuotesError.message}`);
+        console.error('Failed to acquire lock:', updateQuotesError);
+        throw new Error(`Failed to acquire generation lock: ${updateQuotesError.message}`);
       }
 
       if (!lockResult) {
@@ -80,7 +86,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      console.log('✅ Quotes saved and generation lock acquired');
+      console.log(`[${bookId}] ✅ Generation lock acquired (status → generating_prompts)`);
 
     // STEP 2: Fetch the book data
     const { data: book, error: fetchError } = await supabaseAdmin

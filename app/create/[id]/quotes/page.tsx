@@ -151,6 +151,8 @@ export default function QuotesPage() {
    const handleSubmit = async () => {
         const bookId = params.id || book?.id;
 
+        console.log('[Quotes] handleSubmit called, bookId:', bookId, '| quotes:', quotes.length);
+
         captureEvent(Events.QUOTES_SUBMITTED, {
             quote_count: 8,
             is_admin: adminMode,
@@ -159,7 +161,8 @@ export default function QuotesPage() {
 
         setSaving(true);
 
-        // Fire generation request without waiting — redirect immediately to progress page
+        // Fire-and-forget — belt-and-suspenders; progress page also triggers on mount
+        console.log('[Quotes] Firing generate-preview (fire-and-forget)...');
         fetch('/api/generate-preview', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -168,11 +171,14 @@ export default function QuotesPage() {
                 quotes: quotes, // Always exactly 8 quotes
                 customGreeting: null,
             }),
+        }).then(() => {
+            console.log('[Quotes] fire-and-forget completed');
         }).catch((error) => {
-            console.error('[QUOTES] Background generation failed:', error);
+            console.error('[Quotes] Background generation failed:', error);
         });
 
-        // Redirect instantly — progress page polls for status
+        // Redirect instantly — progress page polls for status AND re-triggers if needed
+        console.log('[Quotes] Redirecting to progress page...');
         router.push(`/progress/${bookId}`);
     };
 

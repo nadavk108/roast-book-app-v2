@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Check, Loader2 } from 'lucide-react';
@@ -17,6 +17,53 @@ export default function ProgressPage() {
   const [status, setStatus] = useState<BookStatus>('analyzing');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const generationTriggeredRef = useRef(false);
+
+  // Trigger generation on mount — belt-and-suspenders in case the quotes page
+  // fire-and-forget was cancelled by browser navigation
+  useEffect(() => {
+    if (!bookId || generationTriggeredRef.current) return;
+    generationTriggeredRef.current = true;
+
+    console.log('[Progress] Triggering generation for bookId:', bookId);
+
+    const triggerGeneration = async () => {
+      try {
+        // Fetch book to get quotes and current status
+        const res = await fetch(`/api/book/${bookId}`);
+        if (!res.ok) {
+          console.error('[Progress] Failed to fetch book for trigger:', res.status);
+          return;
+        }
+        const book = await res.json();
+
+        console.log('[Progress] Book status:', book.status, '| quotes count:', book.quotes?.length ?? 0);
+
+        // If book has no quotes, nothing to generate yet
+        if (!book.quotes?.length) {
+          console.log('[Progress] No quotes found, skipping generation trigger');
+          return;
+        }
+
+        // If already in progress or complete, API atomic lock will handle it
+        console.log('[Progress] Calling /api/generate-preview...');
+        const genRes = await fetch('/api/generate-preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bookId,
+            quotes: book.quotes,
+            customGreeting: book.custom_greeting || null,
+          }),
+        });
+        console.log('[Progress] generate-preview response status:', genRes.status);
+      } catch (err) {
+        console.error('[Progress] Failed to trigger generation:', err);
+      }
+    };
+
+    triggerGeneration();
+  }, [bookId]);
 
   useEffect(() => {
     if (!bookId) {

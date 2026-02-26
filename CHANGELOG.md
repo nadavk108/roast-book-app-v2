@@ -4,7 +4,11 @@
 This file tracks all changes made by Claude Code. Each entry includes what changed, why, and how to test it.
 
 ---
+## Current Status (update this section every session)
 
+**Last working deploy:** 2026-02-26 (latest commit: `19102a5` — ban clipart from image prompts)
+**Currently broken:** Nothing known. Post-payment stuck loader was fixed (webhook race condition + missing DB constraint). RTL rendering fixed. Clipart banned from prompts.
+**In progress:** Uncommitted session — flipbook image preloading + nav debounce (UX), belt-and-suspenders generation retry from progress page (reliability), tighter atomic lock in generate-preview.
 ## [DATE] - [Brief Title]
 
 **Problem:**

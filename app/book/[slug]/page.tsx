@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Home, Share2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { TheEndPage } from '@/components/flipbook/TheEndPage';
@@ -32,6 +32,7 @@ export default function BookPage() {
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const [showArrows, setShowArrows] = useState(false);
+  const [imagesPreloaded, setImagesPreloaded] = useState(false);
   const startParamApplied = useRef(false);
 
   // Swipe tracking
@@ -39,6 +40,7 @@ export default function BookPage() {
   const touchStartY = useRef(0);
   const touchEndX = useRef(0);
   const isSwiping = useRef(false);
+  const isTransitioningRef = useRef(false);
   const hideArrowsTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -59,13 +61,30 @@ export default function BookPage() {
     const startParam = searchParams.get('start');
     if (startParam) {
       const startIndex = parseInt(startParam, 10);
-      const slides = buildSlides(book);
-      if (!isNaN(startIndex) && startIndex >= 0 && startIndex < slides.length) {
+      const allSlides = buildSlides(book);
+      if (!isNaN(startIndex) && startIndex >= 0 && startIndex < allSlides.length) {
         setActiveIndex(startIndex);
       }
       startParamApplied.current = true;
     }
   }, [book, searchParams]);
+
+  // Preload all images on mount so navigation is instant
+  useEffect(() => {
+    if (!book) return;
+    const allSlides = buildSlides(book);
+    const urls = allSlides.map(s => s.imageUrl).filter(Boolean) as string[];
+    if (urls.length === 0) { setImagesPreloaded(true); return; }
+    let loaded = 0;
+    urls.forEach(url => {
+      const img = new window.Image();
+      img.onload = img.onerror = () => {
+        loaded++;
+        if (loaded === urls.length) setImagesPreloaded(true);
+      };
+      img.src = url;
+    });
+  }, [book?.id]);
 
   const fetchBook = async () => {
     try {
@@ -100,14 +119,20 @@ export default function BookPage() {
   };
 
   // Navigation
-  const slides = book ? buildSlides(book) : [];
+  const slides = useMemo(() => book ? buildSlides(book) : [], [book]);
 
   const goToNext = useCallback(() => {
+    if (isTransitioningRef.current) return;
+    isTransitioningRef.current = true;
     setActiveIndex((prev) => Math.min(prev + 1, slides.length - 1));
+    setTimeout(() => { isTransitioningRef.current = false; }, 300);
   }, [slides.length]);
 
   const goToPrev = useCallback(() => {
+    if (isTransitioningRef.current) return;
+    isTransitioningRef.current = true;
     setActiveIndex((prev) => Math.max(prev - 1, 0));
+    setTimeout(() => { isTransitioningRef.current = false; }, 300);
   }, []);
 
   // Keyboard navigation
@@ -214,6 +239,14 @@ export default function BookPage() {
     );
   }
 
+  if (!imagesPreloaded) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-400 border-t-transparent" />
+      </div>
+    );
+  }
+
   const bookUrl = typeof window !== 'undefined' ? window.location.href.split('?')[0] : '';
 
   const bookTitle = isHebrewBook
@@ -277,6 +310,7 @@ export default function BookPage() {
           style={{
             visibility: i === activeIndex ? 'visible' : 'hidden',
             zIndex: i === activeIndex ? 1 : 0,
+            willChange: 'transform',
           }}
         >
           {slide.imageUrl && (
@@ -284,6 +318,7 @@ export default function BookPage() {
               src={slide.imageUrl}
               alt={`Slide ${i}`}
               className="absolute inset-0 w-full h-full object-cover"
+              style={{ willChange: 'transform' }}
               loading="eager"
             />
           )}
