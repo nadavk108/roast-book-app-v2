@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, message: 'Already generating', skipped: true });
       }
 
-      // Stale lock — reset to paid and fall through to re-acquire
+      // Stale lock - reset to paid and fall through to re-acquire
       console.log(`[${bookId}] ⚠️ STALE LOCK: generating_remaining for >10min, resetting to paid`);
       const { error: resetError } = await supabaseAdmin
         .from('roast_books')
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, message: 'Already processing', skipped: true });
       }
 
-      // AWAIT the processing — do NOT fire-and-forget on Vercel
+      // AWAIT the processing - do NOT fire-and-forget on Vercel
       const result = await processRemainingImages(book);
 
     return NextResponse.json({ success: true, message: 'Generation complete', result });

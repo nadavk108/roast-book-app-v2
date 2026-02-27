@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       victimName: book.victim_name
     });
 
-    // GUARD: Prevent duplicate generation — if images already exist, return them
+    // GUARD: Prevent duplicate generation - if images already exist, return them
       if (book.preview_image_urls?.length > 0 && book.status === 'preview_ready') {
         console.log(`[${bookId}] ⚠️ GUARD: Preview images already exist, skipping generation`);
         return NextResponse.json({

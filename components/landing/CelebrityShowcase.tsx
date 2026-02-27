@@ -48,7 +48,7 @@ export function CelebrityShowcase() {
               key={celeb.name}
               className="relative min-w-[280px] md:min-w-0 flex-shrink-0 md:flex-shrink snap-start rounded-2xl overflow-hidden border border-border shadow-brutal-sm aspect-[3/4] bg-black"
             >
-              {/* Celebrity image — eager-loaded, above the fold */}
+              {/* Celebrity image - eager-loaded, above the fold */}
               <img
                 src={celeb.image}
                 alt={`${celeb.name} saying "${celeb.quote}"`}
@@ -58,14 +58,14 @@ export function CelebrityShowcase() {
                 height={373}
               />
 
-              {/* Quote overlay — gradient + frosted pill */}
+              {/* Quote overlay - gradient + frosted pill */}
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-16 pb-4 px-3">
                 <div className="bg-black/50 backdrop-blur-md rounded-xl px-3 py-3 text-center">
                   <p className="text-white font-heading font-bold text-base leading-snug">
                     &ldquo;{celeb.quote}&rdquo;
                   </p>
                   <p className="text-white/70 text-xs mt-1.5 font-medium tracking-wide">
-                    — {celeb.name}
+                    - {celeb.name}
                   </p>
                 </div>
               </div>
@@ -76,7 +76,7 @@ export function CelebrityShowcase() {
         {/* CTA below carousel */}
         <div className="text-center mt-10 px-4 md:px-0">
           <p className="text-xl md:text-2xl font-heading font-bold mb-5">
-            Now imagine this — but with YOUR friends
+            Now imagine this, but with YOUR friends
           </p>
           <Link href="/dashboard">
             <BrutalButton size="lg">

@@ -161,7 +161,7 @@ export default function QuotesPage() {
 
         setSaving(true);
 
-        // Fire-and-forget — belt-and-suspenders; progress page also triggers on mount
+        // Fire-and-forget - belt-and-suspenders; progress page also triggers on mount
         console.log('[Quotes] Firing generate-preview (fire-and-forget)...');
         fetch('/api/generate-preview', {
             method: 'POST',
@@ -177,7 +177,7 @@ export default function QuotesPage() {
             console.error('[Quotes] Background generation failed:', error);
         });
 
-        // Redirect instantly — progress page polls for status AND re-triggers if needed
+        // Redirect instantly - progress page polls for status AND re-triggers if needed
         console.log('[Quotes] Redirecting to progress page...');
         router.push(`/progress/${bookId}`);
     };
@@ -245,8 +245,8 @@ export default function QuotesPage() {
                                 dir={isHebrew ? 'rtl' : 'ltr'}
                             >
                                 {isHebrew
-                                    ? 'הכל רלוונטי — תחביבים, הרגלים, אובססיות, בדיחות פנימיות, שגעונות. אנחנו נהפוך את זה לרוסטים מטורפים.'
-                                    : "Anything goes — hobbies, habits, obsessions, quirks, inside jokes. We'll turn it into hilarious roasts."}
+                                    ? 'הכל רלוונטי: תחביבים, הרגלים, אובססיות, בדיחות פנימיות, שגעונות. אנחנו נהפוך את זה לרוסטים מטורפים.'
+                                    : "Anything goes: hobbies, habits, obsessions, quirks, inside jokes. We'll turn it into hilarious roasts."}
                             </p>
                         </div>
 

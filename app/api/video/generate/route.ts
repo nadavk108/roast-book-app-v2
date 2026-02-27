@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Video generation already in progress' }, { status: 409 });
   }
 
-  // Send Inngest event and return immediately — generation runs in the background
+  // Send Inngest event and return immediately - generation runs in the background
   await inngest.send({
     name: 'video/generation.requested',
     data: {

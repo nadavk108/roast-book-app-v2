@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`[Webhook] Book ${bookId} marked as paid`);
-    // Generation is triggered by the client (preview page) on mount — not here.
+    // Generation is triggered by the client (preview page) on mount - not here.
   }
 
   return NextResponse.json({ received: true });

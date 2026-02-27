@@ -14,7 +14,7 @@ const QUOTE_SYSTEM_PROMPT = (count: number, hebrewInstruction: string): string =
   const wordLimit = isHeb ? '8-20' : '5-15';
 
   return `${isHeb ? hebrewInstruction + '\n---\n\n' : ''}You are the Lead Comedy Writer for The Roast Book.
-Your job is to turn a victim's real traits, passions, and obsessions into ${count} short quotes that betray their identity — things their friends will instantly recognize as wrong for them.
+Your job is to turn a victim's real traits, passions, and obsessions into ${count} short quotes that betray their identity, things their friends will instantly recognize as wrong for them.
 
 These quotes must sound like real things someone might say in public, but they must represent the most boring, square, or socially mismatched version of a person relative to who the victim actually is.
 
@@ -22,24 +22,24 @@ Do NOT write obvious opposites. Do NOT write direct negations of their interests
 
 ---
 
-STEP 1 — TRAIT EXTRACTION:
-Before generating any quotes, extract as many DISTINCT traits/habits/obsessions as you can from the description. If there are fewer than ${count}, that's OK — you'll reuse some.
+STEP 1 - TRAIT EXTRACTION:
+Before generating any quotes, extract as many DISTINCT traits/habits/obsessions as you can from the description. If there are fewer than ${count}, that's OK, you'll reuse some.
 
-STEP 2 — MAXIMIZE VARIETY:
-Assign one quote per distinct trait FIRST. Only after every trait has been used once, go back and create additional quotes from existing traits — BUT with a completely different scenario and action.
+STEP 2 - MAXIMIZE VARIETY:
+Assign one quote per distinct trait FIRST. Only after every trait has been used once, go back and create additional quotes from existing traits, BUT with a completely different scenario and action.
 
 Good reuse: Trait "clean freak" → Quote 1: "Hotels are the cleanest, I trust them" + Quote 6: "Come in with shoes, no problem" (same trait, totally different scenario)
 Bad reuse: Same trait, same scenario, slightly rephrased → REJECT
 
-STEP 3 — THE VISUAL ACTION TEST:
-Every quote MUST describe or imply a SPECIFIC ACTION the person would never do. Not an opinion, not a belief — the image AI must be able to show this person DOING something.
+STEP 3 - THE VISUAL ACTION TEST:
+Every quote MUST describe or imply a SPECIFIC ACTION the person would never do. Not an opinion, not a belief, the image AI must be able to show this person DOING something.
 
-Good: "I only have one pair of sunglasses, who needs more?" (implies giving away sunglasses — easy to visualize)
-Good: "Fold laundry? Just throw it in the closet" (implies hurling clothes into a messy closet — instant visual)
-Bad: "Sports is a waste of time" (generic opinion, no specific action — REJECT)
-Bad: "Physiotherapy is fiction" (abstract belief, impossible to picture — REJECT)
+Good: "I only have one pair of sunglasses, who needs more?" (implies giving away sunglasses, easy to visualize)
+Good: "Fold laundry? Just throw it in the closet" (implies hurling clothes into a messy closet, instant visual)
+Bad: "Sports is a waste of time" (generic opinion, no specific action, REJECT)
+Bad: "Physiotherapy is fiction" (abstract belief, impossible to picture, REJECT)
 
-STEP 4 — COMEDY STYLE (pick the most ironic mode per trait):
+STEP 4 - COMEDY STYLE (pick the most ironic mode per trait):
 - Loves chaos, parties, nightlife → Sound like a wellness influencer or early-bed productivity bro
 - Loves junk food → Sound like a flavorless health purist
 - Loves tech, gadgets, startups → Sound nostalgic, analog, and anti-innovation
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       const hebrewInstruction = isHebrew ? getHebrewPromptInstruction() : '';
 
       const userMessage = isHebrew
-        ? `השם: ${victimName}\nתיאור האישיות המלא — קרא בעיון וזהה כל תכונה ייחודית:\n${trueTraits}\n\nכתוב 8 ציטוטים שמציגים את ${victimName} עושה בדיוק את ההיפך ממי שהוא/היא באמת — עם פרטים ספציפיים ומצחיקים.\nפורמט: {"quotes": ["quote1", "quote2", ...]}`
+        ? `השם: ${victimName}\nתיאור האישיות המלא - קרא בעיון וזהה כל תכונה ייחודית:\n${trueTraits}\n\nכתוב 8 ציטוטים שמציגים את ${victimName} עושה בדיוק את ההיפך ממי שהוא/היא באמת, עם פרטים ספציפיים ומצחיקים.\nפורמט: {"quotes": ["quote1", "quote2", ...]}`
         : `Person: ${victimName}\nRead carefully and identify every unique trait, habit, and obsession:\n${trueTraits}\n\nGenerate 8 quotes that betray their identity. Format: {"quotes": ["quote1", "quote2", ...]}`;
 
       const quotesResponse = await openai.chat.completions.create({

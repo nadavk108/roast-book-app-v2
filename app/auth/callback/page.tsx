@@ -83,7 +83,7 @@ export default function AuthCallbackPage() {
             await waitForCookie(`${origin}${next}`);
             window.location.assign(`${origin}${next}`);
           } else {
-            // Verified but no session — user needs to sign in
+            // Verified but no session - user needs to sign in
             console.log('[AUTH CALLBACK] Verified but no session, redirect to login');
             setStatus('Email verified! Please sign in.');
             setTimeout(() => {
@@ -131,7 +131,7 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        // === FLOW 3: No code or token — check URL hash (implicit flow) ===
+        // === FLOW 3: No code or token - check URL hash (implicit flow) ===
         // Some Supabase configs use hash-based tokens
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const accessToken = hashParams.get('access_token');

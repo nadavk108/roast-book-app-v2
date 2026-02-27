@@ -47,7 +47,7 @@ export default function BookPage() {
     fetchBook();
   }, []);
 
-  // Poll only while NOT complete — stop once done
+  // Poll only while NOT complete - stop once done
   useEffect(() => {
     if (!book || book.status === 'complete') return;
 
@@ -325,7 +325,7 @@ export default function BookPage() {
         </div>
       ))}
 
-      {/* Interactive Layer — Tap + Swipe */}
+      {/* Interactive Layer - Tap + Swipe */}
       <div
         className="absolute inset-0 z-10 cursor-pointer"
         onClick={handleTap}
@@ -396,7 +396,7 @@ export default function BookPage() {
         )}
       </div>
 
-      {/* Desktop Arrow Buttons — hidden on touch, visible on mouse hover */}
+      {/* Desktop Arrow Buttons - hidden on touch, visible on mouse hover */}
       {activeIndex > 0 && (
         <button
           onClick={(e) => { e.stopPropagation(); goToPrev(); }}

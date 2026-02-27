@@ -25,11 +25,11 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: 'The Roast Book — Personalized AI Roast Gift Book for Friends | $9.99',
+    default: 'The Roast Book - Personalized AI Roast Gift Book for Friends | $9.99',
     template: '%s | The Roast Book',
   },
   description:
-    'Create a hilarious personalized roast book for your friend in 2 minutes. Upload their photo, describe their quirks, and AI generates a custom illustrated flipbook of "Things They\'d Never Say." The funniest birthday, wedding, or farewell gift — only $9.99.',
+    'Create a hilarious personalized roast book for your friend in 2 minutes. Upload their photo, describe their quirks, and AI generates a custom illustrated flipbook of "Things They\'d Never Say." The funniest birthday, wedding, or farewell gift, only $9.99.',
   keywords: [
     'personalized roast book',
     'AI roast gift',
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     canonical: 'https://theroastbook.com',
   },
   openGraph: {
-    title: 'The Roast Book — The Funniest Personalized Gift You Can Give',
+    title: 'The Roast Book - The Funniest Personalized Gift You Can Give',
     description:
       'Upload a photo of your friend. AI creates a hilarious illustrated roast book of "Things They\'d Never Say." Ready in 2 minutes. Only $9.99.',
     type: 'website',
@@ -59,9 +59,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'The Roast Book — Personalized AI Roast Gift',
+    title: 'The Roast Book - Personalized AI Roast Gift',
     description:
-      'Create a custom illustrated roast book for your friend in 2 minutes. The funniest gift ever — only $9.99.',
+      'Create a custom illustrated roast book for your friend in 2 minutes. The funniest gift ever, only $9.99.',
   },
   robots: {
     index: true,

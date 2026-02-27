@@ -610,7 +610,7 @@ export default function PreviewPage() {
         </div>
       ))}
 
-      {/* Interactive layer — tap, swipe, content overlays */}
+      {/* Interactive layer - tap, swipe, content overlays */}
       <div
         className="absolute inset-0 z-10 cursor-pointer"
         onClick={handleTap}

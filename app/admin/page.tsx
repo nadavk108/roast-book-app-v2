@@ -250,7 +250,7 @@ export default function AdminPage() {
       }
     } catch (err: any) {
       // iOS Safari (and some mobile browsers) drop long-running fetch connections
-      // before the response arrives. The server may have succeeded — let fetchMetrics()
+      // before the response arrives. The server may have succeeded - let fetchMetrics()
       // in finally refresh the UI. Only alert on real API errors (not network drops).
       const isNetworkDrop = err.message === 'Load failed' || err.message === 'Failed to fetch' || err.name === 'TypeError';
       if (!isNetworkDrop) {

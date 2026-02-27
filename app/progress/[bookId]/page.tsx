@@ -19,7 +19,7 @@ export default function ProgressPage() {
   const [error, setError] = useState<string | null>(null);
   const generationTriggeredRef = useRef(false);
 
-  // Trigger generation on mount — belt-and-suspenders in case the quotes page
+  // Trigger generation on mount - belt-and-suspenders in case the quotes page
   // fire-and-forget was cancelled by browser navigation
   useEffect(() => {
     if (!bookId || generationTriggeredRef.current) return;

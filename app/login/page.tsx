@@ -81,7 +81,7 @@ export default function LoginPage() {
             window.location.href = '/dashboard';
           }, 1500);
         } else {
-          // Existing user signed in — hard redirect to pick up session cookie
+          // Existing user signed in - hard redirect to pick up session cookie
           window.location.href = '/dashboard';
         }
     } catch (err: any) {
