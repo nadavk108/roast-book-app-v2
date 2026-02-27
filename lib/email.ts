@@ -60,6 +60,115 @@ export async function sendUserVideoReadyEmail(params: {
 
 const resend = new Resend((process.env.RESEND_API_KEY || 'placeholder-resend-key').trim());
 
+export async function sendBookReadyEmail(params: {
+  to: string;
+  victimName: string;
+  slug: string;
+  quoteCount: number;
+  isHebrew: boolean;
+}) {
+  const { to, victimName, slug, quoteCount, isHebrew } = params;
+  const bookUrl = `https://theroastbook.com/book/${slug}`;
+
+  const subject = isHebrew
+    ? `ספר הרוסט של ${victimName} מוכן! 🔥`
+    : `Your Roast Book for ${victimName} is ready! 🔥`;
+
+  const label = isHebrew ? 'הספר מוכן' : 'BOOK READY';
+  const headline = isHebrew
+    ? `משפטים שלא תשמעו את ${victimName} אומר/ת`
+    : `Things ${victimName} Would Never Say`;
+  const body = isHebrew
+    ? `${quoteCount} רוסטים שיגרמו ל${victimName} לפקפק בחברות שלכם. אל תשמרו את היצירה הזו לעצמכם.`
+    : `${quoteCount} roasts, ready to make ${victimName} question your friendship. Don't keep this masterpiece to yourself.`;
+  const primaryCta = isHebrew ? 'פתחו את ספר הרוסט 🔥' : 'Open Your Roast Book 🔥';
+  const secondaryCta = isHebrew ? 'שתפו עם חברים' : 'Share with friends';
+  const footer = isHebrew
+    ? 'נעשה באהבה ובאפס רגישות - The Roast Book Team'
+    : 'Made with love and zero chill - The Roast Book Team';
+
+  const dirAttr = isHebrew ? ' dir="rtl"' : '';
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body style="margin:0;padding:0;background:#0d0d0d;font-family:Georgia,serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0d0d0d;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="480" cellpadding="0" cellspacing="0" style="background:#111;border-radius:16px;overflow:hidden;border:1px solid #333;">
+
+          <!-- Header bar -->
+          <tr>
+            <td style="background:#FACC15;height:8px;"></td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding:40px 40px 32px;"${dirAttr}>
+
+              <!-- Label -->
+              <p style="margin:0 0 12px;color:#FACC15;font-size:13px;letter-spacing:3px;text-transform:uppercase;">
+                ${label}
+              </p>
+
+              <!-- Title -->
+              <h1 style="margin:0 0 16px;color:#fff;font-size:28px;font-weight:bold;line-height:1.3;">
+                ${headline}
+              </h1>
+
+              <!-- Body -->
+              <p style="margin:0 0 32px;color:#aaa;font-size:16px;line-height:1.6;">
+                ${body}
+              </p>
+
+              <!-- Primary CTA -->
+              <a href="${bookUrl}" style="display:block;background:#FACC15;color:#000;text-align:center;padding:16px 24px;border-radius:12px;font-size:16px;font-weight:bold;text-decoration:none;margin-bottom:12px;">
+                ${primaryCta}
+              </a>
+
+              <!-- Secondary CTA -->
+              <a href="${bookUrl}" style="display:block;background:transparent;color:#888;text-align:center;padding:12px 24px;border-radius:12px;font-size:14px;text-decoration:none;border:1px solid #333;margin-bottom:32px;">
+                ${secondaryCta}
+              </a>
+
+              <!-- Footer -->
+              <p style="margin:0;color:#555;font-size:13px;">
+                ${footer}
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Footer bar -->
+          <tr>
+            <td style="background:#FACC15;height:8px;"></td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+
+  const { error } = await resend.emails.send({
+    from: 'The Roast Book <noreply@theroastbook.com>',
+    to,
+    subject,
+    html,
+  });
+
+  if (error) {
+    throw new Error(`Resend error: ${JSON.stringify(error)}`);
+  }
+}
+
 export async function sendVideoReadyEmail(params: {
   victimName: string;
   videoUrl: string;

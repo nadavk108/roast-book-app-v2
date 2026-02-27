@@ -166,6 +166,31 @@ async function processRemainingImages(book: any) {
     if (updateError) throw updateError;
 
     console.log(`[${bookId}] ========== BOOK COMPLETE ==========`);
+
+    // Send completion email (non-blocking, don't fail the request)
+    try {
+      const { sendBookReadyEmail } = await import('@/lib/email');
+      const isHebrew = book.victim_name && /[\u0590-\u05FF]/.test(book.victim_name);
+      if (book.user_email) {
+        if (book.user_email === 'nadavkarlinski@gmail.com') {
+          console.log(`[${bookId}] Admin book — skipping completion email`);
+        } else {
+          await sendBookReadyEmail({
+            to: book.user_email,
+            victimName: book.victim_name,
+            slug: book.slug,
+            quoteCount: book.quotes?.length || 8,
+            isHebrew: !!isHebrew,
+          });
+          console.log(`[${bookId}] ✅ Completion email sent to ${book.user_email}`);
+        }
+      } else {
+        console.log(`[${bookId}] No user_email on book — skipping completion email`);
+      }
+    } catch (emailErr) {
+      console.warn(`[${bookId}] ⚠️ Failed to send completion email:`, emailErr);
+    }
+
     return { totalImages: fullImageUrls.length };
 
   } catch (error) {
