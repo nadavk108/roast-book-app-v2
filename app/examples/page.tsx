@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { CelebrityShowcase } from "@/components/landing/CelebrityShowcase";
 import { BrutalButton } from "@/components/ui/brutal-button";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
@@ -317,6 +318,9 @@ export default function Examples() {
             </motion.header>
           </div>
         </section>
+
+        {/* Celebrity showcase */}
+        <CelebrityShowcase />
 
         {/* Gallery Grid */}
         <section className="py-8 md:py-16" aria-labelledby="gallery-heading">
