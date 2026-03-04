@@ -169,6 +169,7 @@ export async function POST(request: NextRequest) {
             quote,
             victimDescription: book.victim_description,
             victimTraits: book.victim_traits || '',
+            wardrobeVibe: book.wardrobe_vibe || undefined,
             imageIndex: index,
             totalImages: book.quotes.length
           }),
