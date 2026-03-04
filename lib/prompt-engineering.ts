@@ -13,29 +13,21 @@ const openai = new OpenAI({
 // ============================================
 const ACTIVE_PROMPT_STYLE: 'contradiction' | 'satirical' | 'direct' = 'direct';
 
-// Deterministic outfit per image index — forces variety and prevents Gemini from repeating clothing
-const CLOTHING_BY_INDEX: readonly string[] = [
-  'a bright Hawaiian shirt, cargo shorts, and white sneakers',
-  'a full formal business suit with tie and dress shoes',
-  'athletic gym clothes — a tank top, running shorts, and trainers',
-  "a chef's white coat and apron over a plain t-shirt",
-  'smart casual — an open button-down shirt and chinos',
-  'home loungewear — sweatpants, an oversized hoodie, and slippers',
-  'outdoors hiking gear — a fleece jacket, waterproof trousers, and boots',
-  'a black tie tuxedo completely out of place for the situation',
-];
-
 type VisualPromptInput = {
   quote: string;
   victimDescription: string;
   victimTraits?: string;
+  wardrobeVibe?: string;
   imageIndex?: number;
   totalImages?: number;
 };
 
-function getAntiRepetitionNote(imageIndex?: number, totalImages?: number): string {
+function getAntiRepetitionNote(imageIndex?: number, totalImages?: number, wardrobeVibe?: string): string {
   if (imageIndex === undefined || !totalImages) return '';
-  return `\n\nIMPORTANT: This is image ${imageIndex + 1} of ${totalImages} in the same book. You MUST use a completely different outfit, environment, camera angle, and time of day than any other image. Never repeat subway, gym, cafe, or park across images in the same book.`;
+  const vibeInstruction = wardrobeVibe
+    ? `\n\nOUTFIT FOR THIS IMAGE: Invent a unique outfit that strictly aligns with this wardrobe vibe: "${wardrobeVibe}". The outfit must be different from every other image in this sequence — never repeat the same top, bottom, shoes, or color palette. Describe the clothing in high detail in your output: fabric, color, fit, and any accessories.`
+    : '';
+  return `\n\nIMPORTANT: This is image ${imageIndex + 1} of ${totalImages} in the same book. You MUST use a completely different outfit, environment, camera angle, and time of day than any other image. Never repeat subway, gym, cafe, or park across images in the same book.${vibeInstruction}`;
 }
 
 // ============================================
@@ -169,8 +161,6 @@ Write ONLY the final visual prompt description. No explanation. No commentary.${
 // STYLE C: "Direct Contradiction" (show the obvious opposite)
 // ============================================
 function getDirectPrompt(antiRepetitionNote: string, imageIndex?: number, totalImages?: number): string {
-  const forcedOutfit = imageIndex !== undefined ? CLOTHING_BY_INDEX[imageIndex % 8] : CLOTHING_BY_INDEX[0];
-
   const varietyNote = (imageIndex !== undefined && totalImages)
     ? `\n\nVARIETY: You are generating image ${imageIndex + 1} of ${totalImages} for this book.
 - Each image MUST have a different setting (indoor/outdoor, home/work/public/nature)
@@ -223,9 +213,10 @@ You will receive a "Subject Description" with physical details.
 CONTEXT: You may also receive the person's real personality traits. These tell you WHY this quote is funny (because they're the opposite in real life), but do NOT show their real traits. Show the QUOTE's version of them.
 
 OUTFIT RULES:
-- The outfit for this image is pre-assigned and MUST be used exactly as given
+- Invent a unique outfit for this image that aligns with the subject's wardrobe vibe (provided in the anti-repetition note above)
 - Do NOT keep the clothing from the reference photo
-- Do NOT substitute a different outfit even if it seems more fitting for the scene
+- Do NOT repeat an outfit used in any other image in this book
+- Describe the outfit in high detail in your output: fabric, color, fit, and any accessories
 
 SETTING RULES:
 - Each image MUST be in a COMPLETELY DIFFERENT location
@@ -233,7 +224,7 @@ SETTING RULES:
 - Use varied environments: home, outdoor, office, restaurant, gym, store, street, park, car, bathroom, etc.
 
 OUTPUT FORMAT:
-"A cinematic, 8k, hyper-realistic PHOTOGRAPH (strictly photorealistic, NO illustration, NO cartoon, NO clipart) of [SUBJECT DESCRIPTION — same face and build, wearing ${forcedOutfit}]. [They are SINCERELY and ENTHUSIASTICALLY doing what the quote says, pushed to absurd extreme]. [SPECIFIC SETTING]. [1-2 visual details that amplify the absurdity]. [Camera angle and lighting]. Shot on 35mm film. VERTICAL PORTRAIT ORIENTATION (9:16)."
+"A cinematic, 8k, hyper-realistic PHOTOGRAPH (strictly photorealistic, NO illustration, NO cartoon, NO clipart) of [SUBJECT DESCRIPTION — same face and build, wearing [OUTFIT: one unique outfit matching their wardrobe vibe, described in full detail — fabric, color, fit, accessories]]. [They are SINCERELY and ENTHUSIASTICALLY doing what the quote says, pushed to absurd extreme]. [SPECIFIC SETTING]. [1-2 visual details that amplify the absurdity]. [Camera angle and lighting]. Shot on 35mm film. VERTICAL PORTRAIT ORIENTATION (9:16)."
 
 Write ONLY the visual prompt. No explanation.${varietyNote}${antiRepetitionNote}`;
 }
@@ -243,10 +234,9 @@ Write ONLY the visual prompt. No explanation.${varietyNote}${antiRepetitionNote}
  * Switch between styles by changing ACTIVE_PROMPT_STYLE at the top of this file.
  */
 export async function generateVisualPrompt(input: VisualPromptInput): Promise<string> {
-  const { quote, victimDescription, victimTraits, imageIndex, totalImages } = input;
+  const { quote, victimDescription, victimTraits, wardrobeVibe, imageIndex, totalImages } = input;
 
-  const antiRepetitionNote = getAntiRepetitionNote(imageIndex, totalImages);
-  const forcedOutfit = CLOTHING_BY_INDEX[(imageIndex ?? 0) % 8];
+  const antiRepetitionNote = getAntiRepetitionNote(imageIndex, totalImages, wardrobeVibe);
 
   let systemPrompt: string;
   if (ACTIVE_PROMPT_STYLE === 'direct') {
@@ -271,7 +261,9 @@ Person's Real Traits & Habits (use this to determine what reality to show — th
 ${victimTraits}`;
   }
 
-  userPrompt += `\n\nMANDATORY OUTFIT FOR THIS IMAGE: The subject must be wearing ${forcedOutfit}. Do not change this. Do not substitute. Include this exact clothing description verbatim in your output prompt.`;
+  if (wardrobeVibe) {
+    userPrompt += `\n\nWARDROBE VIBE FOR THIS BOOK: ${wardrobeVibe}\nInvent a unique outfit for this specific image that fits this vibe. Describe it in full detail (fabric, color, fit, accessories) in your output. Do NOT repeat an outfit from any other image in this sequence.`;
+  }
 
   const response = await openai.chat.completions.create({
     model: 'gpt-4o-mini',
