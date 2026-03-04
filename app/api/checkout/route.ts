@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { createClient } from '@/lib/supabase-server';
-import { createCheckoutSession } from '@/lib/stripe';
+import { paddle } from '@/lib/paddle';
 import { isAdminUser } from '@/lib/admin';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,11 +31,7 @@ export async function POST(request: NextRequest) {
     console.log('[CHECKOUT API] BookId:', bookId);
 
     if (!bookId) {
-      console.error('[CHECKOUT API] Missing bookId');
-      return NextResponse.json(
-        { error: 'Missing bookId' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing bookId' }, { status: 400 });
     }
 
     // Get book data
@@ -47,10 +45,7 @@ export async function POST(request: NextRequest) {
 
     if (fetchError || !book) {
       console.error('[CHECKOUT API] Book not found:', fetchError);
-      return NextResponse.json(
-        { error: 'Book not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Book not found' }, { status: 404 });
     }
 
     if (book.status !== 'preview_ready') {
@@ -61,27 +56,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[CHECKOUT API] Creating Stripe session...');
-    // Create Stripe checkout session
-    const session = await createCheckoutSession(bookId, book.slug);
-    console.log('[CHECKOUT API] Stripe session created:', session.id);
+    console.log('[CHECKOUT API] Creating Paddle transaction...');
 
-    // Update book with session ID
+    const transaction = await paddle.transactions.create({
+      items: [{ priceId: process.env.PADDLE_PRICE_ID!, quantity: 1 }],
+      customData: { bookId, slug: book.slug },
+      checkoutSettings: {
+        successUrl: `${(process.env.NEXT_PUBLIC_APP_URL || '').trim()}/book/${book.slug}?start=3`,
+      },
+    });
+
+    console.log('[CHECKOUT API] Paddle transaction created:', transaction.id);
+
+    // Save transaction ID to book
     await supabaseAdmin
       .from('roast_books')
-      .update({
-        stripe_session_id: session.id,
-      })
+      .update({ paddle_transaction_id: transaction.id })
       .eq('id', bookId);
 
-    console.log('[CHECKOUT API] Success! Session URL:', session.url);
+    console.log('[CHECKOUT API] Success! Checkout URL:', transaction.checkout?.url);
 
-    return NextResponse.json({
-      sessionUrl: session.url,
-    });
+    return NextResponse.json({ checkoutUrl: transaction.checkout?.url });
   } catch (error: any) {
     console.error('[CHECKOUT API] Error:', error);
-    console.error('[CHECKOUT API] Error details:', error.message, error.stack);
     return NextResponse.json(
       { error: `Failed to create checkout session: ${error.message}` },
       { status: 500 }

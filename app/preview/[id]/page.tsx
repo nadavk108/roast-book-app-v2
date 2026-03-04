@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { initializePaddle } from '@paddle/paddle-js';
 import { Button } from '@/components/ui/Button';
 import { Shield, Home, Share2, Send } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
@@ -64,6 +65,13 @@ export default function PreviewPage() {
     fetchBook();
   }, []);
 
+  useEffect(() => {
+    initializePaddle({
+      environment: 'sandbox',
+      token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
+    });
+  }, []);
+
   // Show greeting input after payment while book generates
   useEffect(() => {
     if (isPaymentReturn && book && !greetingSaved && !book.custom_greeting) {
@@ -103,7 +111,7 @@ export default function PreviewPage() {
   }, [book, searchParams, paymentTracked, adminMode]);
 
   // Payment flow: poll for paid status, then trigger generation, then poll for completion.
-  // Waits for Stripe webhook to set status='paid' before calling generate-remaining,
+  // Waits for Paddle webhook to set status='paid' before calling generate-remaining,
   // avoiding the race condition where the API rejects with "Book not paid".
   useEffect(() => {
     if (!book?.id || !isPaymentReturn) return;
@@ -299,7 +307,7 @@ export default function PreviewPage() {
         throw new Error(data.error || 'Checkout failed');
       }
 
-      window.location.href = data.sessionUrl;
+      window.location.href = data.checkoutUrl;
     } catch (error: any) {
       alert(`Failed to start checkout: ${error.message || 'Unknown error'}`);
       setCheckingOut(false);

@@ -35,8 +35,7 @@ export type Database = {
           full_image_urls: string[];
           cover_image_url: string | null;
           slug: string;
-          stripe_session_id: string | null;
-          stripe_payment_intent: string | null;
+          paddle_transaction_id: string | null;
           video_status: 'processing' | 'complete' | 'failed' | null;
           video_url: string | null;
           video_generated_at: string | null;
@@ -56,8 +55,7 @@ export type Database = {
           full_image_urls?: string[];
           cover_image_url?: string | null;
           slug: string;
-          stripe_session_id?: string | null;
-          stripe_payment_intent?: string | null;
+          paddle_transaction_id?: string | null;
           video_status?: 'processing' | 'complete' | 'failed' | null;
           video_url?: string | null;
           video_generated_at?: string | null;
@@ -77,8 +75,7 @@ export type Database = {
           full_image_urls?: string[];
           cover_image_url?: string | null;
           slug?: string;
-          stripe_session_id?: string | null;
-          stripe_payment_intent?: string | null;
+          paddle_transaction_id?: string | null;
           video_status?: 'processing' | 'complete' | 'failed' | null;
           video_url?: string | null;
           video_generated_at?: string | null;

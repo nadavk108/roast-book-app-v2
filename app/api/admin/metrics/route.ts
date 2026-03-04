@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     // Fetch all books
     const { data: books, error } = await supabaseAdmin
       .from('roast_books')
-      .select('id, created_at, victim_name, status, slug, cover_image_url, stripe_payment_intent, quotes, preview_image_urls, full_image_urls, user_email, video_status, video_url')
+      .select('id, created_at, victim_name, status, slug, cover_image_url, paddle_transaction_id, quotes, preview_image_urls, full_image_urls, user_email, video_status, video_url')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
       imageCount: b.full_image_urls?.length || b.preview_image_urls?.length || 0,
       createdAt: b.created_at,
       isAdmin: b.user_email === 'nadavkarlinski@gmail.com',
-      hasPaid: b.stripe_payment_intent !== null,
+      hasPaid: b.paddle_transaction_id !== null,
       videoStatus: b.video_status ?? null,
       videoUrl: b.video_url ?? null,
     }));

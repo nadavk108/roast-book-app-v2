@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       .from('roast_books')
       .update({
         status: 'paid',
-        stripe_payment_intent: 'pi_test_manual',
+        paddle_transaction_id: 'txn_test_manual',
       })
       .eq('id', bookId);
 
