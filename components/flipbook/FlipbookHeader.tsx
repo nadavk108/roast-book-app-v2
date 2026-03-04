@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Home, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -17,11 +18,13 @@ export function FlipbookHeader({ bookTitle, victimName, onShare }: FlipbookHeade
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => window.location.href = '/'}
           className="text-white hover:text-yellow-400 hover:bg-white/10 transition-colors"
+          asChild
         >
-          <Home className="h-5 w-5 md:mr-2" />
-          <span className="hidden md:inline">Home</span>
+          <Link href="/">
+            <Home className="h-5 w-5 md:mr-2" />
+            <span className="hidden md:inline">Home</span>
+          </Link>
         </Button>
 
         {/* Book Title - Center */}

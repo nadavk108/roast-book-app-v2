@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { Home, Share2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { TheEndPage } from '@/components/flipbook/TheEndPage';
 import { isPredominantlyHebrew, getHebrewBookTitle } from '@/lib/hebrew-utils';
@@ -26,7 +27,6 @@ type Slide = {
 
 export default function BookPage() {
   const params = useParams();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
@@ -275,13 +275,13 @@ export default function BookPage() {
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-40 pt-safe">
         <div className="flex items-center justify-between px-4 py-3 mt-3">
-          <button
-            onClick={() => router.push('/')}
+          <Link
+            href="/"
             className="flex items-center justify-center w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white hover:bg-black/60 transition-colors"
             aria-label="Go home"
           >
             <Home className="w-5 h-5" />
-          </button>
+          </Link>
 
           <div className="flex-1 text-center px-4">
             <h1

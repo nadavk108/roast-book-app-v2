@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Share2, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { isPredominantlyHebrew } from '@/lib/hebrew-utils';
@@ -169,12 +170,12 @@ export function TheEndPage({ victimName, bookUrl }: TheEndPageProps) {
 
         {/* Create Your Own CTA */}
         <div className="mt-6 pt-6 border-white/10">
-          <button
-            onClick={() => window.location.href = '/'}
-            className="w-full py-3 px-6 border-2 border-white/30 bg-white/10 backdrop-blur-sm text-white hover:bg-white hover:text-black font-bold rounded-xl transition-all hover:scale-105 active:scale-95"
+          <Link
+            href="/"
+            className="block text-center w-full py-3 px-6 border-2 border-white/30 bg-white/10 backdrop-blur-sm text-white hover:bg-white hover:text-black font-bold rounded-xl transition-all hover:scale-105 active:scale-95"
           >
             Create Your Own Roast Book
-          </button>
+          </Link>
         </div>
       </div>
     </div>
