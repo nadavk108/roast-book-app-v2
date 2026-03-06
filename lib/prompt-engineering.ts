@@ -25,7 +25,7 @@ type VisualPromptInput = {
 function getAntiRepetitionNote(imageIndex?: number, totalImages?: number, wardrobeVibe?: string): string {
   if (imageIndex === undefined || !totalImages) return '';
   const vibeInstruction = wardrobeVibe
-    ? `\n\nOUTFIT FOR THIS IMAGE: Invent a unique outfit that strictly aligns with this wardrobe vibe: "${wardrobeVibe}". The outfit must be different from every other image in this sequence — never repeat the same top, bottom, shoes, or color palette. Describe the clothing in high detail in your output: fabric, color, fit, and any accessories.`
+    ? `\n\nOUTFIT FOR THIS IMAGE: This person's everyday style is: "${wardrobeVibe}". Use this as a personality guide — NOT a costume. The outfit must fit the SCENE and WEATHER first, then reflect their personal aesthetic. A beach-casual person wears athletic clothes at the gym, a jacket in cold weather, work clothes at the office — they do NOT wear beach/vacation outfits everywhere. Invent a unique, scene-appropriate outfit that feels natural for this specific situation while reflecting who this person is. Never repeat the same top, bottom, shoes, or color palette used in any other image in this sequence. Describe the outfit in full detail: fabric, color, fit, accessories.`
     : '';
   return `\n\nIMPORTANT: This is image ${imageIndex + 1} of ${totalImages} in the same book. You MUST use a completely different outfit, environment, camera angle, and time of day than any other image. Never repeat subway, gym, cafe, or park across images in the same book.${vibeInstruction}`;
 }
@@ -262,7 +262,7 @@ ${victimTraits}`;
   }
 
   if (wardrobeVibe) {
-    userPrompt += `\n\nWARDROBE VIBE FOR THIS BOOK: ${wardrobeVibe}\nInvent a unique outfit for this specific image that fits this vibe. Describe it in full detail (fabric, color, fit, accessories) in your output. Do NOT repeat an outfit from any other image in this sequence.`;
+    userPrompt += `\n\nPERSON'S STYLE (personality guide, not a costume): ${wardrobeVibe}\nThe outfit must fit the SCENE and WEATHER first. Only use vacation/beach/sport-specific clothing if the scene calls for it. Invent a unique, contextually appropriate outfit that reflects their aesthetic without repeating garments from other images. Describe it in full detail (fabric, color, fit, accessories).`;
   }
 
   const response = await openai.chat.completions.create({
