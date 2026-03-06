@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from "framer-motion";
-import { Upload, Users, Vote, Sparkles, ArrowRight } from "lucide-react";
+import { Upload, Users, Gift, Sparkles, ArrowRight } from "lucide-react";
 
 const steps = [
   {
@@ -29,7 +29,7 @@ const steps = [
     color: "from-blue-500 to-cyan-400",
   },
   {
-    icon: Vote,
+    icon: Gift,
     number: "4",
     title: "Preview & Pay",
     description: "Review your custom roast book, then pay to unlock the full flipbook.",

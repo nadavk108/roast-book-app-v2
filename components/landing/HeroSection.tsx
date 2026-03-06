@@ -99,7 +99,7 @@ export function HeroSection() {
 
             {/* CTAs */}
             <nav className="flex flex-col sm:flex-row gap-3 pt-2" aria-label="Primary actions">
-              <Link href="/dashboard" className="w-full sm:w-auto">
+              <Link href="/create" className="w-full sm:w-auto">
                 <BrutalButton size="xl" className="w-full group">
                   Start Roasting Free
                   <ArrowRight className="ml-2 transition-transform group-hover:translate-x-1" aria-hidden="true" />

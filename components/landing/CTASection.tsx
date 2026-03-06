@@ -90,7 +90,7 @@ export function CTASection() {
             transition={{ delay: 0.2 }}
             className="text-center"
           >
-            <Link href="/dashboard">
+            <Link href="/create">
               <BrutalButton
                 size="xl"
                 className="bg-primary text-primary-foreground border-background hover:bg-accent text-lg px-10"

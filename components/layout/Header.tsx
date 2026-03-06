@@ -149,7 +149,7 @@ export function Header() {
                       Sign In
                     </button>
                   </Link>
-                  <Link href="/dashboard">
+                  <Link href="/create">
                     <BrutalButton
                       size="sm"
                       onClick={() => captureEvent(Events.START_ROASTING_CLICKED, { location: 'header_desktop' })}
@@ -261,7 +261,7 @@ export function Header() {
                     >
                       Sign In
                     </Link>
-                    <Link href="/dashboard" onClick={() => {
+                    <Link href="/create" onClick={() => {
                       setMobileMenuOpen(false);
                       captureEvent(Events.START_ROASTING_CLICKED, { location: 'header_mobile' });
                     }}>
