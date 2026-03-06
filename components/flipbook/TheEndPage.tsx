@@ -29,7 +29,7 @@ export function TheEndPage({ victimName, bookUrl }: TheEndPageProps) {
 
   const handleEmailShare = () => {
     const subject = encodeURIComponent(shareTitle);
-    const body = encodeURIComponent(`${shareText}\n\nView it here: ${bookUrl}\n\nMade with RoastBook.app 🔥`);
+    const body = encodeURIComponent(`${shareText}\n\nView it here: ${bookUrl}\n\nMade with theroastbook.com 🔥`);
     window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
   };
 
@@ -171,7 +171,7 @@ export function TheEndPage({ victimName, bookUrl }: TheEndPageProps) {
         {/* Create Your Own CTA */}
         <div className="mt-6 pt-6 border-white/10">
           <Link
-            href="/"
+            href="/create"
             className="block text-center w-full py-3 px-6 border-2 border-white/30 bg-white/10 backdrop-blur-sm text-white hover:bg-white hover:text-black font-bold rounded-xl transition-all hover:scale-105 active:scale-95"
           >
             Create Your Own Roast Book

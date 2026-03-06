@@ -644,29 +644,38 @@ export default function PreviewPage() {
               </div>
             )}
 
-            <div className="absolute inset-0 flex items-center justify-center p-8 pointer-events-none">
-              <div className="text-center pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-                <div className="text-6xl mb-6">🔒</div>
-                <h2 className="text-2xl font-heading font-black text-white mb-2">
-                  {isHebrewBook ? 'פתחו את הספר המלא' : 'Unlock Full Book'}
-                </h2>
-                <p className="text-gray-400 mb-8 max-w-sm" dir={isHebrewBook ? 'rtl' : 'ltr'}>
-                  {isHebrewBook
-                    ? `קבלו את כל ${book.quotes.length} הרוסטים ושתפו את הספר המלא`
-                    : `Get all ${book.quotes.length} hilarious roasts and share the complete book`}
+            <div className="absolute inset-0 flex items-center justify-center p-6 pointer-events-none">
+              <div className="text-center pointer-events-auto w-full max-w-xs" onClick={(e) => e.stopPropagation()}>
+                <p className="text-yellow-400 text-xs font-bold uppercase tracking-widest mb-3">
+                  {isHebrewBook ? 'רק מתחיל...' : 'That was just the warmup'}
                 </p>
+                <h2 className="text-2xl font-heading font-black text-white mb-2 leading-tight" dir={isHebrewBook ? 'rtl' : 'ltr'}>
+                  {isHebrewBook
+                    ? `עוד ${book.quotes.length - 2} רוסטים מחכים ל${book.victim_name}`
+                    : `${book.quotes.length - 2} more roasts are waiting for ${book.victim_name}`}
+                </h2>
+                <p className="text-white/50 text-sm mb-6" dir={isHebrewBook ? 'rtl' : 'ltr'}>
+                  {isHebrewBook
+                    ? 'הטובים ביותר עוד לא ראיתם'
+                    : "The best ones haven't dropped yet."}
+                </p>
+                <div className="flex justify-center gap-4 text-xs text-white/40 mb-6">
+                  <span>✓ {isHebrewBook ? `כל ${book.quotes.length} הרוסטים` : `All ${book.quotes.length} roasts`}</span>
+                  <span>✓ {isHebrewBook ? 'שתפו את הספר' : 'Shareable link'}</span>
+                  <span>✓ {isHebrewBook ? 'הקדשה אישית' : 'Personal note'}</span>
+                </div>
                 <Button
                   onClick={handleCheckout}
                   disabled={checkingOut}
                   size="lg"
-                  className="bg-yellow-400 hover:bg-yellow-500 text-black font-heading font-black text-lg px-8 py-6 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                  className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-heading font-black text-lg py-6 border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
                 >
                   {checkingOut
                     ? (isHebrewBook ? 'מעבד...' : 'Processing...')
-                    : (isHebrewBook ? 'פתחו את הספר - $9.99' : 'Unlock Book - $9.99')}
+                    : (isHebrewBook ? `פתחו את הספר המלא - $9.99` : `Unlock Full Book — $9.99`)}
                 </Button>
-                <p className="text-white/50 text-xs mt-4">
-                  {isHebrewBook ? '← הקישו בצדדים לתצוגה מקדימה →' : '← Tap sides to preview more quotes →'}
+                <p className="text-white/30 text-xs mt-3">
+                  {isHebrewBook ? '← הקישו בצדדים לתצוגה מקדימה →' : '← Tap sides to preview more →'}
                 </p>
               </div>
             </div>
