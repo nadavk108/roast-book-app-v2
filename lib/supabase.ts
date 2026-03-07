@@ -35,7 +35,8 @@ export type Database = {
           full_image_urls: string[];
           cover_image_url: string | null;
           slug: string;
-          paddle_transaction_id: string | null;
+          lemonsqueezy_checkout_id: string | null;
+          lemonsqueezy_order_id: string | null;
           video_status: 'processing' | 'complete' | 'failed' | null;
           video_url: string | null;
           video_generated_at: string | null;
@@ -55,7 +56,8 @@ export type Database = {
           full_image_urls?: string[];
           cover_image_url?: string | null;
           slug: string;
-          paddle_transaction_id?: string | null;
+          lemonsqueezy_checkout_id?: string | null;
+          lemonsqueezy_order_id?: string | null;
           video_status?: 'processing' | 'complete' | 'failed' | null;
           video_url?: string | null;
           video_generated_at?: string | null;
@@ -75,7 +77,8 @@ export type Database = {
           full_image_urls?: string[];
           cover_image_url?: string | null;
           slug?: string;
-          paddle_transaction_id?: string | null;
+          lemonsqueezy_checkout_id?: string | null;
+          lemonsqueezy_order_id?: string | null;
           video_status?: 'processing' | 'complete' | 'failed' | null;
           video_url?: string | null;
           video_generated_at?: string | null;

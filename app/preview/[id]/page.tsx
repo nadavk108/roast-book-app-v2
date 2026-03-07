@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { initializePaddle } from '@paddle/paddle-js';
 import { Button } from '@/components/ui/Button';
 import { Shield, Home, Share2, Send } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
@@ -63,13 +62,6 @@ export default function PreviewPage() {
   useEffect(() => {
     loadUser();
     fetchBook();
-  }, []);
-
-  useEffect(() => {
-    initializePaddle({
-      environment: 'sandbox',
-      token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
-    });
   }, []);
 
   // Show greeting input after payment while book generates

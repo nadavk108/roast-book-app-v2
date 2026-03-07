@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { createClient } from '@/lib/supabase-server';
-import { paddle } from '@/lib/paddle';
+import { setupLemonSqueezy } from '@/lib/lemonsqueezy';
+import { createCheckout } from '@lemonsqueezy/lemonsqueezy.js';
 import { isAdminUser } from '@/lib/admin';
 
 export const dynamic = 'force-dynamic';
@@ -56,27 +57,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[CHECKOUT API] Creating Paddle transaction...');
+    console.log('[CHECKOUT API] Creating LemonSqueezy checkout...');
 
-    const transaction = await paddle.transactions.create({
-      items: [{ priceId: process.env.PADDLE_PRICE_ID!, quantity: 1 }],
-      customData: { bookId, slug: book.slug },
-    });
+    setupLemonSqueezy();
 
-    console.log('[CHECKOUT API] Paddle transaction created:', transaction.id);
-    console.log('[CHECKOUT API] Full transaction:', JSON.stringify(transaction, null, 2));
+    const checkout = await createCheckout(
+      process.env.LEMONSQUEEZY_STORE_ID!,
+      process.env.LEMONSQUEEZY_VARIANT_ID!,
+      {
+        checkoutOptions: {
+          embed: false,
+        },
+        checkoutData: {
+          custom: {
+            bookId,
+            slug: book.slug,
+          },
+        },
+        productOptions: {
+          redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/book/${book.slug}?start=3`,
+          receiptLinkUrl: `${process.env.NEXT_PUBLIC_APP_URL}/book/${book.slug}?start=3`,
+        },
+      }
+    );
 
-    // Save transaction ID to book
+    console.log('[CHECKOUT API] LemonSqueezy checkout created:', checkout.data?.data.id);
+
+    const checkoutUrl = checkout.data?.data.attributes.url;
+
+    if (!checkoutUrl) {
+      console.error('[CHECKOUT API] No checkout URL in response:', JSON.stringify(checkout, null, 2));
+      return NextResponse.json({ error: 'Failed to get checkout URL' }, { status: 500 });
+    }
+
+    // Save checkout ID to book
     await supabaseAdmin
       .from('roast_books')
-      .update({ paddle_transaction_id: transaction.id })
+      .update({ lemonsqueezy_checkout_id: checkout.data?.data.id })
       .eq('id', bookId);
 
-    console.log('[CHECKOUT API] Success! Checkout URL:', transaction.checkout?.url);
+    console.log('[CHECKOUT API] Success! Checkout URL:', checkoutUrl);
 
-    const checkoutUrl = `https://buy.paddle.com/checkout/custom-checkout?_ptxn=${transaction.id}`;
-console.log('[CHECKOUT API] Hosted checkout URL:', checkoutUrl);
-return NextResponse.json({ checkoutUrl });
+    return NextResponse.json({ checkoutUrl });
   } catch (error: any) {
     console.error('[CHECKOUT API] Error:', error);
     return NextResponse.json(
