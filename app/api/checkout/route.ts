@@ -75,8 +75,8 @@ export async function POST(request: NextRequest) {
           },
         },
         productOptions: {
-          redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/book/${book.slug}?start=3`,
-          receiptLinkUrl: `${process.env.NEXT_PUBLIC_APP_URL}/book/${book.slug}?start=3`,
+          redirectUrl: `https://www.theroastbook.com/book/${book.slug}?start=3`,
+          receiptLinkUrl: `https://www.theroastbook.com/book/${book.slug}?start=3`,
         },
       }
     );
