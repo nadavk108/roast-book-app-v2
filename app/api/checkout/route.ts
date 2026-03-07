@@ -81,9 +81,16 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    console.log('[CHECKOUT API] LemonSqueezy checkout created:', checkout.data?.data.id);
+    console.log('[CHECKOUT API] LS response:', JSON.stringify(checkout, null, 2));
+    console.log('[CHECKOUT API] LS errors:', checkout.error);
 
-    const checkoutUrl = checkout.data?.data.attributes.url;
+    if (!checkout.data) {
+      throw new Error(`LemonSqueezy returned no data. Full response: ${JSON.stringify(checkout, null, 2)}`);
+    }
+
+    console.log('[CHECKOUT API] LemonSqueezy checkout created:', checkout.data.data.id);
+
+    const checkoutUrl = checkout.data.data.attributes.url;
 
     if (!checkoutUrl) {
       console.error('[CHECKOUT API] No checkout URL in response:', JSON.stringify(checkout, null, 2));
