@@ -74,7 +74,9 @@ export async function POST(request: NextRequest) {
 
     console.log('[CHECKOUT API] Success! Checkout URL:', transaction.checkout?.url);
 
-    return NextResponse.json({ checkoutUrl: transaction.checkout?.url });
+    const checkoutUrl = `https://buy.paddle.com/checkout/custom-checkout?_ptxn=${transaction.id}`;
+console.log('[CHECKOUT API] Hosted checkout URL:', checkoutUrl);
+return NextResponse.json({ checkoutUrl });
   } catch (error: any) {
     console.error('[CHECKOUT API] Error:', error);
     return NextResponse.json(
