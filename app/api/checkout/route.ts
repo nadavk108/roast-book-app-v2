@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         },
         checkoutData: {
           custom: {
-            bookId,
+            book_id: bookId,
             slug: book.slug,
           },
         },

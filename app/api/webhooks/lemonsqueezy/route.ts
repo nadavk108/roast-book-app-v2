@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     payload.meta?.event_name === 'order_created' &&
     payload.data?.attributes?.status === 'paid'
   ) {
-    const bookId = payload.meta?.custom_data?.bookId;
+    const bookId = payload.meta?.custom_data?.book_id;
 
     if (!bookId) {
       console.error('[LemonSqueezy Webhook] No bookId in custom_data');
