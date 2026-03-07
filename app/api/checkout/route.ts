@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
     });
 
     console.log('[CHECKOUT API] Paddle transaction created:', transaction.id);
+    console.log('[CHECKOUT API] Full transaction:', JSON.stringify(transaction, null, 2));
 
     // Save transaction ID to book
     await supabaseAdmin
