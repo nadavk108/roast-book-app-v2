@@ -221,7 +221,7 @@ SETTING RULES:
 - Use varied environments: home, outdoor, office, restaurant, gym, store, street, park, car, bathroom, etc.
 
 OUTPUT FORMAT:
-"A cinematic, 8k, hyper-realistic PHOTOGRAPH (strictly photorealistic, NO illustration, NO cartoon, NO clipart) of [SUBJECT DESCRIPTION — same face and build, wearing [OUTFIT: one unique outfit appropriate for the scene, described in full detail — fabric, color, fit, accessories]]. [They are SINCERELY and ENTHUSIASTICALLY doing what the quote says, pushed to absurd extreme]. [SPECIFIC SETTING]. [1-2 visual details that amplify the absurdity]. [Camera angle and lighting]. Shot on 35mm film. VERTICAL PORTRAIT ORIENTATION (9:16)."
+"A cinematic, 8k, hyper-realistic PHOTOGRAPH (strictly photorealistic, NO illustration, NO cartoon, NO clipart) of [SUBJECT DESCRIPTION — same face and build, wearing [OUTFIT: one unique outfit appropriate for the scene, described in full detail — fabric, color, fit, accessories]]. [They are SINCERELY and ENTHUSIASTICALLY doing what the quote says, pushed to absurd extreme]. [SPECIFIC SETTING]. [1-2 visual details that amplify the absurdity]. [Camera angle and lighting]. Shot on 35mm film. No text, no words, no readable signs, no written text of any kind visible anywhere in the scene. VERTICAL PORTRAIT ORIENTATION (9:16)."
 
 Write ONLY the visual prompt. No explanation.${varietyNote}${antiRepetitionNote}`;
 }
