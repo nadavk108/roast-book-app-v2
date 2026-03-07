@@ -61,9 +61,6 @@ export async function POST(request: NextRequest) {
     const transaction = await paddle.transactions.create({
       items: [{ priceId: process.env.PADDLE_PRICE_ID!, quantity: 1 }],
       customData: { bookId, slug: book.slug },
-      checkoutSettings: {
-        successUrl: `${(process.env.NEXT_PUBLIC_APP_URL || '').trim()}/book/${book.slug}?start=3`,
-      },
     });
 
     console.log('[CHECKOUT API] Paddle transaction created:', transaction.id);
