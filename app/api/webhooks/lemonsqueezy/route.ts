@@ -29,6 +29,9 @@ export async function POST(request: NextRequest) {
   console.log('[LS WEBHOOK] Custom data:', JSON.stringify(payload.meta?.custom_data));
   console.log('[LS WEBHOOK] Order status:', payload.data?.attributes?.status);
 
+  console.log('[LS WEBHOOK] Full meta:', JSON.stringify(payload.meta, null, 2));
+  console.log('[LS WEBHOOK] Full data attributes:', JSON.stringify(payload.data?.attributes, null, 2));
+
   if (
     payload.meta?.event_name === 'order_created' &&
     payload.data?.attributes?.status === 'paid'
