@@ -47,16 +47,6 @@ STEP 4 - COMEDY STYLE (pick the most ironic mode per trait):
 - Loves weed, rebellion, laziness → Sound like a hyper-responsible rule enforcer
 - Messy or always late → Sound neurotically punctual and organized
 
-STEP 5 - WARDROBE VIBE:
-Infer the person's authentic day-to-day clothing aesthetic from their personality and appearance.
-Write 1-2 sentences describing what they would naturally wear. Be specific: garment types, fit, fabric, colors, footwear.
-This is used by an image AI to invent scene-appropriate outfits — it must be gender-correct and persona-accurate.
-Examples:
-- "Casual urban — slim dark jeans, plain fitted tees or minimal hoodies, white leather sneakers. Clean and unpretentious."
-- "Girly glam — high-waisted jeans or fitted dresses, strappy tops, heeled boots or chunky trainers. Always accessorized."
-- "Israeli tech casual — slim chinos or joggers, polo or open button-down, clean Nikes. Functional and put-together."
-- "Outdoorsy — cargo pants or hiking trousers, fleece or puffer vest, trail shoes. Practical and rugged."
-
 TONE RULES:
 - Funny but not mean
 - Subtle cringe beats obvious reversal
@@ -71,7 +61,7 @@ OUTPUT RULES (STRICT):
 - Describe or strongly imply a concrete, visible action
 - Maximize trait variety: use every unique trait before reusing any
 - When reusing a trait, use a completely different scenario and action
-- Return ONLY a JSON object: {"quotes": ["quote1", "quote2", ...], "wardrobe_vibe": "style description"}
+- Return ONLY a JSON object: {"quotes": ["quote1", "quote2", ...]}
 - No extra text, no explanations
 
 QUALITY FILTER (MENTAL CHECK BEFORE OUTPUT):
@@ -117,25 +107,20 @@ export async function POST(request: NextRequest) {
 
       const parsed = JSON.parse(quotesResponse.choices[0].message.content || '{"quotes": []}');
       const quotes = parsed.quotes;
-      const wardrobeVibe: string | undefined = parsed.wardrobe_vibe || undefined;
 
       console.log('Generated quotes:', quotes);
-      if (wardrobeVibe) console.log('Generated wardrobe_vibe:', wardrobeVibe);
 
-        // Save traits and wardrobe vibe to book if bookId provided
+        // Save traits to book if bookId provided
         if (bookId) {
-          const dbUpdate: Record<string, unknown> = { victim_traits: trueTraits };
-          if (wardrobeVibe) dbUpdate.wardrobe_vibe = wardrobeVibe;
-
           const { error: traitsError } = await supabaseAdmin
             .from('roast_books')
-            .update(dbUpdate)
+            .update({ victim_traits: trueTraits })
             .eq('id', bookId);
 
           if (traitsError) {
             console.error('Failed to save traits:', traitsError);
           } else {
-            console.log(`[${bookId}] ✅ Saved victim_traits${wardrobeVibe ? ' + wardrobe_vibe' : ''} to database`);
+            console.log(`[${bookId}] ✅ Saved victim_traits to database`);
           }
         }
 
@@ -190,13 +175,10 @@ export async function POST(request: NextRequest) {
 
     const parsed = JSON.parse(quotesResponse.choices[0].message.content || '{"quotes": []}');
     const quotes = parsed.quotes;
-    const wardrobeVibe: string | undefined = parsed.wardrobe_vibe || undefined;
 
     console.log('Generated quotes:', quotes);
-    if (wardrobeVibe) console.log(`[${bookId}] Generated wardrobe_vibe:`, wardrobeVibe);
 
     const dbUpdate: Record<string, unknown> = { quotes, status: 'analyzing' };
-    if (wardrobeVibe) dbUpdate.wardrobe_vibe = wardrobeVibe;
 
     const { error: updateError } = await supabaseAdmin
       .from('roast_books')

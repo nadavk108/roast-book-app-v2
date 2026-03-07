@@ -17,17 +17,13 @@ type VisualPromptInput = {
   quote: string;
   victimDescription: string;
   victimTraits?: string;
-  wardrobeVibe?: string;
   imageIndex?: number;
   totalImages?: number;
 };
 
-function getAntiRepetitionNote(imageIndex?: number, totalImages?: number, wardrobeVibe?: string): string {
+function getAntiRepetitionNote(imageIndex?: number, totalImages?: number): string {
   if (imageIndex === undefined || !totalImages) return '';
-  const vibeInstruction = wardrobeVibe
-    ? `\n\nOUTFIT FOR THIS IMAGE: This person's everyday style is: "${wardrobeVibe}". Use this as a personality guide — NOT a costume. The outfit must fit the SCENE and WEATHER first, then reflect their personal aesthetic. A beach-casual person wears athletic clothes at the gym, a jacket in cold weather, work clothes at the office — they do NOT wear beach/vacation outfits everywhere. Invent a unique, scene-appropriate outfit that feels natural for this specific situation while reflecting who this person is. Never repeat the same top, bottom, shoes, or color palette used in any other image in this sequence. Describe the outfit in full detail: fabric, color, fit, accessories.`
-    : '';
-  return `\n\nIMPORTANT: This is image ${imageIndex + 1} of ${totalImages} in the same book. You MUST use a completely different outfit, environment, camera angle, and time of day than any other image. Never repeat subway, gym, cafe, or park across images in the same book.${vibeInstruction}`;
+  return `\n\nIMPORTANT: This is image ${imageIndex + 1} of ${totalImages} in the same book. You MUST use a completely different outfit, environment, camera angle, and time of day than any other image. Never repeat subway, gym, cafe, or park across images in the same book.`;
 }
 
 // ============================================
@@ -213,7 +209,8 @@ You will receive a "Subject Description" with physical details.
 CONTEXT: You may also receive the person's real personality traits. These tell you WHY this quote is funny (because they're the opposite in real life), but do NOT show their real traits. Show the QUOTE's version of them.
 
 OUTFIT RULES:
-- Invent a unique outfit for this image that aligns with the subject's wardrobe vibe (provided in the anti-repetition note above)
+- Invent a unique outfit that fits the scene and activity (gym clothes at a gym, work clothes at an office, outdoor gear on a hike, etc.)
+- EXCEPTION: if wearing a wildly wrong outfit amplifies the comedy of this specific quote, use that instead - but it must be intentional and clearly funny
 - Do NOT keep the clothing from the reference photo
 - Do NOT repeat an outfit used in any other image in this book
 - Describe the outfit in high detail in your output: fabric, color, fit, and any accessories
@@ -224,7 +221,7 @@ SETTING RULES:
 - Use varied environments: home, outdoor, office, restaurant, gym, store, street, park, car, bathroom, etc.
 
 OUTPUT FORMAT:
-"A cinematic, 8k, hyper-realistic PHOTOGRAPH (strictly photorealistic, NO illustration, NO cartoon, NO clipart) of [SUBJECT DESCRIPTION — same face and build, wearing [OUTFIT: one unique outfit matching their wardrobe vibe, described in full detail — fabric, color, fit, accessories]]. [They are SINCERELY and ENTHUSIASTICALLY doing what the quote says, pushed to absurd extreme]. [SPECIFIC SETTING]. [1-2 visual details that amplify the absurdity]. [Camera angle and lighting]. Shot on 35mm film. VERTICAL PORTRAIT ORIENTATION (9:16)."
+"A cinematic, 8k, hyper-realistic PHOTOGRAPH (strictly photorealistic, NO illustration, NO cartoon, NO clipart) of [SUBJECT DESCRIPTION — same face and build, wearing [OUTFIT: one unique outfit appropriate for the scene, described in full detail — fabric, color, fit, accessories]]. [They are SINCERELY and ENTHUSIASTICALLY doing what the quote says, pushed to absurd extreme]. [SPECIFIC SETTING]. [1-2 visual details that amplify the absurdity]. [Camera angle and lighting]. Shot on 35mm film. VERTICAL PORTRAIT ORIENTATION (9:16)."
 
 Write ONLY the visual prompt. No explanation.${varietyNote}${antiRepetitionNote}`;
 }
@@ -234,9 +231,9 @@ Write ONLY the visual prompt. No explanation.${varietyNote}${antiRepetitionNote}
  * Switch between styles by changing ACTIVE_PROMPT_STYLE at the top of this file.
  */
 export async function generateVisualPrompt(input: VisualPromptInput): Promise<string> {
-  const { quote, victimDescription, victimTraits, wardrobeVibe, imageIndex, totalImages } = input;
+  const { quote, victimDescription, victimTraits, imageIndex, totalImages } = input;
 
-  const antiRepetitionNote = getAntiRepetitionNote(imageIndex, totalImages, wardrobeVibe);
+  const antiRepetitionNote = getAntiRepetitionNote(imageIndex, totalImages);
 
   let systemPrompt: string;
   if (ACTIVE_PROMPT_STYLE === 'direct') {
@@ -259,10 +256,6 @@ Input Quote: "${quote}"`;
 
 Person's Real Traits & Habits (use this to determine what reality to show — this is what they ACTUALLY do):
 ${victimTraits}`;
-  }
-
-  if (wardrobeVibe) {
-    userPrompt += `\n\nPERSON'S STYLE (personality guide, not a costume): ${wardrobeVibe}\nThe outfit must fit the SCENE and WEATHER first. Only use vacation/beach/sport-specific clothing if the scene calls for it. Invent a unique, contextually appropriate outfit that reflects their aesthetic without repeating garments from other images. Describe it in full detail (fabric, color, fit, accessories).`;
   }
 
   const response = await openai.chat.completions.create({

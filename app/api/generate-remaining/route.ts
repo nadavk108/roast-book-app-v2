@@ -103,7 +103,6 @@ async function processRemainingImages(book: any) {
             quote,
             victimDescription: book.victim_description,
             victimTraits: book.victim_traits || '',
-            wardrobeVibe: book.wardrobe_vibe || undefined,
             imageIndex: i + 3,
             totalImages: book.quotes.length
           }),
