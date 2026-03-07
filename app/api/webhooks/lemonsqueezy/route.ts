@@ -24,7 +24,10 @@ export async function POST(request: NextRequest) {
   }
 
   const payload = JSON.parse(rawBody);
-  console.log('[LemonSqueezy Webhook] Event:', payload.meta?.event_name);
+  console.log('[LS WEBHOOK] Full payload:', JSON.stringify(payload, null, 2));
+  console.log('[LS WEBHOOK] Event:', payload.meta?.event_name);
+  console.log('[LS WEBHOOK] Custom data:', JSON.stringify(payload.meta?.custom_data));
+  console.log('[LS WEBHOOK] Order status:', payload.data?.attributes?.status);
 
   if (
     payload.meta?.event_name === 'order_created' &&
