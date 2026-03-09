@@ -197,6 +197,7 @@ export default function AdminPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [authorized, setAuthorized] = useState(false);
   const [videoGenerating, setVideoGenerating] = useState<{ bookId: string; bookName: string } | null>(null);
+  const [regenerating, setRegenerating] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -233,6 +234,24 @@ export default function AdminPage() {
   const handleRefresh = () => {
     setRefreshing(true);
     fetchMetrics();
+  };
+
+  const handleRegenerateImages = async (bookId: string) => {
+    setRegenerating(bookId);
+    try {
+      const res = await fetch('/api/admin/regenerate-images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+    } catch (err: any) {
+      alert(`Regeneration failed: ${err.message}`);
+    } finally {
+      setRegenerating(null);
+      fetchMetrics();
+    }
   };
 
   const handleGenerateVideo = async (bookId: string, bookName: string) => {
@@ -507,6 +526,20 @@ export default function AdminPage() {
                       <span className="text-white/30 text-[10px]">{book.imageCount} imgs</span>
                       <span className="text-white/30 text-[10px]">{timeAgo}</span>
                     </div>
+                  </div>
+
+                  {/* Regenerate images (admin prompt testing) */}
+                  <div className="flex-shrink-0" onClick={e => e.stopPropagation()}>
+                    <button
+                      onClick={() => handleRegenerateImages(book.id)}
+                      disabled={regenerating !== null || videoGenerating !== null}
+                      title="Regenerate all images"
+                      className="text-xs px-2 py-1.5 bg-white/10 text-white/60 rounded-lg font-bold disabled:opacity-30 hover:bg-white/20 transition-colors"
+                    >
+                      {regenerating === book.id ? (
+                        <span className="animate-spin inline-block">⟳</span>
+                      ) : '🔄'}
+                    </button>
                   </div>
 
                   {/* Video controls (complete books only) */}
