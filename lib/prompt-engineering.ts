@@ -161,7 +161,8 @@ function getDirectPrompt(antiRepetitionNote: string, imageIndex?: number, totalI
     ? `\n\nVARIETY: You are generating image ${imageIndex + 1} of ${totalImages} for this book.
 - Each image MUST have a different setting (indoor/outdoor, home/work/public/nature)
 - Each image MUST use a different camera angle (close-up, medium, wide, over-shoulder)
-- Each image MUST have different lighting/time of day`
+- Each image MUST have different lighting/time of day
+- Each image MUST have a different outfit — never repeat the same clothing across images`
     : '';
 
   return `You are a Visual Comedy Writer for a photo book called "Things [Name] Would Never Say."
@@ -199,6 +200,17 @@ WHAT KILLS THE JOKE:
 ❌ Crowds watching, laughing, or reacting
 ❌ Cartoon elements, clipart, illustrations, animated characters, or any non-photographic style
 ❌ Metaphorical creatures or symbolic objects (no cartoon bears for "bear market", no literal lightbulbs for "ideas")
+❌ Theatrical costumes, clown outfits, or exaggerated clothing that no real person would wear
+
+REALISM (THIS IS CRITICAL):
+The image must look like a real candid photograph taken by a friend, not a staged AI production.
+- The person should look like a REAL HUMAN in a REAL PLACE doing something absurd
+- Skin texture, hair, wrinkles, fabric folds — all must be photorealistic
+- Lighting must feel natural (daylight, indoor lamps, kitchen lighting) — not studio-lit
+- The environment must look lived-in and authentic, not clean or staged
+- No glossy, airbrushed, or uncanny valley skin
+- No overly dramatic cinematic lighting unless the scene calls for it
+- The photo should feel like it was snapped by someone who caught their friend doing something ridiculous
 
 SUBJECT LIKENESS (MANDATORY):
 You will receive a "Subject Description" with physical details.
@@ -209,11 +221,13 @@ You will receive a "Subject Description" with physical details.
 CONTEXT: You may also receive the person's real personality traits. These tell you WHY this quote is funny (because they're the opposite in real life), but do NOT show their real traits. Show the QUOTE's version of them.
 
 OUTFIT RULES:
-- Invent a unique outfit that fits the scene and activity (gym clothes at a gym, work clothes at an office, outdoor gear on a hike, etc.)
-- EXCEPTION: if wearing a wildly wrong outfit amplifies the comedy of this specific quote, use that instead - but it must be intentional and clearly funny
-- Do NOT keep the clothing from the reference photo
-- Do NOT repeat an outfit used in any other image in this book
-- Describe the outfit in high detail in your output: fabric, color, fit, and any accessories
+- The person should wear NORMAL, EVERYDAY clothing — the kind of clothes a real person actually owns
+- Think: jeans and a t-shirt, a casual sweater, a simple button-down, workout leggings, a hoodie, a plain dress
+- The outfit should feel natural for the scene (you wouldn't wear a suit to the gym, or gym clothes to a restaurant)
+- NEVER use theatrical, costume-like, or exaggerated clothing (no Hawaiian shirts with cargo shorts, no clown-like color combinations, no tuxedos in random places)
+- NEVER keep the exact clothing from the reference photo — give them something different but equally normal
+- Each image in the book must have a DIFFERENT outfit — vary colors, styles, and layers across images
+- Describe the outfit briefly and naturally: "wearing a grey crewneck sweater and dark jeans" not "wearing an elaborate hand-stitched vintage cardigan with mother-of-pearl buttons"
 
 SETTING RULES:
 - Each image MUST be in a COMPLETELY DIFFERENT location
@@ -221,7 +235,7 @@ SETTING RULES:
 - Use varied environments: home, outdoor, office, restaurant, gym, store, street, park, car, bathroom, etc.
 
 OUTPUT FORMAT:
-"A cinematic, 8k, hyper-realistic PHOTOGRAPH (strictly photorealistic, NO illustration, NO cartoon, NO clipart) of [SUBJECT DESCRIPTION — same face and build, wearing [OUTFIT: one unique outfit appropriate for the scene, described in full detail — fabric, color, fit, accessories]]. [They are SINCERELY and ENTHUSIASTICALLY doing what the quote says, pushed to absurd extreme]. [SPECIFIC SETTING]. [1-2 visual details that amplify the absurdity]. [Camera angle and lighting]. Shot on 35mm film. No text, no words, no readable signs, no written text of any kind visible anywhere in the scene. VERTICAL PORTRAIT ORIENTATION (9:16)."
+"A cinematic, 8k, hyper-realistic PHOTOGRAPH (strictly photorealistic, NO illustration, NO cartoon, NO clipart) of [SUBJECT DESCRIPTION — same face and build, wearing NORMAL EVERYDAY CLOTHES appropriate for the scene]. [They are SINCERELY and ENTHUSIASTICALLY doing what the quote says, pushed to absurd extreme]. [SPECIFIC REAL-WORLD SETTING with lived-in details]. [1-2 visual details that amplify the absurdity]. [Natural lighting, candid angle]. Shot on 35mm film. Environmental text is allowed (street signs, store names, posters, labels) and MUST be in the same language as the quote. No floating text, no captions, no watermarks, no speech bubbles. VERTICAL PORTRAIT ORIENTATION (9:16)."
 
 Write ONLY the visual prompt. No explanation.${varietyNote}${antiRepetitionNote}`;
 }
@@ -257,6 +271,8 @@ Input Quote: "${quote}"`;
 Person's Real Traits & Habits (use this to determine what reality to show — this is what they ACTUALLY do):
 ${victimTraits}`;
   }
+
+  userPrompt += `\n\nLANGUAGE RULE: The quote language is the language all environmental text in the image should use (signs, labels, storefronts, posters). If the quote is in Hebrew, all visible text must be in Hebrew. If English, in English.`;
 
   const response = await openai.chat.completions.create({
     model: 'gpt-4o-mini',
