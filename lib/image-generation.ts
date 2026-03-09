@@ -100,9 +100,9 @@ async function generateWithNanoBananaPro(config: ImageGenerationConfig): Promise
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     // Use the exact model name from your n8n workflow
-    console.log('[NANO-BANANA-PRO] Initializing model: gemini-3.1-flash-image-preview');
+    console.log('[NANO-BANANA-PRO] Initializing model: gemini-2.0-flash-preview-image-generation');
     const model = genAI.getGenerativeModel({
-      model: 'gemini-3.1-flash-image-preview'
+      model: 'gemini-2.0-flash-preview-image-generation'
     });
 
     // Fetch and convert victim image to base64 with timeout
