@@ -265,15 +265,30 @@ export async function generateVisualPrompt(input: VisualPromptInput): Promise<st
   console.log(`[PROMPT-ENGINE] Using "${ACTIVE_PROMPT_STYLE}" style for image ${(imageIndex ?? 0) + 1}/${totalImages ?? '?'}`);
 
   // Build user prompt — include traits if available (critical for "direct" style)
-  let userPrompt = `Subject Description (use exact physical details including gender): ${victimDescription}
+  let userPrompt = `SUBJECT DESCRIPTION (use exact physical details including gender): ${victimDescription}
 
-Input Quote: "${quote}"`;
+THE QUOTE: "${quote}"
+
+BEFORE writing the visual prompt, do these steps internally:
+
+STEP 1 — TRANSLATE AND UNDERSTAND THE QUOTE:
+The quote may be in Hebrew or another language. Fully translate it and understand its complete meaning as a sentence. Do not react to individual keywords. Understand what the full sentence means — what is this person claiming, and why is it funny that they would never say this?
+
+STEP 2 — IDENTIFY THE LITERAL PHYSICAL ACTION:
+What is the single most literal, concrete, physical action a person would be doing if they sincerely believed and acted on this quote at an absurd extreme? Not a theme. Not a symbol. The actual thing their body would be doing.
+
+STEP 3 — DESIGN THE SCENE:
+Show that literal action, pushed to absurd extreme, in a specific real-world setting. The subject is 100% sincere and committed — not laughing, not ironic.
+
+CRITICAL RULES:
+- The image must show the subject physically doing what the quote literally says
+- NEVER show generic celebration, arms raised, or money raining unless the quote is literally about those things
+- NEVER use symbolic or abstract props (no giant inflatable objects representing concepts)
+- Bystanders if present must look confused or oblivious — NEVER laughing at or mocking the subject
+- The viewer must be able to guess the quote just from looking at the image`;
 
   if (victimTraits) {
-    userPrompt += `
-
-Person's Real Traits & Habits (use this to determine what reality to show — this is what they ACTUALLY do):
-${victimTraits}`;
+    userPrompt += `\n\nSUBJECT'S REAL PERSONALITY (context only — do NOT depict these, they explain why the quote is funny because it's the opposite): ${victimTraits}`;
   }
 
   userPrompt += `\n\nMANDATORY OUTFIT FOR THIS IMAGE: The subject must be wearing: ${forcedOutfit}. Do not substitute, ignore, or modify this outfit under any circumstances.`;
