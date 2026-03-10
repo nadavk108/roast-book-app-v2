@@ -153,94 +153,77 @@ OUTPUT:
 Write ONLY the final visual prompt description. No explanation. No commentary.${antiRepetitionNote}`;
 }
 
-const CLOTHING_BY_INDEX: readonly string[] = [
-  "a fitted black turtleneck and dark trousers",
-  "a crisp white dress shirt, sleeves rolled up, dark jeans",
-  "a grey crewneck sweatshirt and navy chinos",
-  "an olive green bomber jacket over a plain white tee, black jeans",
-  "a navy blue button-down shirt and khaki pants",
-  "a charcoal hoodie and dark joggers",
-  "a light blue linen shirt and beige shorts",
-  "a simple burgundy henley and grey jeans",
-];
-
 // ============================================
 // STYLE C: "Direct Contradiction" (show the obvious opposite)
 // ============================================
 function getDirectPrompt(antiRepetitionNote: string, imageIndex?: number, totalImages?: number): string {
   const varietyNote = (imageIndex !== undefined && totalImages)
     ? `\n\nVARIETY: You are generating image ${imageIndex + 1} of ${totalImages} for this book.
-- Each image MUST have a completely different setting (indoor/outdoor, home/work/public/nature)
+- Each image MUST have a different setting (indoor/outdoor, home/work/public/nature)
 - Each image MUST use a different camera angle (close-up, medium, wide, over-shoulder)
 - Each image MUST have different lighting/time of day`
     : '';
 
-  return `You are a Visual Comedy Writer for a cinematic photo book called "Things [Name] Would Never Say."
+  return `You are a Visual Comedy Writer for a photo book called "Things [Name] Would Never Say."
 
-CONCEPT: Each quote is something this person would NEVER actually say — the complete opposite of who they are. Your job is to create a photograph showing the person LITERALLY DOING what the quote says, pushed to an absurd, exaggerated extreme. The comedy comes from the viewer knowing this person would never do this.
+CONCEPT: Each quote is something this person would NEVER actually say. It's the opposite of who they really are. Your job is to create a photo showing the person LITERALLY DOING what the quote says — pushed to an absurd, exaggerated extreme. The comedy comes from the viewer knowing this person would never actually do this.
 
 THE FORMULA (never deviate):
-1. Read the quote — it is something they would NEVER say
+1. Read the quote — this is something the person would NEVER say
 2. Imagine them sincerely, enthusiastically DOING exactly what the quote says
 3. Push it to an absurd, exaggerated extreme
-4. They look completely committed — not joking, not ironic, 100% sincere
+4. The person should look completely serious/committed — they're not joking
 
 EXAMPLES OF THE FORMULA:
-- "Electric bikes are dangerous" → Person physically blocking an e-bike rider, hand raised in a STOP gesture, dead serious expression, as if saving their life
-- "I only have one pair of sunglasses" → Person sitting at a table with 50+ pairs spread out, earnestly trying to give them away to strangers
-- "Pilates is dangerous for knees" → Person putting yellow caution tape around a pilates reformer, wearing a hard hat, completely serious
-- "Nothing like the feel of newspaper on skin" → Person blissfully rubbing a newspaper against their cheek, eyes closed, surrounded by stacks of newspapers
+- Quote: "Electric bikes? That's dangerous" → Person is physically blocking someone on an e-bike, hand raised in a "STOP" gesture, dead serious expression, as if protecting them from mortal danger
+- Quote: "I only have one pair of sunglasses" → Person is wearing one pair while sitting at a table with 50+ pairs spread out, trying to give them away to passersby
+- Quote: "Folding laundry? Just throw it in the closet" → Person is literally hurling armfuls of clean clothes into an overflowing closet, clothes spilling everywhere, looking proud
+- Quote: "Pilates is dangerous for knees" → Person is standing in front of a pilates reformer putting up yellow caution tape around it, wearing a hard hat, dead serious
+- Quote: "Nothing like the feel of newspaper on skin" → Person is blissfully rubbing a newspaper against their cheek with eyes closed, surrounded by stacks of newspapers
 
-THE KEY INSIGHT: The person is NOT being ironic. They are 100% sincere and fully committed to what they are doing. That sincerity is what makes it funny to anyone who knows them.
+THE KEY INSIGHT: The person is NOT being ironic. They are 100% sincere. They genuinely believe and are genuinely doing what the quote says. That sincerity is what makes it funny to anyone who knows them.
 
 WHAT MAKES IT FUNNY:
-✅ Person sincerely and enthusiastically doing exactly what the quote says
-✅ Action pushed to absurd, exaggerated extreme
-✅ 1-2 specific visual details that amplify the absurdity
-✅ Expression is serious, committed, proud — NOT laughing, not winking at the camera
-✅ Scene is instantly readable — the joke lands in under 2 seconds
+✅ The person is sincerely, enthusiastically doing exactly what the quote says
+✅ The action is pushed to an absurd, exaggerated extreme
+✅ One or two specific visual details amplify the absurdity
+✅ The person's expression is serious/committed/proud — NOT laughing or winking
+✅ The scene is instantly readable — you get the joke in 2 seconds
 
 WHAT KILLS THE JOKE:
-❌ Showing the OPPOSITE of the quote (showing their real personality instead)
+❌ Showing the OPPOSITE of the quote (showing their real behavior)
 ❌ Abstract metaphors or symbolic imagery
-❌ Person just standing or sitting with no clear committed action
-❌ Person looking embarrassed, confused, or aware of the irony
-❌ Cartoon elements, clipart, illustrations, or any non-photographic style
-❌ Theatrical or costume-like clothing that no real person would wear
-❌ Crowds laughing AT the person — bystanders should look confused or oblivious, never mocking
+❌ The person just standing/sitting with no clear action
+❌ Random props that don't relate to the quote (unexplained clocks, signs, weather)
+❌ The person looking embarrassed, confused, or aware of the irony
+❌ Crowds watching, laughing, or reacting
+❌ Cartoon elements, clipart, illustrations, animated characters, or any non-photographic style
+❌ Metaphorical creatures or symbolic objects (no cartoon bears for "bear market", no literal lightbulbs for "ideas")
 
-REALISM — THIS IS CRITICAL:
-The image must look like a real candid photograph taken by a friend, not a staged AI production.
-- Skin texture, hair, fabric folds — all must be photorealistic
-- Lighting must feel natural (daylight, indoor lamps, street light) — not studio-lit
-- The environment must look lived-in and authentic, not clean or staged
-- No glossy, airbrushed, or uncanny valley skin
-- The photo should feel like someone caught their friend doing something completely ridiculous
-
-SUBJECT LIKENESS — MANDATORY:
-You will receive a Subject Description with exact physical details.
-- Use the exact face, hair, build, skin tone, and age described
-- Their face and body type must be consistent and recognizable
+SUBJECT LIKENESS (MANDATORY):
+You will receive a "Subject Description" with physical details.
+- Use the exact physical description (hair color, face shape, age, build, skin tone)
+- Their face and body type must remain consistent across ALL images
 - They should look natural in the scene — committed to the action, not posing
 
-OUTFIT — MANDATORY:
-The user prompt will specify an exact mandatory outfit for this image.
-Use it exactly as stated. Do not substitute, upgrade, or ignore it.
-The outfit must look natural for the scene setting.
+CONTEXT: You may also receive the person's real personality traits. These tell you WHY this quote is funny (because they're the opposite in real life), but do NOT show their real traits. Show the QUOTE's version of them.
 
-SETTING:
-Each image must be in a completely different real-world location.
-Never repeat a setting type across the book.
-Use varied environments: home, outdoors, office, restaurant, gym, market, street, car, park, etc.
+OUTFIT RULES:
+- Invent a unique outfit that fits the scene and activity (gym clothes at a gym, work clothes at an office, outdoor gear on a hike, etc.)
+- EXCEPTION: if wearing a wildly wrong outfit amplifies the comedy of this specific quote, use that instead - but it must be intentional and clearly funny
+- Do NOT keep the clothing from the reference photo
+- Do NOT repeat an outfit used in any other image in this book
+- Describe the outfit in high detail in your output: fabric, color, fit, and any accessories
 
-TEXT IN IMAGE:
-No text, signs, labels, captions, watermarks, or written words of any kind visible anywhere in the image.
+SETTING RULES:
+- Each image MUST be in a COMPLETELY DIFFERENT location
+- Never repeat a setting type across the book
+- Use varied environments: home, outdoor, office, restaurant, gym, store, street, park, car, bathroom, etc.
 
 OUTPUT FORMAT:
-Write a single cinematic image generation prompt using this structure:
-"A cinematic, 8k, hyper-realistic PHOTOGRAPH (strictly photorealistic, NO illustration, NO cartoon, NO clipart) of [SUBJECT DESCRIPTION — exact face and build, wearing EXACTLY the mandatory outfit]. [They are sincerely and enthusiastically doing what the quote says, pushed to absurd extreme — committed expression, not laughing]. [Specific real-world setting with lived-in authentic details]. [1-2 visual details that amplify the absurdity]. [Natural lighting, candid angle]. Shot on 35mm film. No text, signs, words, or captions anywhere in the image. VERTICAL PORTRAIT ORIENTATION (9:16)."
+"A cinematic, 8k, hyper-realistic PHOTOGRAPH (strictly photorealistic, NO illustration, NO cartoon, NO clipart) of [SUBJECT DESCRIPTION — same face and build, wearing [OUTFIT: one unique outfit appropriate for the scene, described in full detail — fabric, color, fit, accessories]]. [They are SINCERELY and ENTHUSIASTICALLY doing what the quote says, pushed to absurd extreme]. [SPECIFIC SETTING]. [1-2 visual details that amplify the absurdity]. [Camera angle and lighting]. Shot on 35mm film. No text, no words, no readable signs, no written text of any kind visible anywhere in the scene. VERTICAL PORTRAIT ORIENTATION (9:16)."
 
-Write ONLY the visual prompt. No explanation. No preamble.${varietyNote}${antiRepetitionNote}`;
+Write ONLY the visual prompt. No explanation.${varietyNote}${antiRepetitionNote}`;
 }
 
 /**
@@ -249,7 +232,6 @@ Write ONLY the visual prompt. No explanation. No preamble.${varietyNote}${antiRe
  */
 export async function generateVisualPrompt(input: VisualPromptInput): Promise<string> {
   const { quote, victimDescription, victimTraits, imageIndex, totalImages } = input;
-  const forcedOutfit = CLOTHING_BY_INDEX[(imageIndex ?? 0) % 8];
 
   const antiRepetitionNote = getAntiRepetitionNote(imageIndex, totalImages);
 
@@ -265,33 +247,16 @@ export async function generateVisualPrompt(input: VisualPromptInput): Promise<st
   console.log(`[PROMPT-ENGINE] Using "${ACTIVE_PROMPT_STYLE}" style for image ${(imageIndex ?? 0) + 1}/${totalImages ?? '?'}`);
 
   // Build user prompt — include traits if available (critical for "direct" style)
-  let userPrompt = `SUBJECT DESCRIPTION (use exact physical details including gender): ${victimDescription}
+  let userPrompt = `Subject Description (use exact physical details including gender): ${victimDescription}
 
-THE QUOTE: "${quote}"
-
-BEFORE writing the visual prompt, do these steps internally:
-
-STEP 1 — TRANSLATE AND UNDERSTAND THE QUOTE:
-The quote may be in Hebrew or another language. Fully translate it and understand its complete meaning as a sentence. Do not react to individual keywords. Understand what the full sentence means — what is this person claiming, and why is it funny that they would never say this?
-
-STEP 2 — IDENTIFY THE LITERAL PHYSICAL ACTION:
-What is the single most literal, concrete, physical action a person would be doing if they sincerely believed and acted on this quote at an absurd extreme? Not a theme. Not a symbol. The actual thing their body would be doing.
-
-STEP 3 — DESIGN THE SCENE:
-Show that literal action, pushed to absurd extreme, in a specific real-world setting. The subject is 100% sincere and committed — not laughing, not ironic.
-
-CRITICAL RULES:
-- The image must show the subject physically doing what the quote literally says
-- NEVER show generic celebration, arms raised, or money raining unless the quote is literally about those things
-- NEVER use symbolic or abstract props (no giant inflatable objects representing concepts)
-- Bystanders if present must look confused or oblivious — NEVER laughing at or mocking the subject
-- The viewer must be able to guess the quote just from looking at the image`;
+Input Quote: "${quote}"`;
 
   if (victimTraits) {
-    userPrompt += `\n\nSUBJECT'S REAL PERSONALITY (context only — do NOT depict these, they explain why the quote is funny because it's the opposite): ${victimTraits}`;
-  }
+    userPrompt += `
 
-  userPrompt += `\n\nMANDATORY OUTFIT FOR THIS IMAGE: The subject must be wearing: ${forcedOutfit}. Do not substitute, ignore, or modify this outfit under any circumstances.`;
+Person's Real Traits & Habits (use this to determine what reality to show — this is what they ACTUALLY do):
+${victimTraits}`;
+  }
 
   const response = await openai.chat.completions.create({
     model: 'gpt-4o-mini',
