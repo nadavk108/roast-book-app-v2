@@ -220,11 +220,14 @@ You will receive a "Subject Description" with physical details.
 CONTEXT: You may also receive the person's real personality traits. These tell you WHY this quote is funny (because they're the opposite in real life), but do NOT show their real traits. Show the QUOTE's version of them.
 
 OUTFIT RULES:
-- Invent a unique outfit that fits the scene and activity (gym clothes at a gym, work clothes at an office, outdoor gear on a hike, etc.)
-- EXCEPTION: if wearing a wildly wrong outfit amplifies the comedy of this specific quote, use that instead - but it must be intentional and clearly funny
-- Do NOT keep the clothing from the reference photo
-- Do NOT repeat an outfit used in any other image in this book
-- Describe the outfit in high detail in your output: fabric, color, fit, and any accessories
+- The person should wear REAL clothing with personality and color — stylish but believable
+- Think: a bold red jacket over a white tee, bright sneakers with dark jeans, a colorful patterned shirt, a vibrant sundress, a sharp leather jacket
+- Clothing should have visual energy — strong colors, interesting textures, good contrast with the setting
+- The outfit should still make sense for the scene (athletic wear at a gym, smart casual at a restaurant)
+- NEVER use theatrical costumes, clown-like combinations, or anything nobody would actually own
+- NEVER keep the exact clothing from the reference photo
+- Each image in the book must have a DIFFERENT outfit with different colors
+- Describe the outfit with color and texture: "wearing a bright orange puffer jacket and black jeans" not just "wearing a jacket and jeans"
 
 SETTING RULES:
 - Each image MUST be in a COMPLETELY DIFFERENT location
@@ -232,7 +235,7 @@ SETTING RULES:
 - Use varied environments: home, outdoor, office, restaurant, gym, store, street, park, car, bathroom, etc.
 
 OUTPUT FORMAT:
-"RAW PHOTOGRAPH. Shot on 35mm film. Real camera. Real lighting. Real skin with pores, stubble, and natural imperfections. NOT a painting. NOT an illustration. NOT digital art. NOT a cinematic render. NOT a video game screenshot. NOT airbrushed. The subject is [SUBJECT DESCRIPTION — exact face and build, wearing EXACTLY the mandatory outfit]. [They are sincerely and enthusiastically doing the literal action from the quote, pushed to absurd extreme — committed expression, not laughing]. [Specific real-world setting, lived-in and authentic, not clean or staged]. [1-2 visual details that amplify the absurdity]. Natural light, candid angle. No text, no signs, no words anywhere in the image. VERTICAL PORTRAIT ORIENTATION (9:16)."
+"A cinematic, 8k, hyper-realistic PHOTOGRAPH (strictly photorealistic, NO illustration, NO cartoon, NO clipart) of [SUBJECT DESCRIPTION — same face and build, wearing STYLISH REAL CLOTHES with bold colors appropriate for the scene]. [They are SINCERELY and ENTHUSIASTICALLY doing what the quote says, pushed to absurd extreme]. [SPECIFIC REAL-WORLD SETTING with lived-in details]. [1-2 visual details that amplify the absurdity]. [Natural lighting, candid angle]. Shot on 35mm film. No text, no words, no signs, no written text of any kind visible anywhere in the scene. VERTICAL PORTRAIT ORIENTATION (9:16)."
 
 Write ONLY the visual prompt. No explanation.${varietyNote}${antiRepetitionNote}`;
 }

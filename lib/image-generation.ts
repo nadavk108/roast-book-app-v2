@@ -100,9 +100,9 @@ async function generateWithNanoBananaPro(config: ImageGenerationConfig): Promise
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     // Use the exact model name from your n8n workflow
-    console.log('[NANO-BANANA-PRO] Initializing model: gemini-2.5-flash-image');
+    console.log('[NANO-BANANA-PRO] Initializing model: gemini-3-pro-image-preview');
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash-image'
+      model: 'gemini-3-pro-image-preview'
     });
 
     // Fetch and convert victim image to base64 with timeout
@@ -142,57 +142,17 @@ async function generateWithNanoBananaPro(config: ImageGenerationConfig): Promise
         },
       },
       {
-          text: `
-You are a Satirical Visual Director for The Roast Book.
+        text: `Edit this photo of a real person to place them in a new scene. CRITICAL RULES:
+- PRESERVE the person's exact face, facial features, body type, age, hair, and skin tone
+- Change their clothing to match the scene description below
+- The output MUST be a hyper-realistic photograph — NOT a painting, NOT clipart, NOT illustration, NOT cartoon
+- The person must look like a real human with real skin texture, not airbrushed or glossy
+- Maintain photorealistic lighting and environment
+- Vertical portrait orientation (9:16)
 
-Your job is to create a hyper-realistic, cinematic image that exposes IRONY and SUBTEXT between what the person claims and what is actually happening.
-
-DO NOT illustrate the quote literally.
-DO NOT create public humiliation scenes.
-DO NOT show strangers laughing, pointing, filming, or mocking the subject.
-DO NOT sexualize or degrade the subject.
-The humor must come from situational contradiction, not social cruelty.
-
-COMEDY RULE:
-The subject must be sincerely trying to live up to the quote, but reality contradicts them in a visually obvious, funny way.
-
-ARCHETYPE LOGIC:
-Infer the persona archetype behind the quote and place them in a situation that contradicts their self-image.
-
-SUBJECT LIKENESS (MANDATORY):
-You MUST preserve:
-- face
-- facial features
-- body type
-- age
-- hair color
-- hairstyle
-- skin tone
-
-VARIATION RULE (CRITICAL):
-- Clothing MUST be different from the reference image
-- Outfit style must change per image
-- Background, setting, pose, and time of day must vary across images
-- Do NOT reuse the same type of location across multiple images
-
-SCENE DESIGN RULES:
-- Prefer semi-private or neutral settings (home, quiet cafe, empty gym, office, park bench, grocery aisle)
-- Avoid subway humiliation, crowds reacting, viral cringe aesthetics
-
-VISUAL COMPOSITION:
-Cinematic, 8k, hyper-realistic photography
-Natural, soft lighting
-Candid, story-driven moment
-Vertical portrait framing (9:16)
-
-NEW SCENE TO CREATE:
-${config.prompt}
-
-CRITICAL:
-The person must be the central focus of the image.
-Everything except the person's physical identity must change.
-`
-        },
+SCENE TO CREATE:
+${config.prompt}`
+      },
     ];
 
     console.log('[NANO-BANANA-PRO] Calling generateContent...');
