@@ -153,6 +153,17 @@ OUTPUT:
 Write ONLY the final visual prompt description. No explanation. No commentary.${antiRepetitionNote}`;
 }
 
+const CLOTHING_BY_INDEX: readonly string[] = [
+  "a fitted black turtleneck and dark trousers",
+  "a crisp white dress shirt, sleeves rolled up, dark jeans",
+  "a grey crewneck sweatshirt and navy chinos",
+  "an olive green bomber jacket over a plain white tee, black jeans",
+  "a navy blue button-down shirt and khaki pants",
+  "a charcoal hoodie and dark joggers",
+  "a light blue linen shirt and beige shorts",
+  "a simple burgundy henley and grey jeans",
+];
+
 // ============================================
 // STYLE C: "Direct Contradiction" (show the obvious opposite)
 // ============================================
@@ -221,7 +232,7 @@ SETTING RULES:
 - Use varied environments: home, outdoor, office, restaurant, gym, store, street, park, car, bathroom, etc.
 
 OUTPUT FORMAT:
-"A cinematic, 8k, hyper-realistic PHOTOGRAPH (strictly photorealistic, NO illustration, NO cartoon, NO clipart) of [SUBJECT DESCRIPTION — same face and build, wearing [OUTFIT: one unique outfit appropriate for the scene, described in full detail — fabric, color, fit, accessories]]. [They are SINCERELY and ENTHUSIASTICALLY doing what the quote says, pushed to absurd extreme]. [SPECIFIC SETTING]. [1-2 visual details that amplify the absurdity]. [Camera angle and lighting]. Shot on 35mm film. No text, no words, no readable signs, no written text of any kind visible anywhere in the scene. VERTICAL PORTRAIT ORIENTATION (9:16)."
+"RAW PHOTOGRAPH. Shot on 35mm film. Real camera. Real lighting. Real skin with pores, stubble, and natural imperfections. NOT a painting. NOT an illustration. NOT digital art. NOT a cinematic render. NOT a video game screenshot. NOT airbrushed. The subject is [SUBJECT DESCRIPTION — exact face and build, wearing EXACTLY the mandatory outfit]. [They are sincerely and enthusiastically doing the literal action from the quote, pushed to absurd extreme — committed expression, not laughing]. [Specific real-world setting, lived-in and authentic, not clean or staged]. [1-2 visual details that amplify the absurdity]. Natural light, candid angle. No text, no signs, no words anywhere in the image. VERTICAL PORTRAIT ORIENTATION (9:16)."
 
 Write ONLY the visual prompt. No explanation.${varietyNote}${antiRepetitionNote}`;
 }
@@ -232,6 +243,7 @@ Write ONLY the visual prompt. No explanation.${varietyNote}${antiRepetitionNote}
  */
 export async function generateVisualPrompt(input: VisualPromptInput): Promise<string> {
   const { quote, victimDescription, victimTraits, imageIndex, totalImages } = input;
+  const forcedOutfit = CLOTHING_BY_INDEX[(imageIndex ?? 0) % 8];
 
   const antiRepetitionNote = getAntiRepetitionNote(imageIndex, totalImages);
 
@@ -246,17 +258,35 @@ export async function generateVisualPrompt(input: VisualPromptInput): Promise<st
 
   console.log(`[PROMPT-ENGINE] Using "${ACTIVE_PROMPT_STYLE}" style for image ${(imageIndex ?? 0) + 1}/${totalImages ?? '?'}`);
 
-  // Build user prompt — include traits if available (critical for "direct" style)
-  let userPrompt = `Subject Description (use exact physical details including gender): ${victimDescription}
+  let userPrompt = `SUBJECT DESCRIPTION (use exact physical details including gender): ${victimDescription}
 
-Input Quote: "${quote}"`;
+THE QUOTE: "${quote}"
+
+BEFORE writing the visual prompt, do these steps internally:
+
+STEP 1 — TRANSLATE AND UNDERSTAND THE QUOTE:
+The quote may be in Hebrew or another language. Fully translate it and understand its complete meaning as a sentence. Do not react to individual keywords. Understand what the full sentence means — what is this person claiming, and why is it funny that they would never say this?
+
+STEP 2 — IDENTIFY THE LITERAL PHYSICAL ACTION:
+What is the single most literal, concrete, physical action a person would be doing if they sincerely believed and acted on this quote at an absurd extreme? Not a theme. Not a symbol. The actual thing their body would be doing.
+
+STEP 3 — DESIGN THE SCENE:
+Show that literal action pushed to absurd extreme in a specific real-world setting. The subject is 100% sincere and committed — not laughing, not ironic.
+
+CRITICAL RULES:
+- The image must show the subject physically doing what the quote literally says
+- NEVER show generic celebration, arms raised, money raining, or screaming unless the quote is literally about those things
+- NEVER use symbolic or abstract props
+- NEVER invent theatrical costumes — clothing is specified below and must be followed exactly
+- Bystanders if present must look confused or oblivious — NEVER laughing at or mocking the subject
+- The viewer must be able to guess the quote just from looking at the image
+- The subject must look like a REAL PERSON with realistic skin, hair, and proportions — NOT a video game character, NOT a model, NOT airbrushed, NOT illustrated`;
 
   if (victimTraits) {
-    userPrompt += `
-
-Person's Real Traits & Habits (use this to determine what reality to show — this is what they ACTUALLY do):
-${victimTraits}`;
+    userPrompt += `\n\nSUBJECT'S REAL PERSONALITY (context only — do NOT depict these, they explain why the quote is funny because it is the opposite of the quote): ${victimTraits}`;
   }
+
+  userPrompt += `\n\nMANDATORY OUTFIT FOR THIS IMAGE: The subject must be wearing: ${forcedOutfit}. Do not substitute, ignore, or modify this outfit. Do not add accessories, chains, headphones, or extra items unless they are directly required by the literal action in the quote.`;
 
   const response = await openai.chat.completions.create({
     model: 'gpt-4o-mini',
