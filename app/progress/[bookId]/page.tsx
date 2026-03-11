@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Check, Loader2 } from 'lucide-react';
 
@@ -151,8 +152,8 @@ export default function ProgressPage() {
           <h2 className="text-2xl font-heading font-black mb-2">Something went wrong</h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <p className="text-xs text-gray-400 mb-6">BookId: {bookId || 'undefined'}</p>
-          <Button onClick={() => router.push('/')} className="w-full">
-            Start Over
+          <Button asChild className="w-full">
+            <Link href="/">Start Over</Link>
           </Button>
         </div>
       </div>

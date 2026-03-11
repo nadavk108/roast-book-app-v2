@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Shield, Home, Share2, Send } from 'lucide-react';
@@ -34,6 +34,7 @@ type Page = {
 export default function PreviewPage() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [book, setBook] = useState<Book | null>(null);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -137,7 +138,7 @@ export default function PreviewPage() {
 
         if (data.status === 'complete' && (data.full_image_urls?.length ?? 0) > 0) {
           clearInterval(pollInterval);
-          window.location.href = `/book/${data.slug}?start=3`;
+          router.push(`/book/${data.slug}?start=3`);
           return;
         }
 
@@ -197,7 +198,7 @@ export default function PreviewPage() {
        if (data && data.status === 'complete' && data.slug) {
             // Only skip to slide 3 if returning from payment, otherwise start at cover
             const startParam = isPaymentReturn ? '?start=3' : '';
-            window.location.href = `/book/${data.slug}${startParam}`;
+            router.push(`/book/${data.slug}${startParam}`);
             return;
           }
 
