@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
-import { Sparkles, ArrowRight, ArrowLeft, RefreshCw, Shield, Loader2, Check } from 'lucide-react';
+import { Sparkles, ArrowRight, ArrowLeft, RefreshCw, Shield, Loader2, Check, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth';
 import { isAdminUser } from '@/lib/admin';
@@ -28,6 +28,15 @@ export default function QuotesPage() {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const adminMode = isAdminUser(user);
+
+    const [showFirstPulse, setShowFirstPulse] = useState(false);
+
+    useEffect(() => {
+        if (step !== 'select') return;
+        setShowFirstPulse(true);
+        const timer = setTimeout(() => setShowFirstPulse(false), 2000);
+        return () => clearTimeout(timer);
+    }, [step]);
 
     const isHebrew = isPredominantlyHebrew(book?.victim_name || '') ||
         isPredominantlyHebrew(description);
@@ -366,8 +375,11 @@ export default function QuotesPage() {
                                             onClick={() => startEdit(i)}
                                             className="relative p-4 rounded-xl border-2 border-yellow-400 bg-yellow-50 shadow-[2px_2px_0px_0px_#FACC15] cursor-pointer transition-all hover:shadow-[4px_4px_0px_0px_#FACC15] hover:-translate-y-0.5 active:shadow-[1px_1px_0px_0px_#FACC15] active:translate-y-0"
                                         >
+                                            <Pencil
+                                                className={`absolute top-2 ${isHebrewQuote ? 'left-2' : 'right-2'} w-4 h-4 text-gray-400 pointer-events-none${i === 0 && showFirstPulse ? ' animate-pulse' : ''}`}
+                                            />
                                             <p
-                                                className="text-sm md:text-base font-medium leading-relaxed pr-2"
+                                                className={`text-sm md:text-base font-medium leading-relaxed ${isHebrewQuote ? 'pl-6' : 'pr-6'}`}
                                                 dir={isHebrewQuote ? 'rtl' : 'ltr'}
                                                 style={{ textAlign: isHebrewQuote ? 'right' : 'left' }}
                                             >
