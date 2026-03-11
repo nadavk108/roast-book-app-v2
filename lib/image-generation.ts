@@ -166,7 +166,9 @@ ${config.prompt}`
         topK: 32,
         topP: 0.9,
         maxOutputTokens: 8192,
-      },
+        responseMimeType: 'image/jpeg',
+        responseModalities: ['image'],
+      } as any,
     });
 
     console.log('[NANO-BANANA-PRO] Got response from model');
@@ -184,6 +186,22 @@ ${config.prompt}`
 
     const editedBase64 = imagePart.inlineData.data;
     const mimeType = imagePart.inlineData.mimeType || 'image/png';
+
+    // Check orientation — if landscape, rotate to portrait
+    try {
+      const imageBuffer = Buffer.from(editedBase64, 'base64');
+      const { default: sharp } = await import('sharp');
+      const metadata = await sharp(imageBuffer).metadata();
+
+      if (metadata.width && metadata.height && metadata.width > metadata.height) {
+        console.log(`[NANO-BANANA-PRO] Image is landscape (${metadata.width}x${metadata.height}), rotating to portrait`);
+        const rotatedBuffer = await sharp(imageBuffer).rotate(270).toBuffer();
+        const rotatedBase64 = rotatedBuffer.toString('base64');
+        return `data:${mimeType};base64,${rotatedBase64}`;
+      }
+    } catch (rotateErr) {
+      console.warn('[NANO-BANANA-PRO] Could not check/fix orientation, using as-is:', rotateErr);
+    }
 
     return `data:${mimeType};base64,${editedBase64}`;
 
