@@ -166,9 +166,7 @@ ${config.prompt}`
         topK: 32,
         topP: 0.9,
         maxOutputTokens: 8192,
-        responseMimeType: 'image/jpeg',
-        responseModalities: ['image'],
-      } as any,
+      },
     });
 
     console.log('[NANO-BANANA-PRO] Got response from model');
