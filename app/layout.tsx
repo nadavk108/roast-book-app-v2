@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Syne, Space_Grotesk } from 'next/font/google';
+import Script from 'next/script';
 import { PostHogProvider } from '@/components/providers/PostHogProvider';
 import './globals.css';
 
@@ -104,6 +105,18 @@ export default function RootLayout({
           }}
         />
       </head>
+      <Script
+        src="https://www.googletagmanager.com/gtag/js?id=G-CF524DTB47"
+        strategy="afterInteractive"
+      />
+      <Script id="google-analytics" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-CF524DTB47');
+        `}
+      </Script>
       <body className={`${syne.variable} ${spaceGrotesk.variable} antialiased`}>
         <PostHogProvider>
           {children}
