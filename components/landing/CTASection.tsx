@@ -95,14 +95,11 @@ export function CTASection() {
                 size="xl"
                 className="bg-primary text-primary-foreground border-background hover:bg-accent text-lg px-10"
               >
-                Start Your Roast Book Free
+                Start Roasting Free
                 <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
               </BrutalButton>
             </Link>
 
-            <p className="mt-6 text-background/50 text-sm">
-              ✓ No credit card required &nbsp;•&nbsp; ✓ Free to create &nbsp;•&nbsp; ✓ Pay only for the final book
-            </p>
           </motion.div>
         </div>
       </div>

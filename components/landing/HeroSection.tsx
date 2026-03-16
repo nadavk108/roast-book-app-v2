@@ -113,6 +113,11 @@ export function HeroSection() {
               </Link>
             </nav>
 
+            {/* Reassurance strip */}
+            <p className="text-sm text-muted-foreground">
+              ✓ No credit card required &nbsp;•&nbsp; ✓ Free to create &nbsp;•&nbsp; ✓ Pay only for the final book
+            </p>
+
             {/* Trust Signals - desktop only (shown below phone on mobile) */}
             <ul className="hidden lg:flex flex-wrap items-center gap-x-6 gap-y-2 pt-4 text-sm text-muted-foreground list-none">
               <li className="flex items-center gap-1.5">
@@ -121,7 +126,7 @@ export function HeroSection() {
               </li>
               <li className="flex items-center gap-1.5">
                 <Zap className="h-4 w-4 text-primary" aria-hidden="true" />
-                <span>Instant Delivery</span>
+                <span>Digital Delivery</span>
               </li>
               <li className="flex items-center gap-1.5">
                 <Clock className="h-4 w-4 text-accent" aria-hidden="true" />
