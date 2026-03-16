@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { Star, Quote } from "lucide-react";
 
 const testimonials = [
@@ -65,7 +66,7 @@ export function FeaturesSection() {
             AI-Powered Magic
           </span>
           <h2 id="features-heading" className="text-3xl md:text-5xl font-heading font-black mt-2 mb-4">
-            Real Results, Real Laughs
+            AI-Generated Roast Book Images From Real Customers
           </h2>
           <p className="text-lg text-muted-foreground">
             See actual AI-generated images from real roast books
@@ -83,13 +84,12 @@ export function FeaturesSection() {
               transition={{ delay: index * 0.1 }}
               className="group relative aspect-[3/4] rounded-xl overflow-hidden border-2 border-border shadow-brutal-sm hover:shadow-brutal transition-all hover:-translate-y-1"
             >
-              <img
+              <Image
                 src={item.image}
                 alt={item.alt}
-                className="w-full h-full object-cover"
-                loading="lazy"
-                width={300}
-                height={400}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 50vw, 25vw"
               />
               <figcaption className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="absolute bottom-0 left-0 right-0 p-3">
@@ -113,7 +113,7 @@ export function FeaturesSection() {
             Loved by 500+ gifters
           </span>
           <h2 className="text-3xl md:text-5xl font-heading font-black mt-2 mb-4">
-            The Reactions Say It Better Than We Can
+            Roast Book Reviews - What Customers Are Saying
           </h2>
         </motion.header>
 

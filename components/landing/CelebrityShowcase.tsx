@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight } from 'lucide-react';
 import { BrutalButton } from '@/components/ui/brutal-button';
 
@@ -48,14 +49,14 @@ export function CelebrityShowcase() {
               key={celeb.name}
               className="relative min-w-[280px] md:min-w-0 flex-shrink-0 md:flex-shrink snap-start rounded-2xl overflow-hidden border border-border shadow-brutal-sm aspect-[3/4] bg-black"
             >
-              {/* Celebrity image - eager-loaded, above the fold */}
-              <img
+              {/* Celebrity image */}
+              <Image
                 src={celeb.image}
                 alt={`${celeb.name} saying "${celeb.quote}"`}
-                className="absolute inset-0 w-full h-full object-cover"
-                loading="eager"
-                width={280}
-                height={373}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 280px, 25vw"
+                loading="lazy"
               />
 
               {/* Quote overlay - gradient + frosted pill */}
@@ -78,7 +79,7 @@ export function CelebrityShowcase() {
           <p className="text-xl md:text-2xl font-heading font-bold mb-5">
             Now imagine this, but with YOUR friends
           </p>
-          <Link href="/dashboard">
+          <Link href="/create">
             <BrutalButton size="lg">
               Start Roasting Free
               <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />

@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     template: '%s | The Roast Book',
   },
   description:
-    'Create a hilarious personalized roast book for your friend in 2 minutes. Upload their photo, describe their quirks, and AI generates a custom illustrated flipbook of "Things They\'d Never Say." The funniest birthday, wedding, or farewell gift, only $9.99.',
+    'Give your friend a hilarious AI-generated roast book in minutes. Upload their photo, describe their quirks, and get 8 custom illustrated scenes. Just $9.99.',
   keywords: [
     'personalized roast book',
     'AI roast gift',
@@ -98,9 +98,29 @@ export default function RootLayout({
               },
               aggregateRating: {
                 '@type': 'AggregateRating',
-                ratingValue: '4.9',
+                ratingValue: '5',
                 reviewCount: '500',
               },
+              review: [
+                {
+                  '@type': 'Review',
+                  reviewRating: { '@type': 'Rating', ratingValue: '5' },
+                  author: { '@type': 'Person', name: 'Sarah M.' },
+                  reviewBody: 'My dad literally cried laughing. Best birthday gift I\'ve ever given him!',
+                },
+                {
+                  '@type': 'Review',
+                  reviewRating: { '@type': 'Rating', ratingValue: '5' },
+                  author: { '@type': 'Person', name: 'Mike T.' },
+                  reviewBody: 'The AI images are insanely good. My friends couldn\'t believe it wasn\'t real.',
+                },
+                {
+                  '@type': 'Review',
+                  reviewRating: { '@type': 'Rating', ratingValue: '5' },
+                  author: { '@type': 'Person', name: 'Rachel K.' },
+                  reviewBody: 'Took me 2 minutes to make. My coworker\'s farewell party was unforgettable!',
+                },
+              ],
             }),
           }}
         />

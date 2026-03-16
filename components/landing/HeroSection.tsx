@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { BrutalButton } from "@/components/ui/brutal-button";
 import { BrutalBadge } from "@/components/ui/brutal-badge";
 import { ArrowRight, Sparkles, Play, Star, Shield, Zap, Clock } from "lucide-react";
@@ -162,13 +163,13 @@ export function HeroSection() {
                         transition={{ duration: 0.5 }}
                         className="absolute inset-0"
                       >
-                        <img
+                        <Image
                           src={HERO_EXAMPLES[currentExample].image}
                           alt={`AI-generated roast image: ${HERO_EXAMPLES[currentExample].name} saying "${HERO_EXAMPLES[currentExample].quote}"`}
-                          className="w-full h-full object-cover"
-                          width={380}
-                          height={676}
-                          loading="eager"
+                          fill
+                          className="object-cover"
+                          priority={currentExample === 0}
+                          sizes="(max-width: 640px) 220px, (max-width: 768px) 280px, (max-width: 1024px) 320px, 380px"
                         />
                         
                         {/* Quote overlay */}
