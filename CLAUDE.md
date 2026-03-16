@@ -45,3 +45,26 @@ If adding a new status, update this constraint first or the DB will silently rej
 - Silent Supabase constraint rejection: always check error return, not just data
 - Env var whitespace: always .trim() on process.env values
 - Duplicate generation: atomic locks prevent this, never remove lock logic
+
+## Learning
+Track two types of knowledge:
+- Domain: what things are (product context, user preferences, APIs, naming conventions, team decisions)
+- Procedural: how to do things (deploy steps, test commands, review flows)
+
+Organize knowledge as a hierarchy of .md files:
+- knowledge/INDEX.md routes to categories
+- Categories hold the details
+
+Progressive disclosure. Read top-down, only load what you need.
+
+Log errors to knowledge/ERRORS.md:
+- Deterministic errors (bad schema, wrong type, missing field) — conclude immediately
+- Infrastructure errors (timeout, rate limit, network) — log, no conclusion until pattern emerges
+- Conclusions graduate into the relevant domain or procedural file
+
+Actively manage the knowledge system:
+- Review knowledge files at the start of each session
+- Merge overlapping categories
+- Split files that grow too long
+- Remove knowledge that's no longer accurate
+- Propose edits to CLAUDE.md when you notice something missing — don't wait to be asked
