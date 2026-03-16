@@ -55,7 +55,7 @@ export function HowItWorksSection() {
             Simple Process
           </span>
           <h2 id="how-it-works-heading" className="text-3xl md:text-5xl font-heading font-black mt-2 mb-4">
-            Ready in 4 Easy Steps
+            5 Minutes From 'I Have an Idea' to 'They're Crying Laughing'
           </h2>
           <p className="text-lg text-muted-foreground">
             From idea to personalized gift in under 5 minutes of your time

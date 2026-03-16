@@ -42,8 +42,7 @@ export function CTASection() {
             </motion.div>
 
             <h2 id="cta-heading" className="text-3xl md:text-5xl lg:text-6xl font-heading font-black mb-4">
-              Ready to Create Something{" "}
-              <span className="text-primary">Unforgettable</span>?
+              Your friend's roast book is waiting. It takes 5 minutes.
             </h2>
 
             <p className="text-lg md:text-xl text-background/70 max-w-2xl mx-auto mb-8">

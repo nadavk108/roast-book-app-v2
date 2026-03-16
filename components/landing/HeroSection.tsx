@@ -93,7 +93,7 @@ export function HeroSection() {
                 <span className="text-muted-foreground line-through" aria-label="Original price $29">$29</span>
               </div>
               <BrutalBadge variant="accent" size="sm">
-                <Zap className="h-3 w-3 mr-1" aria-hidden="true" /> Launch Price
+                <Zap className="h-3 w-3 mr-1" aria-hidden="true" /> Introductory Price
               </BrutalBadge>
             </div>
 
@@ -126,7 +126,7 @@ export function HeroSection() {
               </li>
               <li className="flex items-center gap-1.5">
                 <Zap className="h-4 w-4 text-primary" aria-hidden="true" />
-                <span>Digital Delivery</span>
+                <span>Preview Free Before You Pay</span>
               </li>
               <li className="flex items-center gap-1.5">
                 <Clock className="h-4 w-4 text-accent" aria-hidden="true" />
@@ -266,7 +266,7 @@ export function HeroSection() {
           </li>
           <li className="flex items-center gap-1.5">
             <Zap className="h-4 w-4 text-primary" aria-hidden="true" />
-            <span>Instant Delivery</span>
+            <span>Preview Free Before You Pay</span>
           </li>
           <li className="flex items-center gap-1.5">
             <Clock className="h-4 w-4 text-accent" aria-hidden="true" />

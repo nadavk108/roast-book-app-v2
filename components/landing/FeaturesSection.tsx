@@ -113,7 +113,7 @@ export function FeaturesSection() {
             Loved by 500+ gifters
           </span>
           <h2 className="text-3xl md:text-5xl font-heading font-black mt-2 mb-4">
-            What People Are Saying
+            The Reactions Say It Better Than We Can
           </h2>
         </motion.header>
 
