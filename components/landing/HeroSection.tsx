@@ -113,8 +113,8 @@ export function HeroSection() {
               </Link>
             </nav>
 
-            {/* Trust Signals */}
-            <ul className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-4 text-sm text-muted-foreground list-none">
+            {/* Trust Signals - desktop only (shown below phone on mobile) */}
+            <ul className="hidden lg:flex flex-wrap items-center gap-x-6 gap-y-2 pt-4 text-sm text-muted-foreground list-none">
               <li className="flex items-center gap-1.5">
                 <Shield className="h-4 w-4 text-green-600" aria-hidden="true" />
                 <span>Secure Payment</span>
@@ -139,7 +139,7 @@ export function HeroSection() {
             aria-label="Example roast book preview"
           >
             {/* Phone mockup frame */}
-            <figure className="relative mx-auto max-w-[320px] md:max-w-[380px]">
+            <figure className="relative mx-auto max-w-[220px] sm:max-w-[280px] md:max-w-[320px] lg:max-w-[380px]">
               {/* Phone bezel */}
               <div className="bg-foreground rounded-[2.5rem] p-2 shadow-2xl">
                 <div className="bg-black rounded-[2rem] overflow-hidden relative">
@@ -252,6 +252,22 @@ export function HeroSection() {
             </figure>
           </motion.div>
         </div>
+
+        {/* Trust Signals - mobile only, appears below phone mockup */}
+        <ul className="flex lg:hidden flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-6 text-sm text-muted-foreground list-none">
+          <li className="flex items-center gap-1.5">
+            <Shield className="h-4 w-4 text-green-600" aria-hidden="true" />
+            <span>Secure Payment</span>
+          </li>
+          <li className="flex items-center gap-1.5">
+            <Zap className="h-4 w-4 text-primary" aria-hidden="true" />
+            <span>Instant Delivery</span>
+          </li>
+          <li className="flex items-center gap-1.5">
+            <Clock className="h-4 w-4 text-accent" aria-hidden="true" />
+            <span>Ready in 2 min</span>
+          </li>
+        </ul>
       </div>
     </section>
   );
