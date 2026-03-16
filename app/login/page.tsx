@@ -284,6 +284,11 @@ export default function LoginPage() {
             </BrutalButton>
           </form>
 
+          {/* Photo privacy reassurance */}
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            Your photos are only used to generate your book and are never shared.
+          </p>
+
           {/* Info Message */}
           <div className="mt-6 text-center text-xs text-muted-foreground">
             New here? Enter your email and password to create an account automatically

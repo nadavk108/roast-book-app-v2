@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 
 const benefits = [
   { icon: Gift, text: "Perfect for any occasion" },
-  { icon: Clock, text: "Ready in 24 hours" },
+  { icon: Clock, text: "Ready in 2 min" },
   { icon: CreditCard, text: "One-time payment, no subscription" },
   { icon: Sparkles, text: "8 AI-generated illustrations" },
 ];
