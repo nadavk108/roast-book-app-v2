@@ -132,8 +132,23 @@ export function HeroSection() {
                               sizes="(max-width: 640px) 220px, (max-width: 768px) 280px, (max-width: 1024px) 320px, 380px"
                             />
 
-                            {/* Quote overlay — hidden on cover (title is baked into the cover image) */}
-                            {!currentSlide.isCover && (
+                            {/* Cover overlay — matches flipbook viewer's cover page style */}
+                            {currentSlide.isCover ? (
+                              <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent flex flex-col justify-end items-center p-4 pb-8"
+                              >
+                                <p className="text-white font-black text-sm leading-tight text-center drop-shadow-lg mb-1 px-2">
+                                  Things {currentSlide.name} Would Never Say
+                                </p>
+                                <p className="text-white/80 text-xs text-center drop-shadow-md">
+                                  A Roast Book Dedicated to {currentSlide.name}
+                                </p>
+                              </motion.div>
+                            ) : (
+                              /* Quote overlay — roast images */
                               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-32 pb-8 px-4">
                                 <motion.div
                                   initial={{ opacity: 0, y: 20 }}
