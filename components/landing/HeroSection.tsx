@@ -61,85 +61,38 @@ export function HeroSection() {
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-accent/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" aria-hidden="true" />
 
       <div className="container py-16 md:py-24 lg:py-32 relative z-10 max-w-[1200px] mx-auto">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Left: Text Content */}
+        {/*
+          Mobile (flex-col + order):  headline/subtext → phone → CTAs → price → trust
+          Desktop (lg: 2-col grid):   left col = headline+subtext (row 1) + price/CTAs/trust (row 2)
+                                       right col = phone (row-span-2)
+        */}
+        <div className="flex flex-col gap-8 lg:grid lg:grid-cols-2 lg:grid-rows-[auto_1fr] lg:gap-x-16 lg:gap-y-8 lg:items-start">
+
+          {/* ── 1 (mobile) / Left col row 1 (desktop): Headline + Subtext ── */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
-            className="space-y-6 md:space-y-8"
+            className="order-1 lg:col-start-1 lg:row-start-1"
           >
-            <h1 id="hero-heading" className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-black leading-[1.1] tracking-tight">
-              Create a Personalized AI{" "}
-              <span className="relative inline-block">
-                <span className="relative z-10">Roast Book</span>
-                <span className="absolute bottom-1 md:bottom-2 left-0 w-full h-3 md:h-4 bg-primary -z-0 -rotate-1" aria-hidden="true" />
-              </span>
+            <h1
+              id="hero-heading"
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-black leading-[1.1] tracking-tight mb-6"
+            >
+              The Funniest Gift They&apos;ll Never See Coming
             </h1>
-
             <p className="text-lg md:text-xl text-muted-foreground max-w-lg">
-              Describe your friend&apos;s quirks. AI generates hilarious quotes and illustrations.
-              You get a personalized roast book they&apos;ll never forget.
+              Describe your friend&apos;s quirks and we&apos;ll generate a hilarious personalized roast book
+              with AI-powered quotes and illustrations. Takes 5 minutes. They&apos;ll never forget it.
             </p>
-
-            {/* Price Anchor */}
-            <div className="flex items-center gap-4 py-2">
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl md:text-4xl font-black text-primary">$9.99</span>
-                <span className="text-muted-foreground line-through" aria-label="Original price $29">$29</span>
-              </div>
-              <BrutalBadge variant="accent" size="sm">
-                <Zap className="h-3 w-3 mr-1" aria-hidden="true" /> Introductory Price
-              </BrutalBadge>
-            </div>
-
-            {/* CTAs */}
-            <nav className="flex flex-col sm:flex-row gap-3 pt-2" aria-label="Primary actions">
-              <Link href="/create" className="w-full sm:w-auto">
-                <BrutalButton size="xl" className="w-full group">
-                  Start Roasting Free
-                  <ArrowRight className="ml-2 transition-transform group-hover:translate-x-1" aria-hidden="true" />
-                </BrutalButton>
-              </Link>
-              <BrutalButton
-                variant="outline"
-                size="xl"
-                className="w-full sm:w-auto group"
-                onClick={scrollToExamples}
-              >
-                <Play className="mr-2 h-4 w-4" aria-hidden="true" />
-                See Examples
-              </BrutalButton>
-            </nav>
-
-            {/* Reassurance strip */}
-            <p className="text-sm text-muted-foreground">
-              ✓ No credit card required &nbsp;•&nbsp; ✓ Free to create &nbsp;•&nbsp; ✓ Pay only for the final book
-            </p>
-
-            {/* Trust Signals - desktop only */}
-            <ul className="hidden lg:flex flex-wrap items-center gap-x-6 gap-y-2 pt-4 text-sm text-muted-foreground list-none">
-              <li className="flex items-center gap-1.5">
-                <Shield className="h-4 w-4 text-green-600" aria-hidden="true" />
-                <span>Secure Payment</span>
-              </li>
-              <li className="flex items-center gap-1.5">
-                <Zap className="h-4 w-4 text-primary" aria-hidden="true" />
-                <span>Preview Free Before You Pay</span>
-              </li>
-              <li className="flex items-center gap-1.5">
-                <Clock className="h-4 w-4 text-accent" aria-hidden="true" />
-                <span>Ready in 2 min</span>
-              </li>
-            </ul>
           </motion.div>
 
-          {/* Right: Animated Demo */}
+          {/* ── 2 (mobile) / Right col rows 1-2 (desktop): Phone mockup ── */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="relative"
+            className="order-2 lg:col-start-2 lg:row-start-1 lg:row-span-2 relative"
             aria-label="Example roast book preview"
           >
             {/* Phone mockup frame — tap to open Tyler's book */}
@@ -154,7 +107,6 @@ export function HeroSection() {
                     {/* Screen content */}
                     <div className="aspect-[9/16] relative overflow-hidden">
                       {heroSlides.length === 0 ? (
-                        // Loading skeleton while fetching Tyler's images
                         <div className="absolute inset-0 bg-zinc-800 animate-pulse" aria-hidden="true" />
                       ) : (
                         <AnimatePresence mode="wait">
@@ -268,23 +220,66 @@ export function HeroSection() {
               <ArrowRight className="h-3 w-3" aria-hidden="true" />
             </p>
           </motion.div>
-        </div>
 
-        {/* Trust Signals - mobile only, appears below phone mockup */}
-        <ul className="flex lg:hidden flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-6 text-sm text-muted-foreground list-none">
-          <li className="flex items-center gap-1.5">
-            <Shield className="h-4 w-4 text-green-600" aria-hidden="true" />
-            <span>Secure Payment</span>
-          </li>
-          <li className="flex items-center gap-1.5">
-            <Zap className="h-4 w-4 text-primary" aria-hidden="true" />
-            <span>Preview Free Before You Pay</span>
-          </li>
-          <li className="flex items-center gap-1.5">
-            <Clock className="h-4 w-4 text-accent" aria-hidden="true" />
-            <span>Ready in 2 min</span>
-          </li>
-        </ul>
+          {/* ── 3 (mobile) / Left col row 2 (desktop): CTAs + Price + Trust ──
+               Inner flex-col so order-* classes can reposition price between mobile/desktop.
+               Mobile:  CTAs (order-1) → price (order-2) → trust (order-3)
+               Desktop: price (order-1 → lg:order-1) → CTAs (order-2 → lg:order-2) → trust (order-3)
+          */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="order-3 lg:col-start-1 lg:row-start-2 flex flex-col gap-6"
+          >
+            {/* Price — order-2 on mobile (after CTAs), order-1 on desktop (before CTAs) */}
+            <div className="order-2 lg:order-1 flex items-center gap-4 py-2">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl md:text-4xl font-black text-primary">$9.99</span>
+                <span className="text-muted-foreground line-through" aria-label="Original price $29">$29</span>
+              </div>
+              <BrutalBadge variant="accent" size="sm">
+                <Zap className="h-3 w-3 mr-1" aria-hidden="true" /> Introductory Price
+              </BrutalBadge>
+            </div>
+
+            {/* CTAs — order-1 on mobile (first), order-2 on desktop (after price) */}
+            <nav className="order-1 lg:order-2 flex flex-col sm:flex-row gap-3" aria-label="Primary actions">
+              <Link href="/create" className="w-full sm:w-auto">
+                <BrutalButton size="xl" className="w-full group">
+                  Start Roasting Free
+                  <ArrowRight className="ml-2 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                </BrutalButton>
+              </Link>
+              <BrutalButton
+                variant="outline"
+                size="xl"
+                className="w-full sm:w-auto group"
+                onClick={scrollToExamples}
+              >
+                <Play className="mr-2 h-4 w-4" aria-hidden="true" />
+                See Examples
+              </BrutalButton>
+            </nav>
+
+            {/* Trust Signals — always last */}
+            <ul className="order-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground list-none">
+              <li className="flex items-center gap-1.5">
+                <Shield className="h-4 w-4 text-green-600" aria-hidden="true" />
+                <span>Secure Payment</span>
+              </li>
+              <li className="flex items-center gap-1.5">
+                <Zap className="h-4 w-4 text-primary" aria-hidden="true" />
+                <span>Preview Free Before You Pay</span>
+              </li>
+              <li className="flex items-center gap-1.5">
+                <Clock className="h-4 w-4 text-accent" aria-hidden="true" />
+                <span>Ready in 2 min</span>
+              </li>
+            </ul>
+          </motion.div>
+
+        </div>
       </div>
     </section>
   );
