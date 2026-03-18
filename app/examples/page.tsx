@@ -31,21 +31,12 @@ const FEATURED_EXAMPLES = [
     rating: 5,
   },
   {
-    id: "brett",
-    slug: "0ef514d9vb",
-    bookTitle: "Things Brett Would Never Say",
-    category: "Friends",
-    categoryColor: "from-emerald-500 to-teal-500",
-    highlight: "Share it at their next party!",
-    rating: 5,
-  },
-  {
     id: "emma",
     slug: "yjkyh70ga0",
     bookTitle: "Things Emma Would Never Say",
-    category: "Partners",
+    category: "Coworker",
     categoryColor: "from-purple-500 to-pink-500",
-    highlight: "Perfect for anniversaries!",
+    highlight: "Perfect for office gifts!",
     rating: 5,
   },
 ];

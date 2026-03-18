@@ -13,15 +13,9 @@ const FEATURED_BOOKS = [
     categoryColor: 'from-blue-500 to-cyan-500',
   },
   {
-    slug: '0ef514d9vb',
-    name: 'Brett',
-    category: 'Friends',
-    categoryColor: 'from-emerald-500 to-teal-500',
-  },
-  {
     slug: 'yjkyh70ga0',
     name: 'Emma',
-    category: 'Partners',
+    category: 'Coworker',
     categoryColor: 'from-purple-500 to-pink-500',
   },
 ] as const;
@@ -53,7 +47,7 @@ function BookCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay: index * 0.15 }}
-      className="min-w-[72%] sm:min-w-0 snap-start flex-shrink-0 md:flex-shrink"
+      className="w-full max-w-[320px] mx-auto"
     >
       <Link href={`/book/${meta.slug}`} className="block group">
         {/* Phone-frame card */}
@@ -113,7 +107,7 @@ function BookCard({
 }
 
 export function RealExampleBooksSection() {
-  const [books, setBooks] = useState<(BookData | null)[]>([null, null, null]);
+  const [books, setBooks] = useState<(BookData | null)[]>([null, null]);
 
   useEffect(() => {
     FEATURED_BOOKS.forEach((meta, i) => {
@@ -157,8 +151,8 @@ export function RealExampleBooksSection() {
           </p>
         </motion.header>
 
-        {/* Mobile: horizontal scroll with snap. Desktop: 3-col grid. */}
-        <div className="flex md:grid md:grid-cols-3 gap-5 md:gap-8 overflow-x-auto md:overflow-x-visible snap-x snap-mandatory md:snap-none scroll-pl-4 md:scroll-pl-0 pb-4 md:pb-0 px-4 md:px-0 max-w-3xl md:max-w-none mx-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch]">
+        {/* Vertical stack on mobile, 2-col grid on desktop — no horizontal scroll */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 max-w-[680px] mx-auto px-4 md:px-0">
           {FEATURED_BOOKS.map((meta, i) => (
             <BookCard key={meta.slug} meta={meta} book={books[i]} index={i} />
           ))}
