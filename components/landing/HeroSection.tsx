@@ -80,6 +80,9 @@ export function HeroSection() {
             transition={{ duration: 0.6 }}
             className="order-1 lg:col-start-1 lg:row-start-1"
           >
+            <p className="text-sm font-bold uppercase tracking-widest text-black mb-3">
+              🔥 The Roast Book
+            </p>
             <h1
               id="hero-heading"
               className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-black leading-[1.1] tracking-tight mb-6"
