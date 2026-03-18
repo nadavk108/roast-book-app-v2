@@ -75,4 +75,13 @@ export const Events = {
 
   // Admin Actions
   ADMIN_BOOK_CREATED: 'admin_book_created',
+
+  // Funnel Events (conversion tracking)
+  SIGN_IN_COMPLETE: 'sign_in_complete',
+  PHOTO_UPLOADED: 'photo_uploaded',
+  TRAITS_SUBMITTED: 'traits_submitted',
+  QUOTES_SELECTED: 'quotes_selected',
+  PAYMENT_COMPLETE: 'payment_complete',
+  BOOK_CREATED: 'book_created',
+  BOOK_SHARED: 'book_shared',
 } as const;

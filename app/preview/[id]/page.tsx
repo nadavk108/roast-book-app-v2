@@ -82,6 +82,7 @@ export default function PreviewPage() {
         book_id: book.id,
         victim_name: book.victim_name,
       });
+      try { captureEvent(Events.PAYMENT_COMPLETE, { amount_cents: 999, book_id: book.id }); } catch {}
       setPaymentTracked(true);
 
       captureEvent(Events.BOOK_COMPLETED, {
@@ -137,6 +138,7 @@ export default function PreviewPage() {
         }
 
         if (data.status === 'complete' && (data.full_image_urls?.length ?? 0) > 0) {
+          try { captureEvent(Events.BOOK_CREATED, { book_id: bookId }); } catch {}
           clearInterval(pollInterval);
           router.push(`/book/${data.slug}?start=3`);
           return;
@@ -257,13 +259,16 @@ export default function PreviewPage() {
     if (navigator.share) {
       try {
         await navigator.share({ title: `${title} 🔥📚`, text, url });
+        try { captureEvent(Events.BOOK_SHARED, { share_method: 'native_share', book_id: book.id }); } catch {}
       } catch (err) {
         await navigator.clipboard.writeText(url);
         alert('Link copied to clipboard!');
+        try { captureEvent(Events.BOOK_SHARED, { share_method: 'copy_link', book_id: book.id }); } catch {}
       }
     } else {
       await navigator.clipboard.writeText(url);
       alert('Link copied to clipboard!');
+      try { captureEvent(Events.BOOK_SHARED, { share_method: 'copy_link', book_id: book.id }); } catch {}
     }
   };
 

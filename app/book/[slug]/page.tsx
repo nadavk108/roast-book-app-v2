@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Home, Share2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { TheEndPage } from '@/components/flipbook/TheEndPage';
 import { isPredominantlyHebrew, getHebrewBookTitle } from '@/lib/hebrew-utils';
+import { captureEvent, Events } from '@/lib/posthog';
 
 type Book = {
   id: string;
@@ -108,13 +109,16 @@ export default function BookPage() {
     if (navigator.share) {
       try {
         await navigator.share({ title: `${title} 🔥📚`, text, url });
+        try { captureEvent(Events.BOOK_SHARED, { share_method: 'native_share', book_id: book?.id }); } catch {}
       } catch (err) {
         await navigator.clipboard.writeText(url);
         alert('Link copied to clipboard!');
+        try { captureEvent(Events.BOOK_SHARED, { share_method: 'copy_link', book_id: book?.id }); } catch {}
       }
     } else {
       await navigator.clipboard.writeText(url);
       alert('Link copied to clipboard!');
+      try { captureEvent(Events.BOOK_SHARED, { share_method: 'copy_link', book_id: book?.id }); } catch {}
     }
   };
 

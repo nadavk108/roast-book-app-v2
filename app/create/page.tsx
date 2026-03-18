@@ -85,6 +85,8 @@ export default function UploadPage() {
             console.log('Upload successful, bookId:', responseData.bookId);
             const { bookId } = responseData;
 
+            try { captureEvent(Events.PHOTO_UPLOADED, { book_id: bookId }); } catch {}
+
             // CRITICAL: Wait for analysis to complete before redirecting
             console.log('Starting image analysis...');
             const analyzeRes = await fetch('/api/analyze', {

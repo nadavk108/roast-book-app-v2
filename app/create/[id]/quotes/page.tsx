@@ -101,6 +101,9 @@ export default function QuotesPage() {
                 quotes_generated: 8,
                 book_id: params.id,
             });
+
+            const numTraits = description.split(',').filter((t: string) => t.trim()).length;
+            try { captureEvent(Events.TRAITS_SUBMITTED, { num_traits: numTraits, book_id: params.id }); } catch {}
         } catch (error) {
             console.error(error);
             alert('Failed to generate quotes. Please try again.');
@@ -167,6 +170,7 @@ export default function QuotesPage() {
             is_admin: adminMode,
             book_id: bookId,
         });
+        try { captureEvent(Events.QUOTES_SELECTED, { num_quotes_shown: 8, num_quotes_selected: quotes.length, book_id: bookId }); } catch {}
 
         setSaving(true);
 

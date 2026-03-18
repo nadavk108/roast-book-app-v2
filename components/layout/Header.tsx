@@ -152,7 +152,7 @@ export function Header() {
                   <Link href="/create">
                     <BrutalButton
                       size="sm"
-                      onClick={() => captureEvent(Events.START_ROASTING_CLICKED, { location: 'header_desktop' })}
+                      onClick={() => captureEvent(Events.START_ROASTING_CLICKED, { button_location: 'navbar' })}
                     >
                       Start Roasting 🔥
                     </BrutalButton>
@@ -263,7 +263,7 @@ export function Header() {
                     </Link>
                     <Link href="/create" onClick={() => {
                       setMobileMenuOpen(false);
-                      captureEvent(Events.START_ROASTING_CLICKED, { location: 'header_mobile' });
+                      captureEvent(Events.START_ROASTING_CLICKED, { button_location: 'navbar' });
                     }}>
                       <BrutalButton className="w-full">
                         Start Roasting 🔥

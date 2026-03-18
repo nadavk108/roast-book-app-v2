@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-client';
+import { captureEvent, Events } from '@/lib/posthog';
 
 export default function AuthCallbackPage() {
   const searchParams = useSearchParams();
@@ -120,6 +121,10 @@ export default function AuthCallbackPage() {
 
           if (data?.session) {
             console.log('[AUTH CALLBACK] Session established for:', data.user?.email);
+            const isNewUser = data.user?.created_at
+              ? (Date.now() - new Date(data.user.created_at).getTime() < 60000)
+              : false;
+            try { captureEvent(Events.SIGN_IN_COMPLETE, { auth_method: 'google', is_new_user: isNewUser }); } catch {}
             await waitForCookie(`${origin}${next}`);
             window.location.assign(`${origin}${next}`);
           } else {

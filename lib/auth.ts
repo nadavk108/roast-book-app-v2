@@ -18,6 +18,7 @@ export async function signInWithEmail(email: string, password: string) {
     captureEvent(Events.EMAIL_SIGNIN_COMPLETED, {
       is_new_user: false,
     });
+    try { captureEvent(Events.SIGN_IN_COMPLETE, { auth_method: 'email', is_new_user: false }); } catch {}
 
     return {
       user: signInData.user,
@@ -48,6 +49,7 @@ export async function signInWithEmail(email: string, password: string) {
     captureEvent(Events.EMAIL_SIGNIN_COMPLETED, {
       is_new_user: true,
     });
+    try { captureEvent(Events.SIGN_IN_COMPLETE, { auth_method: 'email', is_new_user: true }); } catch {}
 
     return {
       user: signUpData.user,

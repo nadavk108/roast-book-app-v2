@@ -4,6 +4,7 @@ import { BrutalButton } from "@/components/ui/brutal-button";
 import { ArrowRight, Flame, Gift, Clock, CreditCard, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { captureEvent, Events } from "@/lib/posthog";
 
 const benefits = [
   { icon: Gift, text: "Perfect for any occasion" },
@@ -89,7 +90,9 @@ export function CTASection() {
             transition={{ delay: 0.2 }}
             className="text-center"
           >
-            <Link href="/create">
+            <Link href="/create" onClick={() => {
+              try { captureEvent(Events.START_ROASTING_CLICKED, { button_location: 'cta_section' }); } catch {}
+            }}>
               <BrutalButton
                 size="xl"
                 className="bg-primary text-primary-foreground border-background hover:bg-accent text-lg px-10"

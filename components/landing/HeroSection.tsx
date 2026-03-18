@@ -7,6 +7,7 @@ import { BrutalBadge } from "@/components/ui/brutal-badge";
 import { ArrowRight, Play, Shield, Zap, Clock } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { captureEvent, Events } from "@/lib/posthog";
 
 const TYLER_SLUG = '9x7dzympme';
 
@@ -234,7 +235,9 @@ export function HeroSection() {
 
             {/* CTAs — order-1 on mobile (first), order-2 on desktop (after price) */}
             <nav className="order-1 lg:order-2 flex flex-col sm:flex-row gap-3" aria-label="Primary actions">
-              <Link href="/create" className="w-full sm:w-auto">
+              <Link href="/create" className="w-full sm:w-auto" onClick={() => {
+                try { captureEvent(Events.START_ROASTING_CLICKED, { button_location: 'hero' }); } catch {}
+              }}>
                 <BrutalButton size="xl" className="w-full group">
                   Start Roasting Free
                   <ArrowRight className="ml-2 transition-transform group-hover:translate-x-1" aria-hidden="true" />
