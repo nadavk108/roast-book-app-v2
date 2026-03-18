@@ -57,12 +57,21 @@ export const metadata: Metadata = {
     url: 'https://theroastbook.com',
     siteName: 'The Roast Book',
     locale: 'en_US',
+    images: [
+      {
+        url: 'https://theroastbook.com/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'The Roast Book - The Funniest Personalized Gift You Can Give',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'The Roast Book - Personalized AI Roast Gift',
     description:
       'Create a custom illustrated roast book for your friend in 2 minutes. The funniest gift ever, only $9.99.',
+    images: ['https://theroastbook.com/og-image.png'],
   },
   robots: {
     index: true,
