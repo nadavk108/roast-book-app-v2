@@ -6,6 +6,8 @@ import { BrutalButton } from "@/components/ui/brutal-button";
 import { BrutalBadge } from "@/components/ui/brutal-badge";
 import { ArrowRight, Sparkles, Play, Star, Shield, Zap, Clock } from "lucide-react";
 import Link from "next/link";
+
+const TYLER_SLUG = '9x7dzympme';
 import { motion, AnimatePresence } from "framer-motion";
 
 // Real AI-generated examples rotating in hero
@@ -144,7 +146,8 @@ export function HeroSection() {
             className="relative"
             aria-label="Example roast book preview"
           >
-            {/* Phone mockup frame */}
+            {/* Phone mockup frame — tap to open Tyler's book */}
+            <Link href={`/book/${TYLER_SLUG}`} className="block" aria-label="Tap to explore Tyler's roast book">
             <figure className="relative mx-auto max-w-[220px] sm:max-w-[280px] md:max-w-[320px] lg:max-w-[380px]">
               {/* Phone bezel */}
               <div className="bg-foreground rounded-[2.5rem] p-2 shadow-2xl">
@@ -256,6 +259,11 @@ export function HeroSection() {
                 </div>
               </motion.div>
             </figure>
+            </Link>
+            <p className="text-center mt-3 text-sm text-muted-foreground flex items-center justify-center gap-1">
+              Tap to explore
+              <ArrowRight className="h-3 w-3" aria-hidden="true" />
+            </p>
           </motion.div>
         </div>
 

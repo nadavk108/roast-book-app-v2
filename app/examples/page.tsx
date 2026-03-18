@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CelebrityShowcase } from "@/components/landing/CelebrityShowcase";
@@ -20,122 +20,76 @@ import {
   Star
 } from "lucide-react";
 
-// Featured examples with REAL AI-generated output images from different projects
 const FEATURED_EXAMPLES = [
   {
-    id: "dad-2ec7af3a",
-    slug: "things-dad-never-says",
-    bookTitle: "Things Dad Would Never Say",
-    category: "Family",
-    categoryColor: "from-rose-500 to-orange-500",
-    slides: [
-      {
-        image: "https://ynptkppxwsnocvqjqisz.supabase.co/storage/v1/object/public/roast-book-images/2ec7af3a-411d-4f4d-a9ff-407918c022ed/image_0.jpg",
-        quote: "Protests? What good do they do?!",
-        alt: "AI-generated image of Dad dismissing protests humorously",
-      },
-      {
-        image: "https://ynptkppxwsnocvqjqisz.supabase.co/storage/v1/object/public/roast-book-images/2ec7af3a-411d-4f4d-a9ff-407918c022ed/image_1.jpg",
-        quote: "I made an amazing omelette today!",
-        alt: "AI-generated image of Dad proudly cooking an omelette",
-      },
-      {
-        image: "https://ynptkppxwsnocvqjqisz.supabase.co/storage/v1/object/public/roast-book-images/2ec7af3a-411d-4f4d-a9ff-407918c022ed/image_2.jpg",
-        quote: "I absolutely love the smell of popcorn",
-        alt: "AI-generated image of Dad enjoying popcorn aroma",
-      },
-      {
-        image: "https://ynptkppxwsnocvqjqisz.supabase.co/storage/v1/object/public/roast-book-images/2ec7af3a-411d-4f4d-a9ff-407918c022ed/image_3.jpg",
-        quote: "Leave the laundry, I'll fold it",
-        alt: "AI-generated image of Dad volunteering for laundry",
-      },
-      {
-        image: "https://ynptkppxwsnocvqjqisz.supabase.co/storage/v1/object/public/roast-book-images/2ec7af3a-411d-4f4d-a9ff-407918c022ed/image_4.jpg",
-        quote: "I booked us a relaxing beach vacation",
-        alt: "AI-generated image of Dad planning a spontaneous vacation",
-      },
-    ],
-    highlight: "Perfect for Father's Day!",
-    rating: 5,
-  },
-  {
-    id: "josh-56f74711",
-    slug: "things-josh-never-says",
-    bookTitle: "Things Josh Would Never Say",
+    id: "tyler",
+    slug: "9x7dzympme",
+    bookTitle: "Things Tyler Would Never Say",
     category: "Friends",
     categoryColor: "from-blue-500 to-cyan-500",
-    slides: [
-      {
-        image: "https://ynptkppxwsnocvqjqisz.supabase.co/storage/v1/object/public/roast-book-images/56f74711-2bd0-4a58-be17-7a95ba532b8f/image_0.jpg",
-        quote: "Let's skip the cold brew and get some warm herbal tea",
-        alt: "AI-generated image of Josh choosing herbal tea over coffee",
-      },
-      {
-        image: "https://ynptkppxwsnocvqjqisz.supabase.co/storage/v1/object/public/roast-book-images/56f74711-2bd0-4a58-be17-7a95ba532b8f/image_1.jpg",
-        quote: "I'm thinking of trading in the MacBook for a Dell",
-        alt: "AI-generated image of Josh considering Dell over Apple",
-      },
-      {
-        image: "https://ynptkppxwsnocvqjqisz.supabase.co/storage/v1/object/public/roast-book-images/56f74711-2bd0-4a58-be17-7a95ba532b8f/image_2.jpg",
-        quote: "Driving to the gym in silence instead of a passive income podcast",
-        alt: "AI-generated image of Josh driving without podcasts",
-      },
-      {
-        image: "https://ynptkppxwsnocvqjqisz.supabase.co/storage/v1/object/public/roast-book-images/56f74711-2bd0-4a58-be17-7a95ba532b8f/image_3.jpg",
-        quote: "Green text bubbles? Totally fine. I actually prefer Android.",
-        alt: "AI-generated image of Josh preferring Android phones",
-      },
-    ],
-    highlight: "The ultimate tech bro roast!",
+    highlight: "The ultimate friend roast!",
     rating: 5,
   },
   {
-    id: "tal-605f704c",
-    slug: "things-tal-never-says",
-    bookTitle: "Things Tal Would Never Say",
+    id: "brett",
+    slug: "0ef514d9vb",
+    bookTitle: "Things Brett Would Never Say",
+    category: "Friends",
+    categoryColor: "from-emerald-500 to-teal-500",
+    highlight: "Share it at their next party!",
+    rating: 5,
+  },
+  {
+    id: "emma",
+    slug: "yjkyh70ga0",
+    bookTitle: "Things Emma Would Never Say",
     category: "Partners",
     categoryColor: "from-purple-500 to-pink-500",
-    slides: [
-      {
-        image: "https://ynptkppxwsnocvqjqisz.supabase.co/storage/v1/object/public/roast-book-images/605f704c-45a8-4a82-ad2f-6e5571c847a5/image_0.jpg",
-        quote: "After the baby, let's move to a quiet village up north",
-        alt: "AI-generated image of Tal suggesting country life",
-      },
-      {
-        image: "https://ynptkppxwsnocvqjqisz.supabase.co/storage/v1/object/public/roast-book-images/605f704c-45a8-4a82-ad2f-6e5571c847a5/image_1.jpg",
-        quote: "Wow, I don't know anyone here!",
-        alt: "AI-generated image of social Tal not knowing anyone",
-      },
-      {
-        image: "https://ynptkppxwsnocvqjqisz.supabase.co/storage/v1/object/public/roast-book-images/605f704c-45a8-4a82-ad2f-6e5571c847a5/image_2.jpg",
-        quote: "I need new workout clothes. I'll just buy them at Hoodies",
-        alt: "AI-generated image of Tal shopping at a regular store",
-      },
-      {
-        image: "https://ynptkppxwsnocvqjqisz.supabase.co/storage/v1/object/public/roast-book-images/605f704c-45a8-4a82-ad2f-6e5571c847a5/image_3.jpg",
-        quote: "What restaurant? Never heard of it",
-        alt: "AI-generated image of foodie Tal being unfamiliar with a restaurant",
-      },
-    ],
-    highlight: "Perfect for baby showers!",
+    highlight: "Perfect for anniversaries!",
     rating: 5,
   },
 ];
 
-function ExampleCard({ example, index }: { example: typeof FEATURED_EXAMPLES[0]; index: number }) {
+type BookData = {
+  victim_name: string;
+  full_image_urls: string[];
+  quotes: string[];
+};
+
+type FeaturedExample = typeof FEATURED_EXAMPLES[0];
+
+function ExampleCard({ example, index }: { example: FeaturedExample; index: number }) {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [book, setBook] = useState<BookData | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/book/${example.slug}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: BookData | null) => setBook(data))
+      .catch(() => {});
+  }, [example.slug]);
+
+  const slides = book
+    ? book.full_image_urls.map((image, i) => ({
+        image,
+        quote: book.quotes[i] ?? '',
+        alt: `AI-generated image from Things ${book.victim_name} Would Never Say`,
+      }))
+    : [];
 
   const nextSlide = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setCurrentSlide((prev) => (prev + 1) % example.slides.length);
+    setCurrentSlide((prev) => (prev + 1) % slides.length);
   };
 
   const prevSlide = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setCurrentSlide((prev) => (prev - 1 + example.slides.length) % example.slides.length);
+    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
   };
+
+  const name = book?.victim_name ?? example.bookTitle.replace('Things ', '').replace(' Would Never Say', '');
 
   return (
     <motion.article
@@ -148,39 +102,41 @@ function ExampleCard({ example, index }: { example: typeof FEATURED_EXAMPLES[0];
       <div className="relative bg-card rounded-2xl overflow-hidden border-2 border-border shadow-brutal-sm hover:shadow-brutal transition-all duration-300 hover:-translate-y-1">
         {/* Image Container - Fixed aspect ratio */}
         <div className="relative aspect-[3/4] overflow-hidden bg-black">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentSlide}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="absolute inset-0"
-            >
-              <img
-                src={example.slides[currentSlide].image}
-                alt={example.slides[currentSlide].alt}
-                className="w-full h-full object-contain bg-black"
-                loading="lazy"
-                width={400}
-                height={533}
-              />
+          {slides.length > 0 ? (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentSlide}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="absolute inset-0"
+              >
+                <img
+                  src={slides[currentSlide].image}
+                  alt={slides[currentSlide].alt}
+                  className="w-full h-full object-contain bg-black"
+                  loading="lazy"
+                />
 
-              {/* Quote Overlay at Bottom */}
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-20 pb-6 px-4">
-                <motion.p
-                  key={`quote-${currentSlide}`}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="text-white text-lg md:text-xl font-medium leading-tight text-center"
-                  style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}
-                >
-                  "{example.slides[currentSlide].quote}"
-                </motion.p>
-              </div>
-            </motion.div>
-          </AnimatePresence>
+                {/* Quote Overlay at Bottom */}
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-20 pb-6 px-4">
+                  <motion.p
+                    key={`quote-${currentSlide}`}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="text-white text-lg md:text-xl font-medium leading-tight text-center"
+                    style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}
+                  >
+                    &ldquo;{slides[currentSlide].quote}&rdquo;
+                  </motion.p>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          ) : (
+            <div className="absolute inset-0 bg-zinc-800 animate-pulse" aria-hidden="true" />
+          )}
 
           {/* Category Badge */}
           <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-white text-xs font-bold bg-gradient-to-r ${example.categoryColor}`}>
@@ -188,7 +144,7 @@ function ExampleCard({ example, index }: { example: typeof FEATURED_EXAMPLES[0];
           </div>
 
           {/* Navigation Arrows */}
-          {example.slides.length > 1 && (
+          {slides.length > 1 && (
             <>
               <button
                 onClick={prevSlide}
@@ -208,24 +164,26 @@ function ExampleCard({ example, index }: { example: typeof FEATURED_EXAMPLES[0];
           )}
 
           {/* Slide Indicators */}
-          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex gap-1.5" aria-hidden="true">
-            {example.slides.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setCurrentSlide(idx);
-                }}
-                className={`h-1 rounded-full transition-all ${
-                  idx === currentSlide
-                    ? "w-6 bg-white"
-                    : "w-1.5 bg-white/50 hover:bg-white/70"
-                }`}
-                aria-label={`Go to slide ${idx + 1}`}
-              />
-            ))}
-          </div>
+          {slides.length > 1 && (
+            <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex gap-1.5" aria-hidden="true">
+              {slides.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setCurrentSlide(idx);
+                  }}
+                  className={`h-1 rounded-full transition-all ${
+                    idx === currentSlide
+                      ? "w-6 bg-white"
+                      : "w-1.5 bg-white/50 hover:bg-white/70"
+                  }`}
+                  aria-label={`Go to slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Card Footer */}
@@ -233,7 +191,7 @@ function ExampleCard({ example, index }: { example: typeof FEATURED_EXAMPLES[0];
           <div className="flex items-start justify-between gap-2">
             <div>
               <h3 className="font-heading text-lg font-bold leading-tight">
-                {example.bookTitle}
+                Things {name} Would Never Say
               </h3>
               <p className="text-sm text-muted-foreground mt-0.5">{example.highlight}</p>
             </div>
@@ -244,13 +202,15 @@ function ExampleCard({ example, index }: { example: typeof FEATURED_EXAMPLES[0];
             </div>
           </div>
 
-          <BrutalButton
-            variant="outline"
-            className="w-full group/btn"
-          >
-            View Details
-            <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover/btn:translate-x-1" aria-hidden="true" />
-          </BrutalButton>
+          <Link href={`/book/${example.slug}`} className="block">
+            <BrutalButton
+              variant="outline"
+              className="w-full group/btn"
+            >
+              Swipe Through
+              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover/btn:translate-x-1" aria-hidden="true" />
+            </BrutalButton>
+          </Link>
         </div>
       </div>
     </motion.article>
@@ -313,7 +273,7 @@ export default function Examples() {
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
                 Describe your friend. AI writes the roasts and creates hilarious illustrations.
-                Swipe through real examples to see what's possible.
+                Swipe through real examples to see what&apos;s possible.
               </p>
             </motion.header>
           </div>
