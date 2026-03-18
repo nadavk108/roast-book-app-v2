@@ -97,7 +97,7 @@ function BookCard({
             Things {name} Would Never Say
           </h3>
           <span className="inline-flex items-center gap-1.5 text-primary font-bold text-sm transition-all group-hover:gap-2.5">
-            Swipe Through
+            View Full Book
             <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
           </span>
         </div>

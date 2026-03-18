@@ -198,7 +198,7 @@ function ExampleCard({ example, index }: { example: FeaturedExample; index: numb
               variant="outline"
               className="w-full group/btn"
             >
-              Swipe Through
+              View Full Book
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover/btn:translate-x-1" aria-hidden="true" />
             </BrutalButton>
           </Link>

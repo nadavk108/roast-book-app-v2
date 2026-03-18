@@ -14,6 +14,7 @@ type HeroSlide = {
   image: string;
   quote: string;
   name: string;
+  isCover?: boolean;
 };
 
 export function HeroSection() {
@@ -26,14 +27,18 @@ export function HeroSection() {
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!data?.full_image_urls?.length) return;
-        const slides: HeroSlide[] = data.full_image_urls.slice(0, 4).map(
+        const name = data.victim_name ?? 'Tyler';
+        const imageSlides: HeroSlide[] = data.full_image_urls.slice(0, 3).map(
           (image: string, i: number) => ({
             image,
             quote: data.quotes?.[i] ?? '',
-            name: data.victim_name ?? 'Tyler',
+            name,
           })
         );
-        setHeroSlides(slides);
+        const coverSlides: HeroSlide[] = data.cover_image_url
+          ? [{ image: data.cover_image_url, quote: '', name, isCover: true }]
+          : [];
+        setHeroSlides([...coverSlides, ...imageSlides]);
       })
       .catch(() => {});
   }, []);
@@ -120,29 +125,31 @@ export function HeroSection() {
                           >
                             <Image
                               src={currentSlide.image}
-                              alt={`AI-generated roast image: ${currentSlide.name} saying "${currentSlide.quote}"`}
+                              alt={currentSlide.isCover ? `Things ${currentSlide.name} Would Never Say - roast book cover` : `AI-generated roast image: ${currentSlide.name} saying "${currentSlide.quote}"`}
                               fill
                               className="object-cover"
                               priority={currentExample === 0}
                               sizes="(max-width: 640px) 220px, (max-width: 768px) 280px, (max-width: 1024px) 320px, 380px"
                             />
 
-                            {/* Quote overlay */}
-                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-32 pb-8 px-4">
-                              <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.2 }}
-                                className="text-center"
-                              >
-                                <p className="text-white/60 text-xs mb-1">
-                                  Things {currentSlide.name} Would Never Say
-                                </p>
-                                <p className="text-white text-lg font-semibold">
-                                  &ldquo;{currentSlide.quote}&rdquo;
-                                </p>
-                              </motion.div>
-                            </div>
+                            {/* Quote overlay — hidden on cover (title is baked into the cover image) */}
+                            {!currentSlide.isCover && (
+                              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-32 pb-8 px-4">
+                                <motion.div
+                                  initial={{ opacity: 0, y: 20 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: 0.2 }}
+                                  className="text-center"
+                                >
+                                  <p className="text-white/60 text-xs mb-1">
+                                    Things {currentSlide.name} Would Never Say
+                                  </p>
+                                  <p className="text-white text-lg font-semibold">
+                                    &ldquo;{currentSlide.quote}&rdquo;
+                                  </p>
+                                </motion.div>
+                              </div>
+                            )}
                           </motion.div>
                         </AnimatePresence>
                       )}
@@ -177,42 +184,6 @@ export function HeroSection() {
                   Interactive preview of AI-generated roast book images rotating through Tyler&apos;s examples
                 </figcaption>
 
-                {/* Floating badges */}
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.8 }}
-                  className="absolute -left-4 md:-left-12 top-1/4 bg-card border-2 border-border rounded-xl p-3 shadow-brutal-sm"
-                  aria-hidden="true"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-lg">
-                      🎁
-                    </div>
-                    <div className="text-xs">
-                      <p className="font-bold">$9.99</p>
-                      <p className="text-muted-foreground">Full book</p>
-                    </div>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 1 }}
-                  className="absolute -right-4 md:-right-12 bottom-1/4 bg-card border-2 border-border rounded-xl p-3 shadow-brutal-sm"
-                  aria-hidden="true"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-lg">
-                      ✨
-                    </div>
-                    <div className="text-xs">
-                      <p className="font-bold">AI Generated</p>
-                      <p className="text-muted-foreground">in seconds</p>
-                    </div>
-                  </div>
-                </motion.div>
               </figure>
             </Link>
             <p className="text-center mt-3 text-sm text-muted-foreground flex items-center justify-center gap-1">
