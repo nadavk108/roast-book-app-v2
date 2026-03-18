@@ -126,6 +126,7 @@ export function RealExampleBooksSection() {
 
   return (
     <section
+      id="real-examples"
       className="py-20 md:py-28 bg-zinc-950 overflow-hidden"
       aria-labelledby="real-books-heading"
     >
