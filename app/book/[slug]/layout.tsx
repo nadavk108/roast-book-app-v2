@@ -7,60 +7,54 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  // Fetch book data for metadata
   try {
     const { data: book } = await supabaseAdmin
       .from('roast_books')
-      .select('victim_name, cover_image_url, slug')
+      .select('victim_name, cover_image_url, full_image_urls, slug')
       .eq('slug', params.slug)
       .single();
 
     if (!book) {
       return {
-        title: 'Roast Book Not Found',
-        description: 'The Roast Book - Create Hilarious Personalized Roast Books',
+        title: 'Roast Book',
+        description: 'Check out this hilarious AI-generated roast book!',
       };
     }
 
-    const title = `Check out 'Things ${book.victim_name} Would Never Say'! 🔥📚`;
-    const description = `The Roast Book - Create Hilarious Personalized Roast Books`;
-    const imageUrl = book.cover_image_url || 'https://theroastbook.com/og-image.png';
+    const name = book.victim_name ?? 'Someone';
+    const title = `Things ${name} Would Never Say`;
+    const description = 'Check out this hilarious AI-generated roast book!';
+    const image: string | null =
+      book.cover_image_url ?? book.full_image_urls?.[0] ?? null;
     const bookUrl = `https://theroastbook.com/book/${book.slug}`;
 
     return {
-      title: `Things ${book.victim_name} Would Never Say | RoastBook`,
-      description: description,
+      title,
+      description,
+      alternates: { canonical: bookUrl },
       openGraph: {
-        title: title,
-        description: description,
+        title,
+        description,
         url: bookUrl,
-        siteName: 'RoastBook',
-        images: [
-          {
-            url: imageUrl,
-            width: 1200,
-            height: 630,
-            alt: `Roast Book for ${book.victim_name}`,
-          },
-        ],
+        siteName: 'The Roast Book',
         locale: 'en_US',
         type: 'website',
+        ...(image && {
+          images: [{ url: image, alt: title }],
+        }),
       },
       twitter: {
         card: 'summary_large_image',
-        title: title,
-        description: description,
-        images: [imageUrl],
-      },
-      alternates: {
-        canonical: bookUrl,
+        title,
+        description,
+        ...(image && { images: [image] }),
       },
     };
   } catch (error) {
     console.error('Error generating metadata:', error);
     return {
-      title: 'RoastBook - Hilarious Personalized Roast Books',
-      description: 'Create hilarious personalized roast books for your friends and family',
+      title: 'The Roast Book',
+      description: 'Check out this hilarious AI-generated roast book!',
     };
   }
 }
