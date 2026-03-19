@@ -31,6 +31,15 @@ const FEATURED_EXAMPLES = [
     rating: 5,
   },
   {
+    id: "lauren",
+    slug: "r6vsw49szs",
+    bookTitle: "Things Lauren Would Never Say",
+    category: "Family",
+    categoryColor: "from-green-500 to-emerald-500",
+    highlight: "Perfect for the whole family!",
+    rating: 5,
+  },
+  {
     id: "emma",
     slug: "yjkyh70ga0",
     bookTitle: "Things Emma Would Never Say",

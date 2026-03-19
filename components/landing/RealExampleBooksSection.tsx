@@ -13,6 +13,12 @@ const FEATURED_BOOKS = [
     categoryColor: 'from-blue-500 to-cyan-500',
   },
   {
+    slug: 'r6vsw49szs',
+    name: 'Lauren',
+    category: 'Family',
+    categoryColor: 'from-green-500 to-emerald-500',
+  },
+  {
     slug: 'yjkyh70ga0',
     name: 'Emma',
     category: 'Coworker',
@@ -47,7 +53,7 @@ function BookCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay: index * 0.15 }}
-      className="w-full max-w-[320px] mx-auto"
+      className="w-full"
     >
       <Link href={`/book/${meta.slug}`} className="block group">
         {/* Phone-frame card */}
@@ -107,7 +113,7 @@ function BookCard({
 }
 
 export function RealExampleBooksSection() {
-  const [books, setBooks] = useState<(BookData | null)[]>([null, null]);
+  const [books, setBooks] = useState<(BookData | null)[]>([null, null, null]);
 
   useEffect(() => {
     FEATURED_BOOKS.forEach((meta, i) => {
@@ -127,7 +133,7 @@ export function RealExampleBooksSection() {
   return (
     <section
       id="real-examples"
-      className="py-20 md:py-28 bg-zinc-950 overflow-hidden"
+      className="py-20 md:py-28 bg-zinc-950"
       aria-labelledby="real-books-heading"
     >
       <div className="container max-w-[1200px] mx-auto">
@@ -152,10 +158,18 @@ export function RealExampleBooksSection() {
           </p>
         </motion.header>
 
-        {/* Vertical stack on mobile, 2-col grid on desktop — no horizontal scroll */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 max-w-[680px] mx-auto px-4 md:px-0">
+        {/*
+          Mobile: horizontal snap-scroll carousel — cards at 85vw so the next card peeks on the right.
+          Desktop: all 3 cards side by side in a row, no scroll needed.
+        */}
+        <div
+          className="flex md:grid md:grid-cols-3 gap-4 md:gap-8 overflow-x-auto md:overflow-x-visible snap-x snap-mandatory overscroll-x-contain px-4 md:px-0 pb-6 md:pb-0 -mx-4 md:mx-0"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
+        >
           {FEATURED_BOOKS.map((meta, i) => (
-            <BookCard key={meta.slug} meta={meta} book={books[i]} index={i} />
+            <div key={meta.slug} className="flex-none w-[85vw] md:w-auto snap-center">
+              <BookCard meta={meta} book={books[i]} index={i} />
+            </div>
           ))}
         </div>
       </div>
