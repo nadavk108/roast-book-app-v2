@@ -6,7 +6,7 @@ import posthog from 'posthog-js';
  * @param properties - Additional properties to track
  */
 export function captureEvent(eventName: string, properties?: Record<string, any>) {
-  if (typeof window !== 'undefined' && posthog) {
+  if (typeof window !== 'undefined' && posthog && window.location.hostname === 'theroastbook.com') {
     posthog.capture(eventName, properties);
   }
 }
