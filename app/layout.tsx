@@ -97,6 +97,7 @@ export default function RootLayout({
               description:
                 'A personalized AI-generated roast book gift. Upload a photo of your friend, describe their quirks, and get a hilarious illustrated flipbook of "Things They\'d Never Say."',
               url: 'https://theroastbook.com',
+              image: 'https://theroastbook.com/og-image.png',
               brand: { '@type': 'Brand', name: 'The Roast Book' },
               offers: {
                 '@type': 'Offer',
@@ -104,6 +105,7 @@ export default function RootLayout({
                 priceCurrency: 'USD',
                 availability: 'https://schema.org/InStock',
                 url: 'https://theroastbook.com',
+                priceValidUntil: '2026-12-31',
               },
               aggregateRating: {
                 '@type': 'AggregateRating',
