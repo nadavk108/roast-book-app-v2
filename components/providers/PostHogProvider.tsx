@@ -31,7 +31,7 @@ function PostHogPageView(): null {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (pathname) {
+    if (pathname && window.location.hostname === 'theroastbook.com') {
       let url = window.origin + pathname;
       if (searchParams && searchParams.toString()) {
         url = url + `?${searchParams.toString()}`;
