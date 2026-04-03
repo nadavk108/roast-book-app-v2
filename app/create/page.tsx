@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Upload, ArrowRight, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { captureEvent, Events } from '@/lib/posthog';
+import { getOrCreateSessionToken } from '@/lib/session-token';
 
 export default function UploadPage() {
     const router = useRouter();
@@ -50,11 +51,16 @@ export default function UploadPage() {
         console.log('Starting upload...', { victimName, fileSize: imageFile.size });
 
         try {
+            // Get or create anonymous session token before upload.
+            // This allows the book to be claimed later when the user signs in at checkout.
+            const sessionToken = getOrCreateSessionToken();
+
             // Upload image with timeout
             const formData = new FormData();
             formData.append('victimName', victimName);
             formData.append('victimGender', victimGender);
             formData.append('image', imageFile);
+            formData.append('session_token', sessionToken);
 
             console.log('Sending request to /api/upload...');
 
@@ -119,11 +125,6 @@ export default function UploadPage() {
 
             // Show detailed error to user
             alert(`Error: ${errorMessage}\n\nDebug info:\n- File size: ${(imageFile.size / 1024 / 1024).toFixed(2)}MB\n- Name: ${victimName}\n\nPlease try again or contact support.`);
-
-            // If unauthorized, redirect to login
-            if (errorMessage.includes('Unauthorized') || errorMessage.includes('sign in')) {
-                router.push('/login?redirect=/create');
-            }
         } finally {
             setLoading(false);
         }

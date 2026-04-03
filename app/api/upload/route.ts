@@ -13,29 +13,31 @@ export const maxDuration = 30; // 30 seconds
 export async function POST(request: NextRequest) {
   console.log('Upload route called');
   try {
-    // Get authenticated user
+    // Attempt to get authenticated user (optional - anonymous uploads are allowed)
     const supabase = createClient();
     console.log('Checking authentication...');
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      console.log('No user found - unauthorized');
-      return NextResponse.json(
-        { error: 'Unauthorized - Please sign in' },
-        { status: 401 }
-      );
-    }
-
-    console.log('User authenticated:', user.email);
+    console.log('User authenticated:', user?.email || 'anonymous');
 
     const formData = await request.formData();
     const victimName = formData.get('victimName') as string;
-    const victimGender = formData.get('victimGender') as string || 'neutral';
+    const victimGender = (formData.get('victimGender') as string) || 'neutral';
     const imageFile = formData.get('image') as File;
+    const sessionToken = (formData.get('session_token') as string) || null;
 
-    console.log('Form data received:', { victimName, victimGender, hasImage: !!imageFile });
+    console.log('Form data received:', { victimName, victimGender, hasImage: !!imageFile, hasSessionToken: !!sessionToken });
+
+    // If no authenticated user, a session_token is required to track the anonymous book
+    if (!user && !sessionToken) {
+      console.log('No user and no session_token - unauthorized');
+      return NextResponse.json(
+        { error: 'Unauthorized - Please sign in or provide a session token' },
+        { status: 401 }
+      );
+    }
 
     if (!victimName || !imageFile) {
       console.log('Missing required fields');
@@ -47,6 +49,7 @@ export async function POST(request: NextRequest) {
 
     // Generate unique slug
     const slug = generateBookSlug();
+    // Storage path uses slug (not user_id) so anonymous uploads work fine
     const imagePath = `victims/${slug}/${imageFile.name}`;
 
     console.log('Uploading to Supabase storage:', imagePath);
@@ -76,7 +79,9 @@ export async function POST(request: NextRequest) {
 
     console.log('Creating database record...');
 
-    // Create database record with user_id
+    // Create database record.
+    // user_id is set if authenticated, null for anonymous users.
+    // session_token is always stored when provided (safety net for future claim).
     const { data: bookData, error: dbError } = await supabaseAdmin
       .from('roast_books')
       .insert({
@@ -88,8 +93,9 @@ export async function POST(request: NextRequest) {
         quotes: [],
         preview_image_urls: [],
         full_image_urls: [],
-        user_id: user.id,
-        user_email: user.email,
+        user_id: user?.id ?? null,
+        user_email: user?.email ?? null,
+        session_token: sessionToken,
       })
       .select()
       .single();
@@ -103,9 +109,6 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Book created successfully:', bookData.id);
-
-    // Return immediately - generation will happen async
-    // The client will redirect to the quotes page where they can continue
 
     return NextResponse.json({
       bookId: bookData.id,

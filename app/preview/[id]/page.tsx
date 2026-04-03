@@ -5,7 +5,7 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Shield, Home, Share2, Send } from 'lucide-react';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, signInWithGoogle } from '@/lib/auth';
 import { isAdminUser } from '@/lib/admin';
 import { captureEvent, Events } from '@/lib/posthog';
 import { isPredominantlyHebrew, getHebrewBookTitle } from '@/lib/hebrew-utils';
@@ -41,6 +41,8 @@ export default function PreviewPage() {
   const [checkingOut, setCheckingOut] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [paymentTracked, setPaymentTracked] = useState(false);
+  const [userLoaded, setUserLoaded] = useState(false);
+  const autoCheckoutTriggeredRef = useRef(false);
 
   // Personal note state
   const [showGreetingInput, setShowGreetingInput] = useState(false);
@@ -59,6 +61,8 @@ export default function PreviewPage() {
 
   const adminMode = isAdminUser(user);
   const isPaymentReturn = searchParams.get('payment') === 'success';
+  // Returned here after Google OAuth triggered by the "Unlock" button
+  const isCheckoutReturn = searchParams.get('checkout') === '1';
 
   useEffect(() => {
     loadUser();
@@ -187,6 +191,8 @@ export default function PreviewPage() {
       setUser(currentUser);
     } catch (error) {
       console.error('Failed to load user:', error);
+    } finally {
+      setUserLoaded(true);
     }
   };
 
@@ -275,18 +281,40 @@ export default function PreviewPage() {
   const handleCheckout = async () => {
     if (!book) return;
 
+    // Wait for user load to complete before making auth decisions
+    if (!userLoaded) return;
+
     if (adminMode) {
       alert('Admin users have full access without payment');
       return;
     }
 
-    captureEvent(Events.CHECKOUT_INITIATED, {
-      book_id: book.id,
-      victim_name: book.victim_name,
-    });
+    try { captureEvent(Events.CHECKOUT_INITIATED, { book_id: book.id, victim_name: book.victim_name }); } catch {}
+
+    // If user is not authenticated, redirect to Google sign-in.
+    // After sign-in, the auth callback returns here with ?checkout=1,
+    // and the auto-checkout useEffect below claims the book and opens checkout.
+    if (!user) {
+      await signInWithGoogle(`/preview/${book.id}?checkout=1`);
+      return;
+    }
 
     setCheckingOut(true);
     try {
+      // Step 1: Claim the book for the authenticated user.
+      // This is a no-op if user already owns the book (e.g. they were signed in during upload).
+      const claimRes = await fetch('/api/claim-book', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookId: book.id }),
+      });
+
+      if (!claimRes.ok) {
+        const claimData = await claimRes.json();
+        throw new Error(claimData.error || 'Failed to claim book');
+      }
+
+      // Step 2: Open LemonSqueezy checkout
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -311,6 +339,21 @@ export default function PreviewPage() {
       setCheckingOut(false);
     }
   };
+
+  // Auto-trigger checkout when user returns from Google OAuth sign-in.
+  // Flow: unauthenticated user clicks "Unlock" → signInWithGoogle('/preview/[id]?checkout=1')
+  //   → OAuth → auth/callback → back here with ?checkout=1 + session established
+  //   → this effect fires → claim book + open LemonSqueezy checkout
+  useEffect(() => {
+    if (!isCheckoutReturn) return;
+    if (!userLoaded || !book) return;
+    if (!user) return; // OAuth failed or was cancelled - let user try again manually
+    if (autoCheckoutTriggeredRef.current) return;
+
+    autoCheckoutTriggeredRef.current = true;
+    handleCheckout();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCheckoutReturn, userLoaded, user, book]);
 
   // Navigation
   const pages = useMemo(() => book ? buildPages(book, adminMode) : [], [book, adminMode]);

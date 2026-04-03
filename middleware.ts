@@ -73,8 +73,10 @@ export async function middleware(request: NextRequest) {
 
   // Protected routes that require authentication
   // Note: /book and /preview are NOT protected - publicly shareable
-  // Preview page has built-in paywall for unpaid books and auto-redirects complete books to /book/[slug]
-  const protectedPaths = ['/create', '/dashboard'];
+  // Note: /create is intentionally NOT protected - anonymous book creation is allowed.
+  //   Users sign in only at the payment step (/preview/[id] "Unlock" button).
+  //   The book is claimed (user_id set) via /api/claim-book before checkout.
+  const protectedPaths = ['/dashboard'];
   const isProtectedRoute = protectedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   );
