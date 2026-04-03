@@ -57,6 +57,13 @@ If you add a new status value, you MUST update this constraint or the DB will si
 4. **Duplicate generation**: Atomic locks prevent this, but never remove the lock logic
 5. **Flipbook image/quote mismatch**: Transition locking prevents rapid swipe desync
 
+## Start Session Protocol
+When the user says "start session" or similar:
+1. Read `/Users/I754385/Downloads/files/roast-book-app/CLAUDE.md`
+2. Read `/Users/I754385/Downloads/files/roast-book-app/CHANGELOG.md`
+3. Summarize: last working deploy, what's broken, what's in progress
+4. Confirm locked files are understood
+
 ## Before ANY Code Change
 1. Read CLAUDE.md and CHANGELOG.md and summarize current state
 2. Identify exactly which files will be affected
