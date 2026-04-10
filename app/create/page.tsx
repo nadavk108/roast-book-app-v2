@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -8,8 +8,9 @@ import { Upload, ArrowRight, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { captureEvent, Events } from '@/lib/posthog';
 import { getOrCreateSessionToken } from '@/lib/session-token';
-import Cropper from 'react-easy-crop';
-import type { Area } from 'react-easy-crop';
+import ReactCrop from 'react-image-crop';
+import type { Crop, PixelCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 import { getCroppedImg } from '@/lib/crop-utils';
 
 export default function UploadPage() {
@@ -21,11 +22,12 @@ export default function UploadPage() {
     // Raw file straight from the file picker (used only during crop)
     const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
     const [rawFileName, setRawFileName] = useState<string>('photo.jpg');
+    const [rawFile, setRawFile] = useState<File | null>(null);
 
     // Crop state
-    const [crop, setCrop] = useState({ x: 0, y: 0 });
-    const [zoom, setZoom] = useState(1);
-    const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+    const imgRef = useRef<HTMLImageElement>(null);
+    const [crop, setCrop] = useState<Crop>({ unit: '%', x: 0, y: 0, width: 100, height: 100 });
+    const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null);
 
     // Committed (post-crop) state — what gets uploaded
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -38,12 +40,12 @@ export default function UploadPage() {
         if (!file) return;
 
         // Reset any previous crop
-        setCrop({ x: 0, y: 0 });
-        setZoom(1);
-        setCroppedAreaPixels(null);
+        setCrop({ unit: '%', x: 0, y: 0, width: 100, height: 100 });
+        setCompletedCrop(null);
         setImageFile(null);
         setImagePreview(null);
         setRawFileName(file.name);
+        setRawFile(file);
 
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -55,33 +57,45 @@ export default function UploadPage() {
         e.target.value = '';
     };
 
-    const onCropComplete = useCallback((_: Area, pixels: Area) => {
-        setCroppedAreaPixels(pixels);
+    const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+        // Default completedCrop to full rendered image so "Crop & Continue" works immediately
+        const { width, height } = e.currentTarget;
+        setCompletedCrop({ unit: 'px', x: 0, y: 0, width, height });
     }, []);
 
     const handleCropConfirm = async () => {
-        if (!rawImageSrc || !croppedAreaPixels) return;
+        if (!imgRef.current || !completedCrop || completedCrop.width === 0) return;
         try {
-            const croppedFile = await getCroppedImg(rawImageSrc, croppedAreaPixels, rawFileName);
+            const croppedFile = await getCroppedImg(imgRef.current, completedCrop, rawFileName);
             const preview = URL.createObjectURL(croppedFile);
             setImageFile(croppedFile);
             setImagePreview(preview);
             setRawImageSrc(null);
+            setRawFile(null);
         } catch (err) {
             console.error('Crop failed:', err);
             alert('Could not crop the image. Please try again.');
         }
     };
 
+    const handleSkipCrop = () => {
+        if (!rawFile || !rawImageSrc) return;
+        const preview = URL.createObjectURL(rawFile);
+        setImageFile(rawFile);
+        setImagePreview(preview);
+        setRawImageSrc(null);
+        setRawFile(null);
+    };
+
     const handleChangePhoto = () => {
         const input = document.getElementById('image-upload') as HTMLInputElement | null;
         if (input) input.value = '';
         setRawImageSrc(null);
+        setRawFile(null);
         setImageFile(null);
         setImagePreview(null);
-        setCrop({ x: 0, y: 0 });
-        setZoom(1);
-        setCroppedAreaPixels(null);
+        setCrop({ unit: '%', x: 0, y: 0, width: 100, height: 100 });
+        setCompletedCrop(null);
         input?.click();
     };
 
@@ -267,35 +281,23 @@ export default function UploadPage() {
                                 /* ── Inline crop UI ── */
                                 <div className="space-y-3">
                                     {/* Crop area */}
-                                    <div
-                                        className="relative w-full rounded-xl overflow-hidden border-2 border-black bg-black"
-                                        style={{ height: '60vmin', maxHeight: '60vh' }}
-                                    >
-                                        <Cropper
-                                            image={rawImageSrc}
+                                    <div className="w-full rounded-xl overflow-hidden border-2 border-black bg-black flex items-center justify-center">
+                                        <ReactCrop
                                             crop={crop}
-                                            zoom={zoom}
-                                            aspect={undefined}
-                                            onCropChange={setCrop}
-                                            onZoomChange={setZoom}
-                                            onCropComplete={onCropComplete}
-                                            style={{
-                                                containerStyle: { borderRadius: '0.75rem' },
-                                            }}
-                                        />
+                                            onChange={(_, pct) => setCrop(pct)}
+                                            onComplete={(px) => setCompletedCrop(px)}
+                                            className="max-h-[60vh] max-w-full"
+                                        >
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                                ref={imgRef}
+                                                src={rawImageSrc!}
+                                                alt="Crop preview"
+                                                onLoad={onImageLoad}
+                                                style={{ maxHeight: '60vh', maxWidth: '100%', display: 'block' }}
+                                            />
+                                        </ReactCrop>
                                     </div>
-
-                                    {/* Zoom slider */}
-                                    <input
-                                        type="range"
-                                        min={1}
-                                        max={3}
-                                        step={0.01}
-                                        value={zoom}
-                                        onChange={(e) => setZoom(Number(e.target.value))}
-                                        className="w-full h-2 accent-yellow-400 cursor-pointer"
-                                        aria-label="Zoom"
-                                    />
 
                                     {/* Actions */}
                                     <Button
@@ -305,6 +307,14 @@ export default function UploadPage() {
                                         Crop &amp; Continue
                                         <ArrowRight className="ml-2 h-5 w-5" />
                                     </Button>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleSkipCrop}
+                                        className="w-full text-sm text-gray-600 hover:text-black py-1 transition-colors"
+                                    >
+                                        Skip crop &rarr;
+                                    </button>
 
                                     <button
                                         type="button"

@@ -1,38 +1,34 @@
-export type CropArea = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
+import type { PixelCrop } from 'react-image-crop';
 
 /**
  * Renders the cropped region of an image onto a canvas and returns a File.
- * Standard pattern from react-easy-crop docs, adapted to return a File.
+ * crop coordinates are in rendered-image pixels; we scale to natural resolution.
  */
 export async function getCroppedImg(
-  imageSrc: string,
-  pixelCrop: CropArea,
+  image: HTMLImageElement,
+  crop: PixelCrop,
   originalFileName: string
 ): Promise<File> {
-  const image = await createImageBitmap(await (await fetch(imageSrc)).blob());
+  const scaleX = image.naturalWidth / image.width;
+  const scaleY = image.naturalHeight / image.height;
 
   const canvas = document.createElement('canvas');
-  canvas.width = pixelCrop.width;
-  canvas.height = pixelCrop.height;
+  canvas.width = Math.floor(crop.width * scaleX);
+  canvas.height = Math.floor(crop.height * scaleY);
 
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Could not get canvas 2D context');
 
   ctx.drawImage(
     image,
-    pixelCrop.x,
-    pixelCrop.y,
-    pixelCrop.width,
-    pixelCrop.height,
+    crop.x * scaleX,
+    crop.y * scaleY,
+    crop.width * scaleX,
+    crop.height * scaleY,
     0,
     0,
-    pixelCrop.width,
-    pixelCrop.height
+    canvas.width,
+    canvas.height,
   );
 
   return new Promise((resolve, reject) => {
@@ -41,10 +37,8 @@ export async function getCroppedImg(
         reject(new Error('Canvas toBlob returned null'));
         return;
       }
-      const ext = originalFileName.split('.').pop()?.toLowerCase();
-      const mime = ext === 'png' ? 'image/png' : 'image/jpeg';
       const croppedName = originalFileName.replace(/(\.[^.]+)?$/, '_cropped.jpg');
-      resolve(new File([blob], croppedName, { type: mime }));
+      resolve(new File([blob], croppedName, { type: 'image/jpeg' }));
     }, 'image/jpeg', 0.92);
   });
 }
