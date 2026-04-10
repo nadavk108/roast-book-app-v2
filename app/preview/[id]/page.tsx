@@ -353,6 +353,8 @@ export default function PreviewPage() {
     } catch (error: any) {
       alert(`Failed to start checkout: ${error.message || 'Unknown error'}`);
       setCheckingOut(false);
+      // Clear ?checkout=1 so isCheckoutReturn becomes false and the flipbook renders normally.
+      router.replace(`/preview/${book.id}`);
     }
   };
 
@@ -591,6 +593,18 @@ export default function PreviewPage() {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center">
         <div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-400 border-t-transparent" />
+      </div>
+    );
+  }
+
+  // Block the flipbook from rendering during the OAuth-return checkout flow.
+  // isCheckoutReturn covers the gap from page load until handleCheckout is called.
+  // checkingOut covers the gap from handleCheckout start until the LemonSqueezy redirect.
+  if (isCheckoutReturn || checkingOut) {
+    return (
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-yellow-400 border-t-transparent mb-6" />
+        <p className="text-white/60 text-sm">Redirecting to checkout...</p>
       </div>
     );
   }
