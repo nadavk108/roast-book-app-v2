@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase-server';
+import { isAdminUser } from '@/lib/admin';
 import { generateVisualPrompt } from '@/lib/prompt-engineering';
 import { generateRoastImage } from '@/lib/image-generation';
 import { downloadAndUploadImage } from '@/lib/utils';
@@ -54,6 +56,34 @@ export async function POST(request: NextRequest) {
     if (book.status === 'complete' && book.full_image_urls?.length > 0) {
       console.log(`[${bookId}] ⚠️ GUARD: Book already complete, skipping`);
       return NextResponse.json({ success: true, message: 'Already complete', skipped: true });
+    }
+
+    // Admin bypass: if the authenticated user is an admin and the book is still in
+    // preview_ready, promote it to paid so generation can proceed without a payment.
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const isAdmin = isAdminUser(user);
+
+    if (isAdmin && book.status === 'preview_ready') {
+      console.log(`[${bookId}] Admin bypass: promoting preview_ready → paid`);
+      const { data: promoteResult, error: promoteError } = await supabaseAdmin
+        .from('roast_books')
+        .update({ status: 'paid' })
+        .eq('id', bookId)
+        .eq('status', 'preview_ready')
+        .select('id')
+        .maybeSingle();
+
+      if (promoteError) {
+        console.error(`[${bookId}] Failed to promote book status:`, promoteError);
+        return NextResponse.json({ error: 'Failed to promote book status' }, { status: 500 });
+      }
+
+      if (promoteResult) {
+        book.status = 'paid';
+      }
+      // If promoteResult is null, status changed between fetch and update — fall through
+      // and let the paid gate below handle it.
     }
 
     if (book.status !== 'paid') {

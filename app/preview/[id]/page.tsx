@@ -285,7 +285,23 @@ export default function PreviewPage() {
     if (!userLoaded) return;
 
     if (adminMode) {
-      alert('Admin users have full access without payment');
+      setCheckingOut(true);
+      try {
+        const genRes = await fetch('/api/generate-remaining', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bookId: book.id }),
+        });
+        const genData = await genRes.json();
+        if (!genRes.ok) {
+          throw new Error(genData.error || 'Generation failed');
+        }
+        // Fetch the updated book and let the existing redirect logic handle navigation
+        await fetchBook();
+      } catch (error: any) {
+        alert(`Failed to generate book: ${error.message || 'Unknown error'}`);
+        setCheckingOut(false);
+      }
       return;
     }
 
@@ -712,7 +728,7 @@ export default function PreviewPage() {
                   className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-heading font-black text-lg py-6 border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
                 >
                   {checkingOut
-                    ? (isHebrewBook ? 'מעבד...' : 'Processing...')
+                    ? (isHebrewBook ? (adminMode ? 'מייצר את הספר...' : 'מעבד...') : (adminMode ? 'Generating your book...' : 'Processing...'))
                     : (isHebrewBook ? `פתחו את הספר המלא - $9.99` : `Unlock Full Book — $9.99`)}
                 </Button>
                 <p className="text-white/30 text-xs mt-3">
@@ -786,7 +802,10 @@ export default function PreviewPage() {
 function buildPages(book: any, adminMode: boolean): Page[] {
   const isPaid = book.status === 'paid' || book.status === 'complete' || book.status === 'generating_remaining';
   const isAdminBook = book.user_email === 'nadavkarlinski@gmail.com';
-  const showAllImages = isPaid || adminMode || isAdminBook;
+  // Admin sees locked pages (and the Unlock button) until full images are generated;
+  // once generated, they see everything. Paid users always see all.
+  const hasFullImages = (book.full_image_urls?.length ?? 0) > 0;
+  const showAllImages = isPaid || ((adminMode || isAdminBook) && hasFullImages);
 
   const imageUrls = (showAllImages && book.full_image_urls?.length > 0)
     ? book.full_image_urls
