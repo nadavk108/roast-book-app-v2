@@ -86,38 +86,6 @@ export default function HowItWorks() {
               </div>
             </section>
 
-            <section aria-labelledby="testimonials-heading">
-              <h2 id="testimonials-heading" className="text-2xl md:text-3xl font-heading font-black mb-6">
-                What People Say About The Roast Book
-              </h2>
-              <div className="space-y-4">
-                <blockquote className="border-l-4 border-primary pl-6 py-2">
-                  <p className="text-white text-lg italic mb-2">
-                    "My dad literally cried laughing. Best birthday gift I've ever given him!"
-                  </p>
-                  <footer className="text-zinc-400 text-sm">
-                    <cite>Sarah M.</cite> - Gifted to Dad
-                  </footer>
-                </blockquote>
-                <blockquote className="border-l-4 border-primary pl-6 py-2">
-                  <p className="text-white text-lg italic mb-2">
-                    "The AI images are insanely good. My friends couldn't believe it wasn't real."
-                  </p>
-                  <footer className="text-zinc-400 text-sm">
-                    <cite>Mike T.</cite> - Bachelor Party
-                  </footer>
-                </blockquote>
-                <blockquote className="border-l-4 border-primary pl-6 py-2">
-                  <p className="text-white text-lg italic mb-2">
-                    "Took me 2 minutes to make. My coworker's farewell party was unforgettable!"
-                  </p>
-                  <footer className="text-zinc-400 text-sm">
-                    <cite>Rachel K.</cite> - Office Farewell
-                  </footer>
-                </blockquote>
-              </div>
-            </section>
-
           </div>
         </div>
       </main>

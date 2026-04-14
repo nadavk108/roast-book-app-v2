@@ -46,18 +46,19 @@ export function FAQSection() {
           {faqs.map((faq) => (
             <details
               key={faq.question}
-              className="group rounded-xl border border-white/10 bg-zinc-950 overflow-hidden"
+              className="group rounded-xl border-3 border-foreground bg-background overflow-hidden"
             >
-              <summary className="flex items-center justify-between gap-4 px-6 py-5 cursor-pointer list-none font-semibold text-base md:text-lg hover:bg-white/5 transition-colors">
+              <summary className="flex items-center justify-between gap-4 p-6 cursor-pointer list-none font-heading font-bold text-foreground text-base md:text-lg hover:bg-muted/30 transition-colors [&::-webkit-details-marker]:hidden">
                 <dt>{faq.question}</dt>
                 <span
-                  className="shrink-0 text-zinc-400 transition-transform group-open:rotate-180"
+                  className="shrink-0 text-foreground transition-transform duration-200 group-open:rotate-180"
                   aria-hidden="true"
+                  style={{ display: 'inline-block' }}
                 >
                   ▾
                 </span>
               </summary>
-              <dd className="px-6 pb-5 text-zinc-400 text-sm md:text-base leading-relaxed border-t border-white/5 pt-4">
+              <dd className="px-6 pb-6 text-muted-foreground text-sm md:text-base leading-relaxed border-t border-border pt-4">
                 {faq.answer}
               </dd>
             </details>
