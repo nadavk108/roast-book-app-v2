@@ -149,9 +149,7 @@ export async function POST(request: NextRequest) {
       }
 
     // STEP 3: Determine how many quotes to generate
-    const quotesToGenerate = adminMode
-      ? book.quotes // Admin: Generate ALL quotes
-      : book.quotes.slice(0, 3); // Regular: Generate first 3 for preview
+    const quotesToGenerate = book.quotes.slice(0, 3);
 
     if (!quotesToGenerate || quotesToGenerate.length < 1) {
       throw new Error(`Need at least 1 quote, got ${quotesToGenerate?.length || 0}`);
@@ -237,17 +235,11 @@ export async function POST(request: NextRequest) {
     // Admin: Save to full_image_urls and mark complete
     // Regular: Save to preview_image_urls and mark preview_ready
     // IMPORTANT: Use FIRST Gemini-generated image as cover (best quality)
-    const updateData = adminMode
-      ? {
-          full_image_urls: previewImageUrls,
-          cover_image_url: previewImageUrls[0],
-          status: 'complete' as const,
-        }
-      : {
-          preview_image_urls: previewImageUrls,
-          cover_image_url: previewImageUrls[0],
-          status: 'preview_ready' as const,
-        };
+    const updateData = {
+      preview_image_urls: previewImageUrls,
+      cover_image_url: previewImageUrls[0],
+      status: 'preview_ready' as const,
+    };
 
     console.log(`[${bookId}] Updating book with status: ${updateData.status}`);
 
@@ -295,7 +287,7 @@ export async function POST(request: NextRequest) {
       previewUrls: previewImageUrls,
       coverUrl: previewImageUrls[0],
       bookId: bookId,
-      isComplete: adminMode,
+      isComplete: false,
       imageCount: previewImageUrls.length,
     });
 
