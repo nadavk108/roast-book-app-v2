@@ -6,6 +6,7 @@ import { generateVisualPrompt } from '@/lib/prompt-engineering';
 import { downloadAndUploadImage } from '@/lib/utils';
 import { withRetryContext } from '@/lib/retry';
 import { isAdminUser } from '@/lib/admin';
+import { evaluateImage, extractBase64FromImageResult, fetchImageAsBase64 } from '@/lib/image-qa';
 
 // Add route config to prevent timeout
 export const maxDuration = 60;
@@ -188,11 +189,20 @@ export async function POST(request: NextRequest) {
 
     // STEP 5: Generate all 3 images IN PARALLEL
     console.log(`[${bookId}] Step 2/3: Generating images...`);
+
+    // Fetch reference image once for QA (fail-safe: if this fails, QA is skipped per image)
+    let referenceImageBase64: string | null = null;
+    try {
+      referenceImageBase64 = await fetchImageAsBase64(book.victim_image_url);
+    } catch (err: any) {
+      console.log(`[QA] Could not fetch reference image, QA will be skipped: ${err.message}`);
+    }
+
     const imagePromises = visualPrompts.map(async ({ index, prompt }) => {
       try {
         console.log(`[${bookId}] Generating image ${index}...`);
 
-        const imageUrl = await withRetryContext(
+        let imageUrl = await withRetryContext(
           () => generateRoastImage({
             prompt,
             victimImageUrl: book.victim_image_url
@@ -205,6 +215,49 @@ export async function POST(request: NextRequest) {
         );
 
         console.log(`[${bookId}] ✅ Image ${index} generated from AI`);
+
+        // QA step: evaluate before upload, retry once if failed
+        if (referenceImageBase64) {
+          try {
+            const generatedBase64 = await extractBase64FromImageResult(imageUrl);
+            const qaResult = await evaluateImage({
+              generatedImageBase64: generatedBase64,
+              referenceImageBase64,
+              quote: book.quotes[index],
+              visualPrompt: prompt,
+              imageIndex: index,
+            });
+
+            if (!qaResult.passed) {
+              console.log(`[QA] Image ${index} failed QA, retrying with modified prompt...`);
+              const retryPrompt = `${prompt} — ensure the person closely resembles the reference photo`;
+
+              const retryImageUrl = await withRetryContext(
+                () => generateRoastImage({ prompt: retryPrompt, victimImageUrl: book.victim_image_url }),
+                { context: `[${bookId}] Image ${index} QA retry`, maxAttempts: 2, initialDelayMs: 3000 }
+              );
+
+              // Evaluate retry for logging only — accept regardless of result
+              try {
+                const retryBase64 = await extractBase64FromImageResult(retryImageUrl);
+                await evaluateImage({
+                  generatedImageBase64: retryBase64,
+                  referenceImageBase64,
+                  quote: book.quotes[index],
+                  visualPrompt: retryPrompt,
+                  imageIndex: index,
+                  isRetry: true,
+                });
+              } catch (retryQaErr: any) {
+                console.log(`[QA] Could not evaluate retry image ${index}: ${retryQaErr.message}`);
+              }
+
+              imageUrl = retryImageUrl;
+            }
+          } catch (qaErr: any) {
+            console.log(`[QA] Error during evaluation, skipping QA: ${qaErr.message}`);
+          }
+        }
 
         // Upload to Supabase storage
         const timestamp = Date.now();
