@@ -92,6 +92,80 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
+              '@type': 'FAQPage',
+              mainEntity: [
+                {
+                  '@type': 'Question',
+                  name: 'What is The Roast Book?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'The Roast Book is an AI-powered personalized gift. You upload a photo of your friend, describe their personality traits and quirks, and AI generates a custom illustrated flipbook called "Things [Name] Would Never Say" - featuring funny quotes paired with illustrated images of your friend in hilarious scenarios. It costs $9.99 and is ready in under 2 minutes.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'How does The Roast Book work?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'It takes 3 simple steps: (1) Upload a photo of your friend and enter their name, (2) Describe their personality traits - AI generates personalized roast quotes and you pick your favorites, (3) Preview 3 free illustrated pages, then pay $9.99 to unlock the full 8-page flipbook. The entire process takes under 2 minutes.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'What occasions is The Roast Book good for?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'The Roast Book is perfect for birthdays, weddings, farewell parties, bachelor and bachelorette parties, graduations, holidays, retirement celebrations, or any time you want to make a friend laugh. It is especially popular as a funny birthday gift and a personalized farewell gift for coworkers.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'How much does The Roast Book cost?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'You can preview 3 illustrated pages for free. The full 8-page personalized roast book costs $9.99 - a one-time payment with no subscription or hidden fees.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'Is The Roast Book mean or offensive?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'Not at all. The humor is based on "comedy through contradiction" - imagining things your friend would never say based on their actual personality. It is affectionate and playful, not cruel. Think of it as an inside joke turned into a beautifully illustrated gift book.',
+                  },
+                },
+                {
+                  '@type': 'Question',
+                  name: 'How do I share The Roast Book with my friend?',
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'After your roast book is generated, you get a unique shareable link. Send it via WhatsApp, text message, email, or any messaging app. Your friend opens the link and flips through their personalized illustrated roast book on any device - no app download needed.',
+                  },
+                },
+              ],
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: 'The Roast Book',
+              url: 'https://theroastbook.com',
+              logo: 'https://theroastbook.com/icon.png',
+              description:
+                'AI-powered personalized gift books. Upload a friend\'s photo, describe their personality, and get a hilarious illustrated flipbook of things they\'d never say.',
+              sameAs: ['https://www.tiktok.com/@theroastbook'],
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
               '@type': 'Product',
               name: 'The Roast Book',
               description:

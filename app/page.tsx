@@ -1,5 +1,3 @@
-'use client';
-
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { HeroSection } from '@/components/landing/HeroSection';
@@ -7,6 +5,7 @@ import { RealExampleBooksSection } from '@/components/landing/RealExampleBooksSe
 import { CelebrityShowcase } from '@/components/landing/CelebrityShowcase';
 import { HowItWorksSection } from '@/components/landing/HowItWorksSection';
 import { CTASection } from '@/components/landing/CTASection';
+import { FAQSection } from '@/components/landing/FAQSection';
 
 export default function HomePage() {
   return (
@@ -26,6 +25,7 @@ export default function HomePage() {
         <CelebrityShowcase />
         <HowItWorksSection />
         <CTASection />
+        <FAQSection />
       </main>
       <Footer />
     </div>
