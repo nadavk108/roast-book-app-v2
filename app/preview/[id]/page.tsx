@@ -50,6 +50,7 @@ export default function PreviewPage() {
   const [greetingSaved, setGreetingSaved] = useState(false);
   const [savingGreeting, setSavingGreeting] = useState(false);
   const [generationTimedOut, setGenerationTimedOut] = useState(false);
+  const [adminUnlockStarted, setAdminUnlockStarted] = useState(false);
 
   // Swipe tracking
   const touchStartX = useRef(0);
@@ -296,7 +297,11 @@ export default function PreviewPage() {
         if (!genRes.ok) {
           throw new Error(genData.error || 'Generation failed');
         }
-        // Fetch the updated book and let the existing redirect logic handle navigation
+        // Show the greeting/dedication UI while generation runs in the background
+        setCheckingOut(false);
+        setAdminUnlockStarted(true);
+        setShowGreetingInput(true);
+        // Refresh book state so the non-payment polling effect kicks in
         await fetchBook();
       } catch (error: any) {
         alert(`Failed to generate book: ${error.message || 'Unknown error'}`);
@@ -459,7 +464,7 @@ export default function PreviewPage() {
   const isGenerating = book.status === 'paid' || book.status === 'generating_remaining' || book.status === 'generating_images';
 
   // Personal note screen (shown after payment, during generation)
-  if (showGreetingInput && isPaymentReturn) {
+  if (showGreetingInput && (isPaymentReturn || adminUnlockStarted)) {
     return (
       <div className="fixed inset-0 bg-black flex flex-col">
         {/* Top section with generating indicator */}
@@ -532,7 +537,7 @@ export default function PreviewPage() {
   }
 
   // Generating state (after greeting saved/skipped, or if no greeting prompt)
-  if (isPaymentReturn && isGenerating) {
+  if ((isPaymentReturn || adminUnlockStarted) && isGenerating) {
     if (generationTimedOut) {
       return (
         <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8">
