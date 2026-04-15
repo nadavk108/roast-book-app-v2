@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { createClient } from '@/lib/supabase-server';
 import { isAdminUser } from '@/lib/admin';
-import { generateVisualPrompt } from '@/lib/prompt-engineering';
+import { generateVisualPrompt, generateSceneDirection } from '@/lib/prompt-engineering';
 import { generateRoastImage } from '@/lib/image-generation';
 import { downloadAndUploadImage } from '@/lib/utils';
 import { withRetryContext } from '@/lib/retry';
@@ -129,13 +129,19 @@ async function processRemainingImages(book: any) {
 
     const visualPromptPromises = remainingQuotes.map((quote: string, i: number) =>
       withRetryContext(
-       () => generateVisualPrompt({
+        async () => {
+          // Step 1: Pre-compute scene direction with GPT-4o
+          const sceneDirection = await generateSceneDirection(quote, book.victim_traits || '');
+          // Step 2: Generate image prompt using pre-computed direction
+          return generateVisualPrompt({
             quote,
             victimDescription: book.victim_description,
             victimTraits: book.victim_traits || '',
             imageIndex: i + 3,
-            totalImages: book.quotes.length
-          }),
+            totalImages: book.quotes.length,
+            sceneDirection,
+          });
+        },
         {
           context: `[${bookId}] Prompt ${i + 3}`,
           maxAttempts: 3,

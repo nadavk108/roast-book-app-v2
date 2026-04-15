@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { createClient } from '@/lib/supabase-server';
 import { generateRoastImage } from '@/lib/image-generation';
-import { generateVisualPrompt } from '@/lib/prompt-engineering';
+import { generateVisualPrompt, generateSceneDirection } from '@/lib/prompt-engineering';
 import { downloadAndUploadImage } from '@/lib/utils';
 import { withRetryContext } from '@/lib/retry';
 import { isAdminUser } from '@/lib/admin';
@@ -163,13 +163,19 @@ export async function POST(request: NextRequest) {
     console.log(`[${bookId}] Step 1/3: Generating visual prompts...`);
     const promptPromises = previewQuotes.map((quote: string, index: number) =>
       withRetryContext(
-        () => generateVisualPrompt({
+        async () => {
+          // Step 1: Pre-compute scene direction with GPT-4o
+          const sceneDirection = await generateSceneDirection(quote, book.victim_traits || '');
+          // Step 2: Generate image prompt using pre-computed direction
+          return generateVisualPrompt({
             quote,
             victimDescription: book.victim_description,
             victimTraits: book.victim_traits || '',
             imageIndex: index,
-            totalImages: book.quotes.length
-          }),
+            totalImages: book.quotes.length,
+            sceneDirection,
+          });
+        },
         {
           context: `[${bookId}] Prompt ${index}`,
           maxAttempts: 3,

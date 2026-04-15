@@ -19,6 +19,7 @@ type VisualPromptInput = {
   victimTraits?: string;
   imageIndex?: number;
   totalImages?: number;
+  sceneDirection?: string;
 };
 
 function getAntiRepetitionNote(imageIndex?: number, totalImages?: number): string {
@@ -241,6 +242,73 @@ Write ONLY the visual prompt. No explanation.${varietyNote}${antiRepetitionNote}
 }
 
 /**
+ * Step 1 of 2: Translate the quote and pre-compute the literal scene direction.
+ * Uses GPT-4o for stronger reasoning on Hebrew translation + ironic inversion.
+ */
+export async function generateSceneDirection(
+  quote: string,
+  victimTraits?: string
+): Promise<string> {
+  const systemPrompt = `You are a comedy scene director. You will receive a quote that is something a specific person would NEVER say — it's the opposite of who they really are. The quote may be in Hebrew or English.
+
+Your job: output a single concrete scene direction in English that shows the person LITERALLY, SINCERELY, ENTHUSIASTICALLY doing what the quote says — pushed to an absurd extreme.
+
+RULES:
+- First, fully translate and understand the quote if it's not in English
+- The scene must show the QUOTE'S version of the person, NOT their real personality
+- The action must be physical, literal, and specific — not symbolic or abstract
+- The person is 100% sincere — they genuinely believe what the quote says
+- Push the action to a comedic extreme with 1-2 specific visual details
+- The scene must be instantly readable — a viewer should guess the quote from the image alone
+
+WHAT TO AVOID:
+- Do NOT show the person's real behavior or real personality
+- Do NOT use metaphors, symbols, or abstract concepts
+- Do NOT show generic scenes (celebrating, arms raised, posing)
+- Do NOT show crowds laughing at or mocking the person
+
+OUTPUT FORMAT:
+One paragraph, 2-3 sentences max. Start with the physical action, then the setting, then 1-2 absurd details. English only. No explanation or commentary.
+
+Example:
+Quote: "אפייה זה בזבוז זמן, עדיף פשוט לקנות עוגיות מוכנות" (Baking is a waste of time, just buy store-bought cookies)
+Real traits: She bakes constantly, makes cookies for everyone
+Scene direction: The person is pushing an overflowing shopping cart stacked impossibly high with dozens of packages of store-bought cookies through a supermarket aisle. A store employee watches in disbelief. The person looks completely satisfied and proud of their efficient shopping.
+
+Example:
+Quote: "טיולים בעולם? אין כמו בארץ" (Travel the world? Nothing like staying home)
+Real traits: She travels constantly, always planning the next trip abroad
+Scene direction: The person is sitting on their couch in pajamas surrounded by travel brochures they're actively throwing into a trash can, while hugging a pillow that says "Home Sweet Home." A packed suitcase sits by the door, untouched and covered in dust.
+
+Example:
+Quote: "תנו לי כל עבודה בעולם, רק לא בייביסיטר" (Give me any job in the world, just not babysitting)
+Real traits: She babysits all the time and loves kids
+Scene direction: The person is backing away from a toddler with their hands up in a defensive "stop" gesture, looking genuinely terrified. The toddler is tiny and harmless, just standing there holding a stuffed animal. The contrast between the harmless baby and the person's exaggerated fear is the joke.`;
+
+  let userPrompt = `THE QUOTE: "${quote}"`;
+  if (victimTraits) {
+    userPrompt += `\nTHE PERSON'S REAL TRAITS (they are the OPPOSITE of the quote — use this ONLY to understand WHY the quote is funny, then show the quote's version): ${victimTraits}`;
+  }
+
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
+    max_tokens: 200,
+    temperature: 0.7,
+  });
+
+  const direction = response.choices[0]?.message?.content;
+  if (!direction) {
+    throw new Error('Failed to generate scene direction');
+  }
+
+  return direction.trim();
+}
+
+/**
  * Transform a quote into a visual prompt.
  * Switch between styles by changing ACTIVE_PROMPT_STYLE at the top of this file.
  */
@@ -261,7 +329,28 @@ export async function generateVisualPrompt(input: VisualPromptInput): Promise<st
 
   console.log(`[PROMPT-ENGINE] Using "${ACTIVE_PROMPT_STYLE}" style for image ${(imageIndex ?? 0) + 1}/${totalImages ?? '?'}`);
 
-  let userPrompt = `SUBJECT DESCRIPTION (use exact physical details including gender): ${victimDescription}
+  let userPrompt: string;
+
+  if (input.sceneDirection) {
+    // Two-step flow: scene direction was pre-computed by GPT-4o
+    userPrompt = `SUBJECT DESCRIPTION (use exact physical details including gender): ${victimDescription}
+
+THE QUOTE: "${quote}"
+
+PRE-COMPUTED SCENE DIRECTION (follow this exactly — this is what the image must show):
+${input.sceneDirection}
+
+Your job is to convert the scene direction above into a detailed image prompt. The subject's physical appearance must match the Subject Description exactly. The action, setting, and details must match the Scene Direction exactly.
+
+CRITICAL RULES:
+- Show EXACTLY what the scene direction describes — do not reinterpret or add your own ideas
+- The subject must look like a REAL PERSON with realistic skin, hair, and proportions
+- NO illustration, NO cartoon, NO clipart — strictly photorealistic
+- Bystanders if present must look confused or oblivious — NEVER laughing at or mocking the subject
+- No text, no words, no signs, no written text visible anywhere in the scene`;
+  } else {
+    // Fallback: original single-step flow (kept for backward compatibility)
+    userPrompt = `SUBJECT DESCRIPTION (use exact physical details including gender): ${victimDescription}
 
 THE QUOTE: "${quote}"
 
@@ -284,15 +373,16 @@ CRITICAL RULES:
 - Bystanders if present must look confused or oblivious — NEVER laughing at or mocking the subject
 - The viewer must be able to guess the quote just from looking at the image
 - The subject must look like a REAL PERSON with realistic skin, hair, and proportions — NOT a video game character, NOT a model, NOT airbrushed, NOT illustrated`;
-
-  if (victimTraits) {
-    userPrompt += `\n\nSUBJECT'S REAL PERSONALITY (context only — do NOT depict these, they explain why the quote is funny because it is the opposite of the quote): ${victimTraits}`;
   }
+
+  // NOTE: victimTraits intentionally NOT included in image prompt.
+  // Traits are used in generateSceneDirection (step 1) but excluded here
+  // because they cause the image model to depict real personality instead of the quote.
 
   userPrompt += `\n\nMANDATORY OUTFIT FOR THIS IMAGE: The subject must be wearing: ${forcedOutfit}. Do not substitute, ignore, or modify this outfit. Do not add accessories, chains, headphones, or extra items unless they are directly required by the literal action in the quote.`;
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: 'gpt-4o',
     messages: [
       {
         role: 'system',

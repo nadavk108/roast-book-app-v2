@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { createClient } from '@/lib/supabase-server';
 import { isAdminUser } from '@/lib/admin';
-import { generateVisualPrompt } from '@/lib/prompt-engineering';
+import { generateVisualPrompt, generateSceneDirection } from '@/lib/prompt-engineering';
 import { generateRoastImage } from '@/lib/image-generation';
 import { downloadAndUploadImage } from '@/lib/utils';
 import { withRetryContext } from '@/lib/retry';
@@ -65,13 +65,19 @@ export async function POST(request: NextRequest) {
     const promptResults = await Promise.all(
       book.quotes.map((quote: string, index: number) =>
         withRetryContext(
-          () => generateVisualPrompt({
-            quote,
-            victimDescription: book.victim_description,
-            victimTraits: book.victim_traits || '',
-            imageIndex: index,
-            totalImages: book.quotes.length,
-          }),
+          async () => {
+            // Step 1: Pre-compute scene direction with GPT-4o
+            const sceneDirection = await generateSceneDirection(quote, book.victim_traits || '');
+            // Step 2: Generate image prompt using pre-computed direction
+            return generateVisualPrompt({
+              quote,
+              victimDescription: book.victim_description,
+              victimTraits: book.victim_traits || '',
+              imageIndex: index,
+              totalImages: book.quotes.length,
+              sceneDirection,
+            });
+          },
           { context: `[REGEN ${bookId}] Prompt ${index}`, maxAttempts: 3, initialDelayMs: 2000 }
         ).then(prompt => {
           console.log(`[REGEN ${bookId}] ✅ Prompt ${index} done`);
