@@ -264,7 +264,8 @@ export default function BookPage() {
     <div className="fixed inset-0 bg-black flex items-center justify-center" onMouseMove={handleMouseMove}>
 
       {/* Card: full-screen on mobile, 9:16 portrait centered on desktop */}
-      <div className="absolute inset-0 md:relative md:inset-auto md:h-screen md:aspect-[9/16] md:overflow-hidden">
+      {/* md:w-[56.25vh] = 9/16 * 100vh — explicit width avoids aspect-ratio flex quirks */}
+      <div className="absolute inset-0 md:relative md:inset-auto md:mx-auto md:h-screen md:w-[56.25vh] md:overflow-hidden">
 
         {/* Progress Bars */}
         <div className="absolute top-0 left-0 right-0 z-50 pt-safe">
