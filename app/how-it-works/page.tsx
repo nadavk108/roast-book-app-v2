@@ -4,9 +4,9 @@ import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "How The Roast Book Works - Create a Personalized Roast Gift in 3 Steps",
+  title: "How The Roast Book Works — Create a Personalized AI Roast Gift in 2 Minutes",
   description:
-    "Learn how to create a personalized AI roast book in under 2 minutes. Upload a photo, describe your friend's traits, and get a hilarious illustrated flipbook for $9.99.",
+    'Upload a photo, describe your friend\'s personality, and AI generates a custom illustrated flipbook of "Things They\'d Never Say." 3 free preview pages, full book $9.99. No design skills needed.',
   alternates: {
     canonical: "https://theroastbook.com/how-it-works",
   },
