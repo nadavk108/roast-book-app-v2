@@ -6,9 +6,10 @@ import { generateVisualPrompt, generateSceneDirection } from '@/lib/prompt-engin
 import { downloadAndUploadImage } from '@/lib/utils';
 import { withRetryContext } from '@/lib/retry';
 import { isAdminUser } from '@/lib/admin';
+import { evaluateImage, extractBase64FromImageResult, fetchImageAsBase64 } from '@/lib/image-qa';
 
 // Add route config to prevent timeout
-export const maxDuration = 60;
+export const maxDuration = 120;
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
@@ -183,20 +184,29 @@ export async function POST(request: NextRequest) {
         }
       ).then(prompt => {
         console.log(`[${bookId}] ✅ Prompt ${index} generated`);
-        return { index, prompt };
+        return { index, prompt, quote };
       })
     );
 
     const visualPrompts = await Promise.all(promptPromises);
     console.log(`[${bookId}] All ${visualPrompts.length} prompts generated`);
 
+    // Fetch reference photo once for QA evaluations
+    let referenceImageBase64 = '';
+    try {
+      referenceImageBase64 = await fetchImageAsBase64(book.victim_image_url);
+      console.log(`[${bookId}] ✅ Reference image loaded for QA`);
+    } catch (err: any) {
+      console.log(`[${bookId}] ⚠️ Failed to load reference image for QA, skipping QA: ${err?.message}`);
+    }
+
     // STEP 5: Generate all 3 images IN PARALLEL
     console.log(`[${bookId}] Step 2/3: Generating images...`);
-    const imagePromises = visualPrompts.map(async ({ index, prompt }) => {
+    const imagePromises = visualPrompts.map(async ({ index, prompt, quote }) => {
       try {
         console.log(`[${bookId}] Generating image ${index}...`);
 
-        const imageUrl = await withRetryContext(
+        let imageUrl = await withRetryContext(
           () => generateRoastImage({
             prompt,
             victimImageUrl: book.victim_image_url
@@ -209,6 +219,41 @@ export async function POST(request: NextRequest) {
         );
 
         console.log(`[${bookId}] ✅ Image ${index} generated from AI`);
+
+        // QA check before upload
+        if (referenceImageBase64) {
+          try {
+            const generatedBase64 = await extractBase64FromImageResult(imageUrl);
+            const qaResult = await evaluateImage({
+              generatedImageBase64: generatedBase64,
+              referenceImageBase64,
+              quote,
+              visualPrompt: prompt,
+              imageIndex: index,
+              isRetry: false,
+            });
+            if (!qaResult.passed) {
+              console.log(`[${bookId}] ⚠️ QA FAIL image ${index} (face: ${qaResult.faceSimilarityScore}/10, scene: ${qaResult.sceneCoherenceScore}/10): ${qaResult.reasoning} — regenerating`);
+              const retryUrl = await withRetryContext(
+                () => generateRoastImage({ prompt, victimImageUrl: book.victim_image_url }),
+                { context: `[${bookId}] Image ${index} QA retry`, maxAttempts: 2, initialDelayMs: 3000 }
+              );
+              const retryBase64 = await extractBase64FromImageResult(retryUrl);
+              await evaluateImage({
+                generatedImageBase64: retryBase64,
+                referenceImageBase64,
+                quote,
+                visualPrompt: prompt,
+                imageIndex: index,
+                isRetry: true,
+              });
+              imageUrl = retryUrl;
+              console.log(`[${bookId}] ✅ Image ${index} replaced with QA retry`);
+            }
+          } catch (qaErr: any) {
+            console.log(`[${bookId}] ⚠️ QA error for image ${index}, using original: ${qaErr?.message}`);
+          }
+        }
 
         // Upload to Supabase storage
         const timestamp = Date.now();
