@@ -47,7 +47,7 @@ export function CTASection() {
             </h2>
 
             <p className="text-lg md:text-xl text-background/70 max-w-2xl mx-auto mb-8">
-              Join 500+ people who've given the most memorable, laugh-out-loud gift ever.
+              Instant digital delivery - ready in under 2 minutes.
               Start free, pay only when you're ready.
             </p>
 

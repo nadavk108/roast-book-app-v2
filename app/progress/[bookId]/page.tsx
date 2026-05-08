@@ -153,7 +153,7 @@ export default function ProgressPage() {
           <p className="text-gray-600 mb-4">{error}</p>
           <p className="text-xs text-gray-400 mb-6">BookId: {bookId || 'undefined'}</p>
           <Button asChild className="w-full">
-            <Link href="/">Start Over</Link>
+            <Link href="/create">Start Over</Link>
           </Button>
         </div>
       </div>

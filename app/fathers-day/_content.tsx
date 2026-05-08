@@ -111,7 +111,7 @@ export function FathersDayContent({ images, quotes }: Props) {
             </p>
 
             <BrutalButton size="xl" asChild onClick={() => handleCtaClick('hero')}>
-              <Link href="/">
+              <Link href="/create">
                 Create Dad&apos;s Book - $9.99
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
@@ -123,12 +123,10 @@ export function FathersDayContent({ images, quotes }: Props) {
           </div>
         </section>
 
-        {/* ── Social proof stripe ── */}
+        {/* ── Value proposition stripe ── */}
         <div className="py-6 bg-secondary text-secondary-foreground text-center px-4 border-y-3 border-foreground">
           <p className="text-base md:text-lg font-medium">
-            Join{' '}
-            <span className="text-primary font-bold">500+ people</span>{' '}
-            who&apos;ve made their friends and family cry laughing
+            Instant digital delivery&nbsp;&nbsp;•&nbsp;&nbsp;Ready in under 5 minutes&nbsp;&nbsp;•&nbsp;&nbsp;No app download needed
           </p>
         </div>
 
@@ -299,7 +297,7 @@ export function FathersDayContent({ images, quotes }: Props) {
             </p>
 
             <BrutalButton size="xl" asChild onClick={() => handleCtaClick('bottom')}>
-              <Link href="/">
+              <Link href="/create">
                 Create Dad&apos;s Book - $9.99
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>

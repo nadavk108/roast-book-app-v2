@@ -164,7 +164,7 @@ export function TheEndPage({ victimName, bookUrl, bookId }: TheEndPageProps) {
             Takes 2 minutes. Just $9.99
           </p>
           <Link
-            href="/"
+            href="/create"
             onClick={handleCtaClick}
             className="block text-center w-full py-4 px-6 bg-yellow-400 hover:bg-yellow-500 text-black font-heading font-black text-lg rounded-xl transition-all hover:scale-105 active:scale-95 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
           >

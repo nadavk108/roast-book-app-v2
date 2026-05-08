@@ -14,12 +14,10 @@ export default function HomePage() {
       <main className="flex-1">
         <HeroSection />
         <RealExampleBooksSection />
-        {/* Social proof banner */}
+        {/* Value proposition banner */}
         <div className="py-8 bg-zinc-950 border-t border-white/5 text-center px-4">
           <p className="text-zinc-400 text-base md:text-lg font-medium">
-            Join{' '}
-            <span className="text-white font-bold">500+ people</span>{' '}
-            who&apos;ve made their friends cry laughing
+            Instant digital delivery&nbsp;&nbsp;•&nbsp;&nbsp;Personalized in under 2 minutes&nbsp;&nbsp;•&nbsp;&nbsp;Share via any app
           </p>
         </div>
         <CelebrityShowcase />

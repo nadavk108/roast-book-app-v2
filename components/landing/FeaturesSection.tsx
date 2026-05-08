@@ -110,7 +110,7 @@ export function FeaturesSection() {
           className="text-center max-w-2xl mx-auto mb-12"
         >
           <span className="text-accent font-bold text-sm uppercase tracking-wider">
-            Loved by 500+ gifters
+            What people are saying
           </span>
           <h2 className="text-3xl md:text-5xl font-heading font-black mt-2 mb-4">
             Roast Book Reviews - What Customers Are Saying
