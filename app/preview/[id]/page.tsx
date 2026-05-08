@@ -748,7 +748,7 @@ export default function PreviewPage() {
                 >
                   {checkingOut
                     ? (isHebrewBook ? (adminMode ? 'מייצר את הספר...' : 'מעבד...') : (adminMode ? 'Generating your book...' : 'Processing...'))
-                    : (isHebrewBook ? `פתחו את הספר המלא - $9.99` : `Unlock Full Book — $9.99`)}
+                    : (isHebrewBook ? `פתחו את הספר המלא - $9.99` : `Unlock Full Book - $9.99`)}
                 </Button>
                 <p className="text-white/30 text-xs mt-3">
                   {isHebrewBook ? '← הקישו בצדדים לתצוגה מקדימה →' : '← Tap sides to preview more →'}
