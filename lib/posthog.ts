@@ -84,4 +84,10 @@ export const Events = {
   PAYMENT_COMPLETE: 'payment_complete',
   BOOK_CREATED: 'book_created',
   BOOK_SHARED: 'book_shared',
+
+  // Shared book viewer events
+  BOOK_VIEWED: 'book_viewed',
+  SLIDE_VIEWED: 'slide_viewed',
+  CTA_CLICKED: 'cta_clicked',
+  SHARE_BUTTON_CLICKED: 'share_button_clicked',
 } as const;

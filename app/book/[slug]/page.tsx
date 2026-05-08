@@ -56,6 +56,20 @@ export default function BookPage() {
     return () => clearInterval(interval);
   }, [book?.status]);
 
+  // Fire book_viewed once when the flipbook becomes visible to the viewer
+  useEffect(() => {
+    if (!imagesPreloaded || !book) return;
+    try { captureEvent(Events.BOOK_VIEWED, { book_id: book.id, book_slug: book.slug, is_creator: false }); } catch {}
+  }, [imagesPreloaded]);
+
+  // Fire slide_viewed each time the active slide changes
+  useEffect(() => {
+    if (!imagesPreloaded || !book || slides.length === 0) return;
+    const slide = slides[activeIndex];
+    if (!slide) return;
+    try { captureEvent(Events.SLIDE_VIEWED, { book_id: book.id, slide_index: activeIndex, slide_type: slide.type }); } catch {}
+  }, [activeIndex, imagesPreloaded]);
+
   // Apply ?start= param once book is loaded
   useEffect(() => {
     if (!book || startParamApplied.current) return;
@@ -346,7 +360,7 @@ export default function BookPage() {
           {/* Slide Content Overlays */}
           {currentSlide.type === 'end' ? (
             <div className="absolute inset-0" onClick={(e) => e.stopPropagation()}>
-              <TheEndPage victimName={book.victim_name} bookUrl={bookUrl} />
+              <TheEndPage victimName={book.victim_name} bookUrl={bookUrl} bookId={book.id} />
             </div>
           ) : currentSlide.type === 'greeting' ? (
             <div className="absolute inset-0 bg-white flex items-center justify-center p-8">
