@@ -15,6 +15,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      url: 'https://theroastbook.com/fathers-day',
+      lastModified: new Date('2026-05-08'),
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
       url: 'https://theroastbook.com/llms.txt',
       lastModified: new Date('2026-04-14'),
       changeFrequency: 'weekly',

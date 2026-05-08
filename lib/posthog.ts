@@ -90,4 +90,8 @@ export const Events = {
   SLIDE_VIEWED: 'slide_viewed',
   CTA_CLICKED: 'cta_clicked',
   SHARE_BUTTON_CLICKED: 'share_button_clicked',
+
+  // Father's Day landing page
+  FATHERS_DAY_PAGE_VIEWED: 'fathers_day_page_viewed',
+  FATHERS_DAY_CTA_CLICKED: 'fathers_day_cta_clicked',
 } as const;
