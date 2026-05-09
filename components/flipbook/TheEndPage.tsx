@@ -69,9 +69,6 @@ export function TheEndPage({ victimName, bookUrl, bookId }: TheEndPageProps) {
           <p className="text-xl md:text-2xl font-heading font-bold text-white">
             Share the Roast! 🔥
           </p>
-          <p className="text-sm text-gray-300">
-            Let others enjoy this masterpiece
-          </p>
           <Button
             onClick={handleMainShare}
             size="lg"
@@ -96,7 +93,7 @@ export function TheEndPage({ victimName, bookUrl, bookId }: TheEndPageProps) {
           <Link
             href="/create"
             onClick={handleCtaClick}
-            className="block text-center w-full py-4 px-6 bg-yellow-400 hover:bg-yellow-500 text-black font-heading font-black text-lg rounded-xl transition-all hover:scale-105 active:scale-95 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+            className="block text-center w-full py-4 px-6 bg-transparent hover:bg-yellow-400/10 text-yellow-400 hover:text-yellow-300 border-2 border-yellow-400 font-heading font-black text-lg rounded-xl transition-all hover:scale-105 active:scale-95"
           >
             Create a Roast Book
           </Link>
