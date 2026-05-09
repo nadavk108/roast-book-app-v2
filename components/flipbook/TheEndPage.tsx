@@ -66,16 +66,13 @@ export function TheEndPage({ victimName, bookUrl, bookId }: TheEndPageProps) {
 
         {/* Share section */}
         <div className="flex flex-col gap-3">
-          <p className="text-xl md:text-2xl font-heading font-bold text-white">
-            Share the Roast! 🔥
-          </p>
           <Button
             onClick={handleMainShare}
             size="lg"
             className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-heading font-black text-lg py-6 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
           >
             <Share2 className="w-5 h-5 mr-2" />
-            {copied ? 'Link Copied!' : 'Share This Roast 🔥'}
+            {copied ? 'Link Copied!' : 'Share This Roast'}
           </Button>
         </div>
 
@@ -85,15 +82,15 @@ export function TheEndPage({ victimName, bookUrl, bookId }: TheEndPageProps) {
         {/* Upsell section */}
         <div className="flex flex-col gap-3">
           <p className="text-lg font-heading font-black text-white">
-            Loved it? Make one for someone YOU know
+            Your turn to roast someone 🔥
           </p>
           <p className="text-sm text-gray-500">
-            Give someone the gift of being roasted.
+            Takes 2 minutes. They'll never forgive you.
           </p>
           <Link
             href="/create"
             onClick={handleCtaClick}
-            className="block text-center w-full py-4 px-6 bg-transparent hover:bg-yellow-400/10 text-yellow-400 hover:text-yellow-300 border-2 border-yellow-400 font-heading font-black text-lg rounded-xl transition-all hover:scale-105 active:scale-95"
+            className="block text-center w-full py-4 px-6 bg-transparent hover:bg-yellow-400/10 text-yellow-400 hover:text-yellow-300 border border-yellow-400 font-heading font-black text-lg rounded-xl transition-all hover:scale-105 active:scale-95"
           >
             Create a Roast Book
           </Link>
