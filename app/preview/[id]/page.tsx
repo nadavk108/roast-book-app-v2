@@ -43,6 +43,7 @@ export default function PreviewPage() {
   const [paymentTracked, setPaymentTracked] = useState(false);
   const [userLoaded, setUserLoaded] = useState(false);
   const autoCheckoutTriggeredRef = useRef(false);
+  const addToCartFiredRef = useRef(false);
 
   // Personal note state
   const [showGreetingInput, setShowGreetingInput] = useState(false);
@@ -88,6 +89,9 @@ export default function PreviewPage() {
         victim_name: book.victim_name,
       });
       try { captureEvent(Events.PAYMENT_COMPLETE, { amount_cents: 999, book_id: book.id }); } catch {}
+      if (typeof window !== 'undefined' && typeof (window as any).fbq === 'function') {
+        (window as any).fbq('track', 'Purchase', { value: 9.99, currency: 'USD' });
+      }
       setPaymentTracked(true);
 
       captureEvent(Events.BOOK_COMPLETED, {
@@ -185,6 +189,7 @@ export default function PreviewPage() {
     const pollInterval = setInterval(() => fetchBook(), 3000);
     return () => clearInterval(pollInterval);
   }, [book?.status, isPaymentReturn]);
+
 
   const loadUser = async () => {
     try {
@@ -380,6 +385,18 @@ export default function PreviewPage() {
 
   // Navigation
   const pages = useMemo(() => book ? buildPages(book, adminMode) : [], [book, adminMode]);
+
+  // AddToCart: fire once when the user first hits the paywall slide
+  useEffect(() => {
+    if (!imagesPreloaded || !book || addToCartFiredRef.current) return;
+    const page = pages[activeIndex];
+    if (page?.type === 'locked') {
+      addToCartFiredRef.current = true;
+      if (typeof window !== 'undefined' && typeof (window as any).fbq === 'function') {
+        (window as any).fbq('track', 'AddToCart', { value: 9.99, currency: 'USD' });
+      }
+    }
+  }, [activeIndex, imagesPreloaded, book, pages]);
 
   const goToNext = useCallback(() => {
     if (isTransitioningRef.current) return;

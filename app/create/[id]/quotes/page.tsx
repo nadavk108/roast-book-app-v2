@@ -171,6 +171,9 @@ export default function QuotesPage() {
             book_id: bookId,
         });
         try { captureEvent(Events.QUOTES_SELECTED, { num_quotes_shown: 8, num_quotes_selected: quotes.length, book_id: bookId }); } catch {}
+        if (typeof window !== 'undefined' && typeof (window as any).fbq === 'function') {
+            (window as any).fbq('track', 'Lead');
+        }
 
         setSaving(true);
 
