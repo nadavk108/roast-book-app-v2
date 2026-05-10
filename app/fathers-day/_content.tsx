@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { BrutalButton } from '@/components/ui/brutal-button';
 import { captureEvent, Events } from '@/lib/posthog';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, X } from 'lucide-react';
 
 type Props = {
   images: string[];
@@ -33,7 +33,7 @@ const STEPS = [
     title: 'Get a hilarious flipbook in minutes',
     description:
       'AI generates personalized quotes and illustrations. Preview 3 pages free, then unlock all 8 for $9.99.',
-    duration: 'Ready instantly',
+    duration: 'Digital delivery',
   },
 ];
 
@@ -41,12 +41,12 @@ const FAQ_ITEMS = [
   {
     question: 'What is a Roast Book?',
     answer:
-      'A Roast Book is a personalized AI-generated flipbook called "Things [Name] Would Never Say" - featuring funny quotes paired with illustrated images of Dad in hilarious scenarios. It costs $9.99 and is ready in under 2 minutes.',
+      'A Roast Book is a personalized AI-generated flipbook called "Things [Name] Would Never Say" - featuring funny quotes paired with illustrated images of Dad in hilarious scenarios. Preview 3 pages free, then unlock all 8 for $9.99.',
   },
   {
     question: 'How long does it take?',
     answer:
-      'The whole process takes under 2 minutes. Upload a photo, describe what makes Dad funny, pick your favorite quotes, pay $9.99, and the full 8-page illustrated book is ready instantly.',
+      'The whole process is quick and easy. Upload a photo, describe what makes Dad funny, preview 3 pages free, pay $9.99, and the full 8-page illustrated book is ready to share immediately.',
   },
   {
     question: 'Is it a physical book?',
@@ -62,24 +62,23 @@ const FAQ_ITEMS = [
 
 const CARD_ROTATIONS = ['rotate-1', '-rotate-2', 'rotate-[1.5deg]'];
 
-function getCountdown() {
-  const target = new Date('2026-06-21T00:00:00');
-  const now = new Date();
-  const diff = target.getTime() - now.getTime();
-  if (diff <= 0) return { days: 0, hours: 0 };
-  return {
-    days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-    hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-  };
-}
-
 export function FathersDayContent({ images, quotes }: Props) {
-  const [countdown, setCountdown] = useState(getCountdown());
+  const [showStickyBar, setShowStickyBar] = useState(false);
+  const [stickyDismissed, setStickyDismissed] = useState(false);
+  const heroCTARef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     try { captureEvent(Events.FATHERS_DAY_PAGE_VIEWED, { page: 'fathers_day' }); } catch {}
-    const timer = setInterval(() => setCountdown(getCountdown()), 60_000);
-    return () => clearInterval(timer);
+
+    const el = heroCTARef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => { setShowStickyBar(!entry.isIntersecting); },
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   const handleCtaClick = (location: string) => {
@@ -89,6 +88,25 @@ export function FathersDayContent({ images, quotes }: Props) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
+
+      {/* Sticky bottom CTA bar */}
+      {showStickyBar && !stickyDismissed && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur-sm border-t-3 border-foreground px-4 py-3 flex items-center justify-center gap-4">
+          <BrutalButton size="sm" asChild onClick={() => handleCtaClick('sticky_bar')}>
+            <Link href="/create">
+              Preview 3 Pages Free
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </BrutalButton>
+          <button
+            onClick={() => setStickyDismissed(true)}
+            className="text-white/70 hover:text-white transition-colors"
+            aria-label="Dismiss"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      )}
 
       <main className="flex-1">
 
@@ -110,15 +128,18 @@ export function FathersDayContent({ images, quotes }: Props) {
               The funniest Father&apos;s Day gift - personalized, AI-generated, and ready in 2 minutes
             </p>
 
-            <BrutalButton size="xl" asChild onClick={() => handleCtaClick('hero')}>
-              <Link href="/create">
-                Create Dad&apos;s Book - $9.99
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </BrutalButton>
+            <div ref={heroCTARef}>
+              <BrutalButton size="xl" asChild onClick={() => handleCtaClick('hero')}>
+                <Link href="/create">
+                  Preview 3 Pages Free
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </BrutalButton>
+              <p className="mt-3 text-sm text-muted-foreground">Then unlock all 8 pages for $9.99</p>
+            </div>
 
-            <p className="mt-6 text-sm text-muted-foreground">
-              Father&apos;s Day is June 21 - order now, ready instantly
+            <p className="mt-4 text-sm text-muted-foreground">
+              Father&apos;s Day is June 21 - the perfect last-minute gift
             </p>
           </div>
         </section>
@@ -126,7 +147,7 @@ export function FathersDayContent({ images, quotes }: Props) {
         {/* ── Value proposition stripe ── */}
         <div className="py-6 bg-secondary text-secondary-foreground text-center px-4 border-y-3 border-foreground">
           <p className="text-base md:text-lg font-medium">
-            Instant digital delivery&nbsp;&nbsp;•&nbsp;&nbsp;Ready in under 5 minutes&nbsp;&nbsp;•&nbsp;&nbsp;No app download needed
+            Instant digital delivery&nbsp;&nbsp;•&nbsp;&nbsp;No app download needed&nbsp;&nbsp;•&nbsp;&nbsp;Share as a link
           </p>
         </div>
 
@@ -142,7 +163,7 @@ export function FathersDayContent({ images, quotes }: Props) {
                 See Dave&apos;s Roast Book
               </h2>
               <p className="text-muted-foreground text-lg">
-                Made in under 2 minutes - this is what Dad gets
+                AI-generated from a real photo - this is what Dad gets
               </p>
             </div>
 
@@ -188,7 +209,7 @@ export function FathersDayContent({ images, quotes }: Props) {
               >
                 How It Works
               </h2>
-              <p className="text-muted-foreground text-lg">From idea to gift in under 2 minutes</p>
+              <p className="text-muted-foreground text-lg">Three easy steps to a personalized gift</p>
             </div>
 
             <ol className="grid md:grid-cols-3 gap-6 list-none">
@@ -210,40 +231,14 @@ export function FathersDayContent({ images, quotes }: Props) {
           </div>
         </section>
 
-        {/* ── Countdown urgency ── */}
+        {/* ── Last-minute gift callout ── */}
         <section
           className="py-16 bg-primary border-y-3 border-foreground"
-          aria-label="Father's Day countdown"
+          aria-label="Last-minute gift"
         >
           <div className="container max-w-[700px] mx-auto text-center px-4">
-            <h2 className="text-3xl md:text-4xl font-heading font-black text-primary-foreground mb-2">
-              Father&apos;s Day is June 21
-            </h2>
-            <p className="text-primary-foreground/80 text-lg mb-10">
-              Order now - it&apos;s ready instantly, no shipping needed
-            </p>
-
-            <div className="flex justify-center gap-4 mb-10">
-              <div className="bg-black/15 border-3 border-primary-foreground rounded-2xl px-8 py-6 min-w-[120px]">
-                <div className="text-5xl md:text-6xl font-heading font-black text-primary-foreground tabular-nums leading-none">
-                  {countdown.days}
-                </div>
-                <div className="text-xs font-bold text-primary-foreground/70 uppercase tracking-widest mt-2">
-                  Days
-                </div>
-              </div>
-              <div className="bg-black/15 border-3 border-primary-foreground rounded-2xl px-8 py-6 min-w-[120px]">
-                <div className="text-5xl md:text-6xl font-heading font-black text-primary-foreground tabular-nums leading-none">
-                  {countdown.hours}
-                </div>
-                <div className="text-xs font-bold text-primary-foreground/70 uppercase tracking-widest mt-2">
-                  Hours
-                </div>
-              </div>
-            </div>
-
-            <p className="text-primary-foreground/70 text-sm">
-              Updates every minute
+            <p className="text-2xl md:text-3xl font-heading font-black text-primary-foreground">
+              The ultimate last-minute gift - ready before he finishes his coffee
             </p>
           </div>
         </section>
@@ -293,17 +288,18 @@ export function FathersDayContent({ images, quotes }: Props) {
               Make Dad&apos;s Day Unforgettable
             </h2>
             <p className="text-muted-foreground text-lg mb-10 max-w-lg mx-auto">
-              A personalized roast book he&apos;ll actually remember - ready in 2 minutes, just $9.99
+              A personalized roast book he&apos;ll actually remember - just $9.99
             </p>
 
             <BrutalButton size="xl" asChild onClick={() => handleCtaClick('bottom')}>
               <Link href="/create">
-                Create Dad&apos;s Book - $9.99
+                Preview 3 Pages Free
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </BrutalButton>
+            <p className="mt-3 text-sm text-muted-foreground">Then unlock all 8 pages for $9.99</p>
 
-            <p className="mt-6 text-sm text-muted-foreground">
+            <p className="mt-4 text-sm text-muted-foreground">
               No app download needed - Dad opens it on any device
             </p>
           </div>
