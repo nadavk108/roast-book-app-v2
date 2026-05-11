@@ -632,7 +632,8 @@ export default function PreviewPage() {
   }
 
   return (
-    <div className="fixed inset-0 bg-black overflow-hidden">
+    <div className="fixed inset-0 bg-black flex items-center justify-center">
+      <div className="absolute inset-0 md:relative md:inset-auto md:mx-auto md:h-screen md:w-[56.25vh] md:overflow-hidden">
       {/* Progress Bars */}
       <div className="absolute top-0 left-0 right-0 z-50 pt-safe">
         <div className="flex gap-1 px-2 py-2">
@@ -830,6 +831,7 @@ export default function PreviewPage() {
             />
           ))}
         </div>
+      </div>
       </div>
     </div>
   );
