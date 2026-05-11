@@ -493,8 +493,10 @@ export default function AdminPage() {
                   key={book.id}
                   className="flex items-center gap-3 p-3 bg-white/5 rounded-xl"
                   onClick={() => {
-                    if (book.slug && (book.status === 'complete' || book.status === 'preview_ready')) {
+                    if (book.status === 'complete' && book.slug) {
                       window.open(`/book/${book.slug}`, '_blank');
+                    } else if (book.status === 'preview_ready') {
+                      window.open(`/preview/${book.id}`, '_blank');
                     }
                   }}
                 >
