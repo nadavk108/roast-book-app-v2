@@ -8,7 +8,7 @@ import { withRetryContext } from '@/lib/retry';
 import { isAdminUser } from '@/lib/admin';
 
 // Add route config to prevent timeout
-export const maxDuration = 60;
+export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
