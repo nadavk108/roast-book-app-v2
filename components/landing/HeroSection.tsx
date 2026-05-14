@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { BrutalButton } from "@/components/ui/brutal-button";
 import { BrutalBadge } from "@/components/ui/brutal-badge";
@@ -42,6 +42,8 @@ function buildSlides(data: BookData): HeroSlide[] {
 export function HeroSection({ initialBook }: { initialBook?: BookData }) {
   const [currentExample, setCurrentExample] = useState(0);
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(() => buildSlides(initialBook ?? null));
+  // Skip entrance animation on first paint so the LCP image is visible immediately
+  const skipEntrance = useRef(true);
 
   useEffect(() => {
     if (heroSlides.length === 0) return;
@@ -104,17 +106,20 @@ export function HeroSection({ initialBook }: { initialBook?: BookData }) {
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-foreground rounded-b-2xl z-20" aria-hidden="true" />
 
                     {/* Screen content */}
-                    <div className="aspect-[9/16] relative overflow-hidden">
+                    <div className="aspect-[9/16] relative overflow-hidden" aria-live="polite" aria-atomic="true">
                       {heroSlides.length === 0 ? (
                         <div className="absolute inset-0 bg-zinc-800 animate-pulse" aria-hidden="true" />
                       ) : (
                         <AnimatePresence mode="wait">
                           <motion.div
                             key={currentExample}
-                            initial={{ opacity: 0, scale: 1.05 }}
+                            initial={skipEntrance.current
+                              ? { opacity: 1, scale: 1 }
+                              : { opacity: 0, scale: 1.05 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ duration: 0.5 }}
+                            onAnimationComplete={() => { skipEntrance.current = false; }}
                             className="absolute inset-0"
                           >
                             <Image
@@ -240,7 +245,7 @@ export function HeroSection({ initialBook }: { initialBook?: BookData }) {
             </nav>
 
             {/* Trust Signals — always last */}
-            <ul className="order-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground list-none">
+            <ul role="list" className="order-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground list-none">
               <li className="flex items-center gap-1.5">
                 <Shield className="h-4 w-4 text-green-600" aria-hidden="true" />
                 <span>Secure Payment</span>

@@ -1,28 +1,46 @@
+import dynamic from 'next/dynamic';
+import { unstable_cache } from 'next/cache';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { HeroSection } from '@/components/landing/HeroSection';
 import { RealExampleBooksSection } from '@/components/landing/RealExampleBooksSection';
 import { CelebrityShowcase } from '@/components/landing/CelebrityShowcase';
-import { HowItWorksSection } from '@/components/landing/HowItWorksSection';
-import { CTASection } from '@/components/landing/CTASection';
 import { FAQSection } from '@/components/landing/FAQSection';
 import { supabaseAdmin } from '@/lib/supabase';
+
+// Below-fold heavy components — dynamically imported to reduce initial JS parse/eval
+const HowItWorksSection = dynamic(
+  () => import('@/components/landing/HowItWorksSection').then((m) => ({ default: m.HowItWorksSection })),
+  { ssr: false }
+);
+const CTASection = dynamic(
+  () => import('@/components/landing/CTASection').then((m) => ({ default: m.CTASection })),
+  { ssr: false }
+);
+
+// ISR: revalidate page every hour — prevents DB round-trip on every request
+export const revalidate = 3600;
 
 const TYLER_SLUG = '9x7dzympme';
 const FEATURED_SLUGS = ['9x7dzympme', 'r6vsw49szs', 'yjkyh70ga0'];
 
-async function fetchBook(slug: string) {
-  try {
-    const { data } = await supabaseAdmin
-      .from('roast_books')
-      .select('victim_name, victim_gender, full_image_urls, preview_image_urls, cover_image_url, quotes, slug')
-      .eq('slug', slug)
-      .single();
-    return data ?? null;
-  } catch {
-    return null;
-  }
-}
+// unstable_cache dedups & caches Supabase reads across requests within the revalidate window
+const fetchBook = unstable_cache(
+  async (slug: string) => {
+    try {
+      const { data } = await supabaseAdmin
+        .from('roast_books')
+        .select('victim_name, victim_gender, full_image_urls, preview_image_urls, cover_image_url, quotes, slug')
+        .eq('slug', slug)
+        .single();
+      return data ?? null;
+    } catch {
+      return null;
+    }
+  },
+  ['landing-book'],
+  { revalidate: 3600 }
+);
 
 export default async function HomePage() {
   const [tylerBook, ...featuredBooks] = await Promise.all([
