@@ -9,8 +9,6 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { captureEvent, Events } from "@/lib/posthog";
 
-const TYLER_SLUG = '9x7dzympme';
-
 type HeroSlide = {
   image: string;
   quote: string;
@@ -18,33 +16,33 @@ type HeroSlide = {
   isCover?: boolean;
 };
 
-export function HeroSection() {
+type BookData = {
+  victim_name?: string;
+  full_image_urls?: string[];
+  cover_image_url?: string;
+  quotes?: string[];
+} | null;
+
+function buildSlides(data: BookData): HeroSlide[] {
+  if (!data?.full_image_urls?.length) return [];
+  const name = data.victim_name ?? 'Tyler';
+  const imageSlides: HeroSlide[] = data.full_image_urls.slice(0, 3).map(
+    (image: string, i: number) => ({
+      image,
+      quote: data.quotes?.[i] ?? '',
+      name,
+    })
+  );
+  const coverSlides: HeroSlide[] = data.cover_image_url
+    ? [{ image: data.cover_image_url, quote: '', name, isCover: true }]
+    : [];
+  return [...coverSlides, ...imageSlides];
+}
+
+export function HeroSection({ initialBook }: { initialBook?: BookData }) {
   const [currentExample, setCurrentExample] = useState(0);
-  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([]);
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(() => buildSlides(initialBook ?? null));
 
-  // Fetch Tyler's real book images
-  useEffect(() => {
-    fetch(`/api/book/${TYLER_SLUG}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (!data?.full_image_urls?.length) return;
-        const name = data.victim_name ?? 'Tyler';
-        const imageSlides: HeroSlide[] = data.full_image_urls.slice(0, 3).map(
-          (image: string, i: number) => ({
-            image,
-            quote: data.quotes?.[i] ?? '',
-            name,
-          })
-        );
-        const coverSlides: HeroSlide[] = data.cover_image_url
-          ? [{ image: data.cover_image_url, quote: '', name, isCover: true }]
-          : [];
-        setHeroSlides([...coverSlides, ...imageSlides]);
-      })
-      .catch(() => {});
-  }, []);
-
-  // Auto-rotate — only once slides are loaded
   useEffect(() => {
     if (heroSlides.length === 0) return;
     const interval = setInterval(() => {
@@ -75,12 +73,7 @@ export function HeroSection() {
         <div className="flex flex-col gap-8 lg:grid lg:grid-cols-2 lg:grid-rows-[auto_1fr] lg:gap-x-16 lg:gap-y-8 lg:items-start">
 
           {/* ── 1 (mobile) / Left col row 1 (desktop): Headline + Subtext ── */}
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-            className="order-1 lg:col-start-1 lg:row-start-1"
-          >
+          <div className="order-1 lg:col-start-1 lg:row-start-1">
             <p className="text-sm font-bold uppercase tracking-widest text-black mb-3">
               🔥 The Roast Book
             </p>
@@ -94,18 +87,15 @@ export function HeroSection() {
               Describe your friend&apos;s quirks and we&apos;ll generate a hilarious personalized roast book
               with AI-powered quotes and illustrations. Takes 5 minutes. They&apos;ll never forget it.
             </p>
-          </motion.div>
+          </div>
 
           {/* ── 2 (mobile) / Right col rows 1-2 (desktop): Phone mockup ── */}
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+          <div
             className="order-2 lg:col-start-2 lg:row-start-1 lg:row-span-2 relative"
             aria-label="Example roast book preview"
           >
             {/* Phone mockup frame — tap to open Tyler's book */}
-            <Link href={`/book/${TYLER_SLUG}`} className="block" aria-label="Tap to explore Tyler's roast book">
+            <Link href="/book/9x7dzympme" className="block" aria-label="Tap to explore Tyler's roast book">
               <figure className="relative mx-auto max-w-[220px] sm:max-w-[280px] md:max-w-[320px] lg:max-w-[380px]">
                 {/* Phone bezel */}
                 <div className="bg-foreground rounded-[2.5rem] p-2 shadow-2xl">
@@ -209,19 +199,14 @@ export function HeroSection() {
               Tap to explore
               <ArrowRight className="h-3 w-3" aria-hidden="true" />
             </p>
-          </motion.div>
+          </div>
 
           {/* ── 3 (mobile) / Left col row 2 (desktop): CTAs + Price + Trust ──
                Inner flex-col so order-* classes can reposition price between mobile/desktop.
                Mobile:  CTAs (order-1) → price (order-2) → trust (order-3)
                Desktop: price (order-1 → lg:order-1) → CTAs (order-2 → lg:order-2) → trust (order-3)
           */}
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="order-3 lg:col-start-1 lg:row-start-2 flex flex-col gap-6"
-          >
+          <div className="order-3 lg:col-start-1 lg:row-start-2 flex flex-col gap-6">
             {/* Price — order-2 on mobile (after CTAs), order-1 on desktop (before CTAs) */}
             <div className="order-2 lg:order-1 flex items-center gap-4 py-2">
               <div className="flex items-baseline gap-2">
@@ -269,7 +254,7 @@ export function HeroSection() {
                 <span>Ready in 2 min</span>
               </li>
             </ul>
-          </motion.div>
+          </div>
 
         </div>
       </div>

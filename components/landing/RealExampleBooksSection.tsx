@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { ArrowRight, Sparkles } from 'lucide-react';
 
@@ -30,7 +31,7 @@ type BookData = {
   victim_name: string;
   full_image_urls: string[];
   quotes: string[];
-};
+} | null;
 
 type FeaturedBook = (typeof FEATURED_BOOKS)[number];
 
@@ -65,10 +66,12 @@ function BookCard({
           />
 
           {image ? (
-            <img
+            <Image
               src={image}
               alt={`Things ${name} Would Never Say - roast book preview`}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              fill
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              sizes="(max-width: 768px) 85vw, 33vw"
               loading="lazy"
             />
           ) : (
@@ -112,23 +115,8 @@ function BookCard({
   );
 }
 
-export function RealExampleBooksSection() {
-  const [books, setBooks] = useState<(BookData | null)[]>([null, null, null]);
-
-  useEffect(() => {
-    FEATURED_BOOKS.forEach((meta, i) => {
-      fetch(`/api/book/${meta.slug}`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data: BookData | null) => {
-          setBooks((prev) => {
-            const next = [...prev];
-            next[i] = data;
-            return next;
-          });
-        })
-        .catch(() => {});
-    });
-  }, []);
+export function RealExampleBooksSection({ initialBooks }: { initialBooks?: (BookData | null)[] }) {
+  const [books] = useState<(BookData | null)[]>(initialBooks ?? [null, null, null]);
 
   return (
     <section
