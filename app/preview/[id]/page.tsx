@@ -89,9 +89,22 @@ export default function PreviewPage() {
         victim_name: book.victim_name,
       });
       try { captureEvent(Events.PAYMENT_COMPLETE, { amount_cents: 999, book_id: book.id }); } catch {}
-      if (typeof window !== 'undefined' && typeof (window as any).fbq === 'function') {
-        (window as any).fbq('track', 'Purchase', { value: 9.99, currency: 'USD' });
+
+      // Deduplicate across page refreshes — only fire once per purchase per book
+      const storageKey = `purchase_tracked_${book.id}`;
+      if (!localStorage.getItem(storageKey)) {
+        localStorage.setItem(storageKey, '1');
+        // Retry: Meta Pixel loads afterInteractive and may not be defined yet when this runs
+        const firePurchase = (attemptsLeft: number) => {
+          if (typeof (window as any).fbq === 'function') {
+            (window as any).fbq('track', 'Purchase', { value: 9.99, currency: 'USD' });
+          } else if (attemptsLeft > 0) {
+            setTimeout(() => firePurchase(attemptsLeft - 1), 250);
+          }
+        };
+        firePurchase(12); // retries for up to 3 seconds
       }
+
       setPaymentTracked(true);
 
       captureEvent(Events.BOOK_COMPLETED, {
