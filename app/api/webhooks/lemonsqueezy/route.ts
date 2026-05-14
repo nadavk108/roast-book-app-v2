@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase';
+import { sendCapiPurchase } from '@/lib/meta-capi';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,6 +60,22 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`[LemonSqueezy Webhook] Book ${bookId} marked as paid`);
+
+    // Fire server-side CAPI Purchase event.
+    // event_id = bookId so Meta deduplicates against the client-side fbq call
+    // which also sends eventID: bookId. Awaited so Vercel doesn't terminate early.
+    const attrs = payload.data?.attributes ?? {};
+    try {
+      await sendCapiPurchase({
+        eventId: bookId,
+        email: attrs.user_email ?? null,
+        name: attrs.user_name ?? null,
+        valueCents: typeof attrs.total === 'number' ? attrs.total : 999,
+        currency: attrs.currency ?? 'USD',
+      });
+    } catch (err) {
+      console.error('[LemonSqueezy Webhook] CAPI send failed (non-fatal):', err);
+    }
   }
 
   return NextResponse.json({ received: true });

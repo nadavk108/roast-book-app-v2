@@ -95,9 +95,11 @@ export default function PreviewPage() {
       if (!localStorage.getItem(storageKey)) {
         localStorage.setItem(storageKey, '1');
         // Retry: Meta Pixel loads afterInteractive and may not be defined yet when this runs
+        // eventID must match CAPI's event_id (bookId) for Meta deduplication
+        const eventID = book.id;
         const firePurchase = (attemptsLeft: number) => {
           if (typeof (window as any).fbq === 'function') {
-            (window as any).fbq('track', 'Purchase', { value: 9.99, currency: 'USD' });
+            (window as any).fbq('track', 'Purchase', { value: 9.99, currency: 'USD' }, { eventID });
           } else if (attemptsLeft > 0) {
             setTimeout(() => firePurchase(attemptsLeft - 1), 250);
           }
