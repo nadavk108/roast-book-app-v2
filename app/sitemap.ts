@@ -21,6 +21,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      url: 'https://theroastbook.com/funny-gift-for-best-friend',
+      lastModified: new Date('2026-05-17'),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    {
+      url: 'https://theroastbook.com/gift-for-boyfriend-who-has-everything',
+      lastModified: new Date('2026-05-17'),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    {
+      url: 'https://theroastbook.com/funny-gift-for-dad',
+      lastModified: new Date('2026-05-17'),
+      changeFrequency: 'monthly',
+      priority: 0.9,
+    },
+    {
       url: 'https://theroastbook.com/llms.txt',
       lastModified: new Date('2026-04-14'),
       changeFrequency: 'weekly',
