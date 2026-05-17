@@ -56,19 +56,26 @@ export default function BookPage() {
     return () => clearInterval(interval);
   }, [book?.status]);
 
-  // Fire book_viewed once when the flipbook becomes visible to the viewer
-  useEffect(() => {
-    if (!imagesPreloaded || !book) return;
-    try { captureEvent(Events.BOOK_VIEWED, { book_id: book.id, book_slug: book.slug, is_creator: false }); } catch {}
-  }, [imagesPreloaded]);
+  const bookViewTracked = useRef(false);
 
-  // Fire slide_viewed each time the active slide changes
+  // Fire book_viewed once when the book is ready (status complete or preview_ready)
   useEffect(() => {
-    if (!imagesPreloaded || !book || slides.length === 0) return;
+    if (!book || bookViewTracked.current) return;
+    if (book.status !== 'complete' && book.status !== 'preview_ready') return;
+    bookViewTracked.current = true;
+    try { captureEvent(Events.BOOK_VIEWED, { book_id: book.id, book_slug: book.slug, is_creator: false }); } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [book?.id, book?.status]);
+
+  // Fire slide_viewed each time the active slide changes (once book is loaded)
+  useEffect(() => {
+    if (!book) return;
+    if (book.status !== 'complete' && book.status !== 'preview_ready') return;
     const slide = slides[activeIndex];
     if (!slide) return;
     try { captureEvent(Events.SLIDE_VIEWED, { book_id: book.id, slide_index: activeIndex, slide_type: slide.type }); } catch {}
-  }, [activeIndex, imagesPreloaded]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex, book?.id]);
 
   // Apply ?start= param once book is loaded
   useEffect(() => {
