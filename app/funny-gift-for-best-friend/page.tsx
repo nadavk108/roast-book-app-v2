@@ -46,7 +46,7 @@ const CROSS_LINKS: CrossLink[] = [
   { href: '/funny-gift-for-dad', label: 'Funny gift for dad' },
 ];
 
-const SCHEMA = (faqs: FAQ[]) => [
+const SCHEMA = (faqs: FAQ[], imageUrl: string) => [
   {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
@@ -62,6 +62,7 @@ const SCHEMA = (faqs: FAQ[]) => [
     name: 'The Roast Book',
     description:
       "A personalized AI-generated roast book gift for your best friend. Upload their photo, describe their quirks, and get a hilarious illustrated flipbook of \"Things They'd Never Say.\"",
+    image: imageUrl,
     url: PAGE_URL,
     brand: { '@type': 'Brand', name: 'The Roast Book' },
     offers: {
@@ -114,12 +115,19 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function FunnyGiftForBestFriendPage() {
+export default async function FunnyGiftForBestFriendPage() {
+  const { data: book } = await supabaseAdmin
+    .from('roast_books')
+    .select('cover_image_url')
+    .eq('slug', BOOK_SLUG)
+    .single();
+  const imageUrl = book?.cover_image_url ?? 'https://theroastbook.com/og-image.png';
+
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(SCHEMA(FAQS)) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(SCHEMA(FAQS, imageUrl)) }}
       />
       <LandingPageContent
         heroHeadline="The Funniest Gift Your Best Friend Will Ever Get"
