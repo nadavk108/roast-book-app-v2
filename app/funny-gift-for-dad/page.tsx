@@ -130,7 +130,7 @@ export default async function FunnyGiftForDadPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(SCHEMA(FAQS, imageUrl)) }}
       />
       <LandingPageContent
-        heroHeadline="The Gift That'll Make Dad Laugh (and Mildly Concerned)"
+        heroHeadline="The Gift That'll Make Dad Laugh"
         heroSubheadline="A personalized flipbook of things he'd never say - from his actual dad quirks and habits."
         finalCtaHeadline="Ready to roast your dad?"
         personaName="Dave"

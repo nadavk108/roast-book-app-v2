@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Upload, MessageSquare, BookOpen, Check, ArrowRight, X } from 'lucide-react';
+import { Upload, MessageSquare, BookOpen, Check, ArrowRight } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { BrutalButton } from '@/components/ui/brutal-button';
@@ -79,7 +79,7 @@ export function LandingPageContent({
   pageKey,
 }: LandingPageContentProps) {
   const [showStickyBar, setShowStickyBar] = useState(false);
-  const [stickyDismissed, setStickyDismissed] = useState(false);
+  const [bookCount, setBookCount] = useState<number | null>(null);
   const heroCTARef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -96,6 +96,13 @@ export function LandingPageContent({
     return () => observer.disconnect();
   }, [pageKey]);
 
+  useEffect(() => {
+    fetch('/api/books/count')
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => { if (data?.count) setBookCount(data.count); })
+      .catch(() => {});
+  }, []);
+
   const handleCtaClick = (location: string) => {
     try { captureEvent('landing_cta_clicked', { page: pageKey, location }); } catch {}
   };
@@ -105,21 +112,14 @@ export function LandingPageContent({
       <Header />
 
       {/* Sticky bottom CTA */}
-      {showStickyBar && !stickyDismissed && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur-sm border-t-3 border-foreground px-4 py-3 flex items-center justify-center gap-4">
+      {showStickyBar && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur-sm border-t-3 border-foreground px-4 py-3 flex items-center justify-center">
           <BrutalButton size="sm" asChild onClick={() => handleCtaClick('sticky_bar')}>
             <Link href="/create">
               Create Their Book - $9.99
               <ArrowRight className="ml-1 h-4 w-4" />
             </Link>
           </BrutalButton>
-          <button
-            onClick={() => setStickyDismissed(true)}
-            className="text-white/70 hover:text-white transition-colors"
-            aria-label="Dismiss"
-          >
-            <X className="h-5 w-5" />
-          </button>
         </div>
       )}
 
@@ -150,7 +150,12 @@ export function LandingPageContent({
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </BrutalButton>
-              <p className="mt-3 text-sm text-muted-foreground">
+              {bookCount !== null && (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  🔥 {bookCount.toLocaleString()} roast books created
+                </p>
+              )}
+              <p className="mt-2 text-sm text-muted-foreground">
                 Preview 3 pages free. Pay only when you love it.
               </p>
             </div>
@@ -220,12 +225,12 @@ export function LandingPageContent({
           </div>
         </section>
 
-        {/* Why This Beats a Gift Card */}
+        {/* What Makes This Actually Personal */}
         <section className="py-20 md:py-28 bg-muted/50" aria-labelledby="why-heading">
           <div className="container max-w-[900px] mx-auto px-4">
             <div className="text-center mb-14">
               <h2 id="why-heading" className="text-3xl md:text-4xl font-heading font-black mb-3">
-                Why This Beats a Gift Card
+                What Makes This Actually Personal
               </h2>
               <p className="text-muted-foreground text-lg">Four reasons people actually remember this gift</p>
             </div>
