@@ -111,7 +111,7 @@ export function FathersDayContent({ images, quotes }: Props) {
       <main className="flex-1">
 
         {/* ── Hero ── */}
-        <section className="relative overflow-hidden py-10 md:py-32">
+        <section className="relative overflow-hidden pt-6 pb-8 md:py-32">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/5" aria-hidden="true" />
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" aria-hidden="true" />
 
@@ -120,32 +120,39 @@ export function FathersDayContent({ images, quotes }: Props) {
 
               {/* Text + CTA */}
               <div className="flex-1 text-center md:text-left">
-                <span className="inline-flex items-center gap-2 px-4 py-2 bg-primary/15 border-2 border-primary/40 rounded-full text-sm font-bold mb-5">
+                <span className="inline-flex items-center gap-2 px-4 py-2 bg-primary/15 border-2 border-primary/40 rounded-full text-sm font-bold mb-4">
                   🎁 Father&apos;s Day Gift 2026
                 </span>
 
-                <h1 className="text-4xl md:text-6xl font-heading font-black mb-4 leading-tight">
+                <h1 className="text-4xl md:text-6xl font-heading font-black mb-5 leading-tight">
                   Things Dad Would Never Say 🔥
                 </h1>
 
-                {/* Mobile product preview — between headline and CTA */}
-                {images[0] && (
-                  <div className="md:hidden flex justify-center my-4">
-                    <div className="rotate-2 bg-white border-3 border-foreground shadow-brutal p-2 pb-8 w-[120px]">
+                {/* Mobile product preview — large phone mockup with quote overlay */}
+                {images[1] && (
+                  <div className="md:hidden flex justify-center mb-5">
+                    <div className="relative w-[280px] rounded-[2rem] overflow-hidden border-3 border-foreground shadow-brutal">
                       <Image
-                        src={images[0]}
+                        src={images[1]}
                         alt="Example Roast Book page"
-                        width={116}
-                        height={155}
-                        className="w-full object-cover object-top"
+                        width={280}
+                        height={373}
+                        className="w-full object-cover"
                         style={{ aspectRatio: '3/4' }}
                         priority
                       />
+                      {quotes[1] && (
+                        <div className="absolute bottom-0 left-0 right-0 px-4 py-3 bg-black/65 backdrop-blur-md">
+                          <p className="text-white text-xs text-center font-heading italic leading-snug">
+                            &ldquo;{quotes[1]}&rdquo;
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
 
-                <p className="text-lg md:text-xl text-muted-foreground mb-7 max-w-lg mx-auto md:mx-0 leading-relaxed">
+                <p className="hidden md:block text-lg md:text-xl text-muted-foreground mb-7 max-w-lg mx-auto md:mx-0 leading-relaxed">
                   A personalized 8-page digital flipbook of AI-generated roasts. Ready in 2 minutes. Just $9.99.
                 </p>
 
@@ -163,23 +170,25 @@ export function FathersDayContent({ images, quotes }: Props) {
                 </p>
               </div>
 
-              {/* Desktop product preview */}
-              {images[0] && (
+              {/* Desktop product preview — large phone mockup with quote overlay */}
+              {images[1] && (
                 <div className="hidden md:flex justify-center flex-shrink-0">
-                  <div className="rotate-3 hover:rotate-0 transition-transform duration-300 bg-white border-3 border-foreground shadow-brutal p-3 pb-14 w-[230px]">
+                  <div className="relative w-[310px] rounded-[2.5rem] overflow-hidden border-3 border-foreground shadow-brutal hover:scale-[1.02] transition-transform duration-300">
                     <Image
-                      src={images[0]}
+                      src={images[1]}
                       alt="Example Roast Book page"
-                      width={224}
-                      height={299}
-                      className="w-full object-cover object-top"
+                      width={310}
+                      height={413}
+                      className="w-full object-cover"
                       style={{ aspectRatio: '3/4' }}
                       priority
                     />
-                    {quotes[0] && (
-                      <p className="mt-3 text-black text-xs text-center font-heading italic leading-snug px-1">
-                        &ldquo;{quotes[0]}&rdquo;
-                      </p>
+                    {quotes[1] && (
+                      <div className="absolute bottom-0 left-0 right-0 px-5 py-4 bg-black/65 backdrop-blur-md">
+                        <p className="text-white text-sm text-center font-heading italic leading-snug">
+                          &ldquo;{quotes[1]}&rdquo;
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
