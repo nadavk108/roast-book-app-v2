@@ -94,7 +94,7 @@ export function FathersDayContent({ images, quotes }: Props) {
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur-sm border-t-3 border-foreground px-4 py-3 flex items-center justify-center gap-4">
           <BrutalButton size="sm" asChild onClick={() => handleCtaClick('sticky_bar')}>
             <Link href="/create">
-              Preview 3 Pages Free
+              Roast My Dad
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </BrutalButton>
@@ -111,36 +111,81 @@ export function FathersDayContent({ images, quotes }: Props) {
       <main className="flex-1">
 
         {/* ── Hero ── */}
-        <section className="relative overflow-hidden py-20 md:py-32">
+        <section className="relative overflow-hidden py-10 md:py-32">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/5" aria-hidden="true" />
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" aria-hidden="true" />
 
-          <div className="container max-w-[860px] mx-auto text-center relative z-10 px-4">
-            <span className="inline-flex items-center gap-2 px-4 py-2 bg-primary/15 border-2 border-primary/40 rounded-full text-sm font-bold mb-8">
-              🎁 Father&apos;s Day Gift 2026
-            </span>
+          <div className="container max-w-[1000px] mx-auto relative z-10 px-4">
+            <div className="flex flex-col md:flex-row md:items-center md:gap-16">
 
-            <h1 className="text-5xl md:text-7xl font-heading font-black mb-6 leading-tight">
-              Things Dad Would Never Say 🔥
-            </h1>
+              {/* Text + CTA */}
+              <div className="flex-1 text-center md:text-left">
+                <span className="inline-flex items-center gap-2 px-4 py-2 bg-primary/15 border-2 border-primary/40 rounded-full text-sm font-bold mb-5">
+                  🎁 Father&apos;s Day Gift 2026
+                </span>
 
-            <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
-              The funniest Father&apos;s Day gift - personalized, AI-generated, and ready in 2 minutes
-            </p>
+                <h1 className="text-4xl md:text-6xl font-heading font-black mb-4 leading-tight">
+                  Things Dad Would Never Say 🔥
+                </h1>
 
-            <div ref={heroCTARef}>
-              <BrutalButton size="xl" asChild onClick={() => handleCtaClick('hero')}>
-                <Link href="/create">
-                  Preview 3 Pages Free
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </BrutalButton>
-              <p className="mt-3 text-sm text-muted-foreground">Then unlock all 8 pages for $9.99</p>
+                {/* Mobile product preview — between headline and CTA */}
+                {images[0] && (
+                  <div className="md:hidden flex justify-center my-4">
+                    <div className="rotate-2 bg-white border-3 border-foreground shadow-brutal p-2 pb-8 w-[120px]">
+                      <Image
+                        src={images[0]}
+                        alt="Example Roast Book page"
+                        width={116}
+                        height={155}
+                        className="w-full object-cover object-top"
+                        style={{ aspectRatio: '3/4' }}
+                        priority
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-lg md:text-xl text-muted-foreground mb-7 max-w-lg mx-auto md:mx-0 leading-relaxed">
+                  A personalized 8-page digital flipbook of AI-generated roasts. Ready in 2 minutes. Just $9.99.
+                </p>
+
+                <div ref={heroCTARef}>
+                  <BrutalButton size="xl" asChild onClick={() => handleCtaClick('hero')}>
+                    <Link href="/create">
+                      Roast My Dad
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Link>
+                  </BrutalButton>
+                </div>
+
+                <p className="mt-4 text-sm text-muted-foreground">
+                  Father&apos;s Day is June 21 - the perfect last-minute gift
+                </p>
+              </div>
+
+              {/* Desktop product preview */}
+              {images[0] && (
+                <div className="hidden md:flex justify-center flex-shrink-0">
+                  <div className="rotate-3 hover:rotate-0 transition-transform duration-300 bg-white border-3 border-foreground shadow-brutal p-3 pb-14 w-[230px]">
+                    <Image
+                      src={images[0]}
+                      alt="Example Roast Book page"
+                      width={224}
+                      height={299}
+                      className="w-full object-cover object-top"
+                      style={{ aspectRatio: '3/4' }}
+                      priority
+                    />
+                    {quotes[0] && (
+                      <p className="mt-3 text-black text-xs text-center font-heading italic leading-snug px-1">
+                        &ldquo;{quotes[0]}&rdquo;
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
             </div>
-
-            <p className="mt-4 text-sm text-muted-foreground">
-              Father&apos;s Day is June 21 - the perfect last-minute gift
-            </p>
           </div>
         </section>
 
@@ -293,11 +338,10 @@ export function FathersDayContent({ images, quotes }: Props) {
 
             <BrutalButton size="xl" asChild onClick={() => handleCtaClick('bottom')}>
               <Link href="/create">
-                Preview 3 Pages Free
+                Roast My Dad
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </BrutalButton>
-            <p className="mt-3 text-sm text-muted-foreground">Then unlock all 8 pages for $9.99</p>
 
             <p className="mt-4 text-sm text-muted-foreground">
               No app download needed - Dad opens it on any device
