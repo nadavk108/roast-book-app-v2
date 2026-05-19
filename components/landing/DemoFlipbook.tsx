@@ -39,6 +39,7 @@ export function DemoFlipbook({ slug }: { slug: string }) {
   const isSwiping = useRef(false);
   const isTransitioning = useRef(false);
   const hideArrowsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoAdvanced = useRef(false);
 
   useEffect(() => {
     fetch(`/api/book/${slug}`)
@@ -50,6 +51,13 @@ export function DemoFlipbook({ slug }: { slug: string }) {
   useEffect(() => () => {
     if (hideArrowsTimer.current) clearTimeout(hideArrowsTimer.current);
   }, []);
+
+  useEffect(() => {
+    if (!book || autoAdvanced.current) return;
+    autoAdvanced.current = true;
+    const timer = setTimeout(() => setActiveIndex(1), 800);
+    return () => clearTimeout(timer);
+  }, [book]);
 
   const slides = book ? buildSlides(book) : [];
 
@@ -183,7 +191,7 @@ export function DemoFlipbook({ slug }: { slug: string }) {
         )}
       </div>
 
-      {/* Desktop arrow buttons */}
+      {/* Left arrow — desktop hover only */}
       {activeIndex > 0 && (
         <button
           onClick={(e) => { e.stopPropagation(); goToPrev(); }}
@@ -193,22 +201,23 @@ export function DemoFlipbook({ slug }: { slug: string }) {
           <ChevronLeft className="w-4 h-4" />
         </button>
       )}
+      {/* Right arrow — always visible on all screen sizes */}
       {activeIndex < slides.length - 1 && (
         <button
           onClick={(e) => { e.stopPropagation(); goToNext(); }}
-          className={`hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white items-center justify-center transition-opacity ${showArrows ? 'opacity-100' : 'opacity-0'}`}
+          className="flex absolute right-2 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 text-white items-center justify-center opacity-80"
           aria-label="Next slide"
         >
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-5 h-5" />
         </button>
       )}
 
       {/* Dot indicators */}
-      <div className="absolute bottom-2 left-0 right-0 z-20 flex justify-center gap-1 pointer-events-none">
+      <div className="absolute bottom-2 left-0 right-0 z-20 flex justify-center gap-2 pointer-events-none">
         {slides.map((_, i) => (
           <div
             key={i}
-            className={`h-1 rounded-full transition-all duration-200 ${i === activeIndex ? 'w-5 bg-white/90' : 'w-1 bg-white/40'}`}
+            className={`w-[10px] h-[10px] rounded-full transition-all duration-200 ${i === activeIndex ? 'bg-primary' : 'bg-white/40'}`}
           />
         ))}
       </div>
