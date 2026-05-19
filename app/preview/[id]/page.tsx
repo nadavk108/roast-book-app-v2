@@ -760,8 +760,8 @@ export default function PreviewPage() {
                 </p>
                 <h2 className="text-2xl font-heading font-black text-white mb-2 leading-tight" dir={isHebrewBook ? 'rtl' : 'ltr'}>
                   {isHebrewBook
-                    ? `עוד ${book.quotes.length - 2} רוסטים מחכים ל${book.victim_name}`
-                    : `${book.quotes.length - 2} more roasts are waiting for ${book.victim_name}`}
+                    ? `עוד ${book.quotes.length - 3} רוסטים מחכים ל${book.victim_name}`
+                    : `${book.quotes.length - 3} more roasts are waiting for ${book.victim_name}`}
                 </h2>
                 <p className="text-white/50 text-sm mb-6" dir={isHebrewBook ? 'rtl' : 'ltr'}>
                   {isHebrewBook
@@ -870,7 +870,7 @@ function buildPages(book: any, adminMode: boolean): Page[] {
 
   for (let i = 0; i < book.quotes.length; i++) {
     const imageUrl = imageUrls[i];
-    if (imageUrl && (showAllImages || i < 2)) {
+    if (imageUrl && (showAllImages || i < 3)) {
       pages.push({ type: 'roast', imageUrl, quote: book.quotes[i] });
     } else if (!showAllImages) {
       pages.push({ type: 'locked', imageUrl: null, quote: book.quotes[i] });
