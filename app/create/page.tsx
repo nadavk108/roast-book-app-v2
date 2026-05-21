@@ -16,8 +16,10 @@ import { getCroppedImg } from '@/lib/crop-utils';
 export default function UploadPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [flowStep, setFlowStep] = useState<1 | 2 | 3>(1);
     const [victimName, setVictimName] = useState('');
     const [victimGender, setVictimGender] = useState<'male' | 'female' | 'neutral'>('neutral');
+    const [description, setDescription] = useState('');
 
     // Raw file straight from the file picker (used only during crop)
     const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
@@ -29,17 +31,18 @@ export default function UploadPage() {
     const [crop, setCrop] = useState<Crop>({ unit: '%', x: 0, y: 0, width: 100, height: 100 });
     const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null);
 
-    // Committed (post-crop) state — what gets uploaded
+    // Committed (post-crop) state - what gets uploaded
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
     const showCropUI = rawImageSrc !== null && imageFile === null;
 
+    const progressWidth = flowStep === 1 ? '33%' : flowStep === 2 ? '66%' : '100%';
+
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Reset any previous crop
         setCrop({ unit: '%', x: 0, y: 0, width: 100, height: 100 });
         setCompletedCrop(null);
         setImageFile(null);
@@ -58,7 +61,6 @@ export default function UploadPage() {
     };
 
     const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-        // Default completedCrop to full rendered image so "Crop & Continue" works immediately
         const { width, height } = e.currentTarget;
         setCompletedCrop({ unit: 'px', x: 0, y: 0, width, height });
     }, []);
@@ -170,7 +172,10 @@ export default function UploadPage() {
             }
 
             console.log('Analysis complete, redirecting to quotes page');
-            router.push(`/create/${bookId}/quotes`);
+            const traitsParam = description.trim()
+                ? `?traits=${encodeURIComponent(description.trim())}`
+                : '';
+            router.push(`/create/${bookId}/quotes${traitsParam}`);
         } catch (error: any) {
             console.error('Upload error:', error);
 
@@ -191,84 +196,156 @@ export default function UploadPage() {
         <div className="min-h-screen bg-[#FFFDF5] font-body text-black flex flex-col">
             {/* Header */}
             <header className="px-6 py-4 flex items-center border-b-2 border-black bg-white">
-                <Link href="/" className="p-2 hover:bg-black/5 rounded-full transition-colors mr-4">
-                    <ArrowLeft className="w-5 h-5" />
-                </Link>
+                {flowStep > 1 ? (
+                    <button
+                        type="button"
+                        onClick={() => setFlowStep((s: 1 | 2 | 3) => (s - 1) as 1 | 2 | 3)}
+                        className="p-2 hover:bg-black/5 rounded-full transition-colors mr-4"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+                ) : (
+                    <Link href="/" className="p-2 hover:bg-black/5 rounded-full transition-colors mr-4">
+                        <ArrowLeft className="w-5 h-5" />
+                    </Link>
+                )}
                 <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden border border-black">
-                    <div className="bg-yellow-400 h-full w-[20%]" />
+                    <div
+                        className="bg-yellow-400 h-full transition-all duration-300"
+                        style={{ width: progressWidth }}
+                    />
                 </div>
-                <span className="ml-4 font-bold whitespace-nowrap">Step 1/3</span>
+                <span className="ml-4 font-bold whitespace-nowrap">Step {flowStep}/3</span>
             </header>
 
             <main className="flex-1 container mx-auto px-4 py-8 max-w-lg">
-                <div className="bg-white border-2 border-black rounded-xl p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                    <h1 className="text-3xl font-heading font-black mb-2">
-                        Who are we roasting?
-                    </h1>
-                    <p className="text-gray-600 mb-8">
-                        We need a photo to generate the illustrations.
-                    </p>
 
-                    <div className="space-y-6">
-                        <div>
-                            <label className="block text-sm font-bold mb-2">
-                                Their name
-                            </label>
-                            <Input
-                                placeholder="e.g. Josh"
-                                value={victimName}
-                                onChange={(e) => setVictimName(e.target.value)}
-                                className="text-lg py-6 border-2 border-black rounded-xl focus:ring-yellow-400"
-                            />
-                        </div>
+                {/* ===== STEP 1: NAME + GENDER ===== */}
+                {flowStep === 1 && (
+                    <div className="bg-white border-2 border-black rounded-xl p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                        <h1 className="text-3xl font-heading font-black mb-2">
+                            Who are we roasting?
+                        </h1>
+                        <p className="text-gray-600 mb-8">
+                            Start with their name and we'll build the book around them.
+                        </p>
 
-                        <div>
-                            <label className="block text-sm font-bold mb-2">
-                                Gender
-                            </label>
-                            <div className="flex gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setVictimGender('male')}
-                                    className={`flex-1 py-3 px-4 rounded-xl border-2 font-bold transition-all ${
-                                        victimGender === 'male'
-                                            ? 'bg-yellow-400 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                                            : 'bg-white border-gray-300 hover:border-black'
-                                    }`}
-                                >
-                                    Male
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setVictimGender('female')}
-                                    className={`flex-1 py-3 px-4 rounded-xl border-2 font-bold transition-all ${
-                                        victimGender === 'female'
-                                            ? 'bg-yellow-400 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                                            : 'bg-white border-gray-300 hover:border-black'
-                                    }`}
-                                >
-                                    Female
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setVictimGender('neutral')}
-                                    className={`flex-1 py-3 px-4 rounded-xl border-2 font-bold transition-all ${
-                                        victimGender === 'neutral'
-                                            ? 'bg-yellow-400 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                                            : 'bg-white border-gray-300 hover:border-black'
-                                    }`}
-                                >
-                                    Other
-                                </button>
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-bold mb-2">
+                                    Their name
+                                </label>
+                                <Input
+                                    placeholder="e.g. Josh"
+                                    value={victimName}
+                                    onChange={(e) => setVictimName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && victimName.trim()) setFlowStep(2);
+                                    }}
+                                    className="text-lg py-6 border-2 border-black rounded-xl focus:ring-yellow-400"
+                                />
                             </div>
+
+                            <div>
+                                <label className="block text-sm font-bold mb-2">
+                                    Gender
+                                </label>
+                                <div className="flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setVictimGender('male')}
+                                        className={`flex-1 py-3 px-4 rounded-xl border-2 font-bold transition-all ${
+                                            victimGender === 'male'
+                                                ? 'bg-yellow-400 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                                                : 'bg-white border-gray-300 hover:border-black'
+                                        }`}
+                                    >
+                                        Male
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setVictimGender('female')}
+                                        className={`flex-1 py-3 px-4 rounded-xl border-2 font-bold transition-all ${
+                                            victimGender === 'female'
+                                                ? 'bg-yellow-400 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                                                : 'bg-white border-gray-300 hover:border-black'
+                                        }`}
+                                    >
+                                        Female
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setVictimGender('neutral')}
+                                        className={`flex-1 py-3 px-4 rounded-xl border-2 font-bold transition-all ${
+                                            victimGender === 'neutral'
+                                                ? 'bg-yellow-400 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                                                : 'bg-white border-gray-300 hover:border-black'
+                                        }`}
+                                    >
+                                        Other
+                                    </button>
+                                </div>
+                            </div>
+
+                            <Button
+                                onClick={() => setFlowStep(2)}
+                                disabled={!victimName.trim()}
+                                className="w-full text-lg py-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all mt-4"
+                                size="lg"
+                            >
+                                Next - Describe Them
+                                <ArrowRight className="ml-2 h-5 w-5" />
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {/* ===== STEP 2: DESCRIBE PERSONALITY ===== */}
+                {flowStep === 2 && (
+                    <div className="bg-white border-2 border-black rounded-xl p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                        <h1 className="text-3xl font-heading font-black mb-2">
+                            Describe their personality
+                        </h1>
+                        <p className="text-gray-600 mb-6">
+                            You're making this for {victimName}
+                        </p>
+
+                        <textarea
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="e.g. Lives for pizza, always 15 min late, TikTok addict, thinks he's a chef but burns eggs, sleeps till 2pm on weekends, still quotes The Office daily..."
+                            className="w-full min-h-[160px] p-4 rounded-xl border-2 border-black bg-[#FFFDF5] text-lg resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400 placeholder:text-gray-400 placeholder:text-base"
+                            maxLength={800}
+                        />
+                        <div className="flex justify-between items-center mt-2 mb-6">
+                            <p className="text-xs text-gray-400">{description.length}/800</p>
+                            <p className="text-xs text-gray-400">The more you share, the funnier the roasts</p>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-bold mb-2">
-                                Upload their photo
-                            </label>
+                        <Button
+                            onClick={() => setFlowStep(3)}
+                            disabled={!description.trim()}
+                            className="w-full text-lg py-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                            size="lg"
+                        >
+                            Next - Add Their Photo
+                            <ArrowRight className="ml-2 h-5 w-5" />
+                        </Button>
+                    </div>
+                )}
 
-                            {/* Hidden file input — always present so handleChangePhoto can trigger it */}
+                {/* ===== STEP 3: PHOTO UPLOAD ===== */}
+                {flowStep === 3 && (
+                    <div className="bg-white border-2 border-black rounded-xl p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                        <h1 className="text-3xl font-heading font-black mb-2">
+                            Last step - upload a photo of {victimName}
+                        </h1>
+                        <p className="text-gray-600 mb-8">
+                            We use it to generate the illustrated scenes. Any clear photo works - doesn't need to be perfect.
+                        </p>
+
+                        <div className="space-y-6">
+                            {/* Hidden file input - always present so handleChangePhoto can trigger it */}
                             <input
                                 type="file"
                                 accept="image/*"
@@ -278,9 +355,8 @@ export default function UploadPage() {
                             />
 
                             {showCropUI ? (
-                                /* ── Inline crop UI ── */
+                                /* Inline crop UI */
                                 <div className="space-y-3">
-                                    {/* Crop area */}
                                     <div className="w-full rounded-xl overflow-hidden border-2 border-black bg-black flex items-center justify-center">
                                         <ReactCrop
                                             crop={crop}
@@ -299,7 +375,6 @@ export default function UploadPage() {
                                         </ReactCrop>
                                     </div>
 
-                                    {/* Actions */}
                                     <Button
                                         onClick={handleCropConfirm}
                                         className="w-full text-lg py-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
@@ -325,7 +400,7 @@ export default function UploadPage() {
                                     </button>
                                 </div>
                             ) : (
-                                /* ── Upload picker / preview ── */
+                                /* Upload picker / preview */
                                 <label
                                     htmlFor="image-upload"
                                     className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors relative overflow-hidden group"
@@ -351,31 +426,32 @@ export default function UploadPage() {
                                     )}
                                 </label>
                             )}
-                        </div>
 
-                        {/* Continue button — only shown after crop is committed */}
-                        {!showCropUI && (
-                            <Button
-                                onClick={handleUpload}
-                                disabled={!victimName || !imageFile || loading}
-                                className="w-full text-lg py-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all mt-4"
-                                size="lg"
-                            >
-                                {loading ? (
-                                    <>
-                                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-black border-t-transparent mr-2" />
-                                        Analyzing photo...
-                                    </>
-                                ) : (
-                                    <>
-                                        Continue
-                                        <ArrowRight className="ml-2 h-5 w-5" />
-                                    </>
-                                )}
-                            </Button>
-                        )}
+                            {/* Continue button - only shown after crop is committed */}
+                            {!showCropUI && (
+                                <Button
+                                    onClick={handleUpload}
+                                    disabled={!imageFile || loading}
+                                    className="w-full text-lg py-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all mt-4"
+                                    size="lg"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-black border-t-transparent mr-2" />
+                                            Analyzing photo...
+                                        </>
+                                    ) : (
+                                        <>
+                                            Continue
+                                            <ArrowRight className="ml-2 h-5 w-5" />
+                                        </>
+                                    )}
+                                </Button>
+                            )}
+                        </div>
                     </div>
-                </div>
+                )}
+
             </main>
         </div>
     );

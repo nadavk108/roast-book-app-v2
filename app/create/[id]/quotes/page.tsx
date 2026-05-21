@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Sparkles, ArrowRight, ArrowLeft, RefreshCw, Shield, Loader2, Check, Pencil } from 'lucide-react';
 import Link from 'next/link';
@@ -13,6 +13,7 @@ import { isPredominantlyHebrew } from '@/lib/hebrew-utils';
 export default function QuotesPage() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [book, setBook] = useState<any>(null);
@@ -20,7 +21,7 @@ export default function QuotesPage() {
 
     // Step: 'describe' → 'select'
     const [step, setStep] = useState<'describe' | 'select'>('describe');
-    const [description, setDescription] = useState('');
+    const [description, setDescription] = useState(searchParams.get('traits') ?? '');
     const [generating, setGenerating] = useState(false);
     const [quotes, setQuotes] = useState<string[]>([]);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
