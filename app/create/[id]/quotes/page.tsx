@@ -75,51 +75,18 @@ export default function QuotesPage() {
         }
     };
 
-    const handleGenerate = async () => {
-        if (!description.trim()) return;
-
-        setGenerating(true);
-        try {
-            captureEvent(Events.ROAST_ASSISTANT_OPENED, { book_id: params.id });
-
-            const res = await fetch('/api/generate-quotes', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-               body: JSON.stringify({
-                    bookId: params.id,
-                    victimName: book?.victim_name || '',
-                    trueTraits: description.trim(),
-                }),
-            });
-
-            if (!res.ok) throw new Error('Generation failed');
-
-            const { quotes: generatedQuotes } = await res.json();
-            setQuotes(generatedQuotes.slice(0, 8)); // Always exactly 8
-            setStep('select');
-
-            captureEvent(Events.ROAST_ASSISTANT_USED, {
-                quotes_generated: 8,
-                book_id: params.id,
-            });
-
-            const numTraits = description.split(',').filter((t: string) => t.trim()).length;
-            try { captureEvent(Events.TRAITS_SUBMITTED, { num_traits: numTraits, book_id: params.id }); } catch {}
-        } catch (error) {
-            console.error(error);
-            alert('Failed to generate quotes. Please try again.');
-        } finally {
-            setGenerating(false);
-        }
-    };
-
-    const handleRegenerate = async () => {
+    const generateQuotes = async (isFirstGeneration: boolean) => {
         if (!description.trim()) {
-            setStep('describe');
+            if (!isFirstGeneration) setStep('describe');
             return;
         }
+
         setGenerating(true);
         try {
+            if (isFirstGeneration) {
+                captureEvent(Events.ROAST_ASSISTANT_OPENED, { book_id: params.id });
+            }
+
             const res = await fetch('/api/generate-quotes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -133,14 +100,24 @@ export default function QuotesPage() {
             if (!res.ok) throw new Error('Generation failed');
 
             const { quotes: generatedQuotes } = await res.json();
-            setQuotes(generatedQuotes.slice(0, 8)); // Always exactly 8
+            setQuotes(generatedQuotes.slice(0, 8));
+
+            if (isFirstGeneration) {
+                setStep('select');
+                captureEvent(Events.ROAST_ASSISTANT_USED, { quotes_generated: 8, book_id: params.id });
+                const numTraits = description.split(',').filter((t: string) => t.trim()).length;
+                try { captureEvent(Events.TRAITS_SUBMITTED, { num_traits: numTraits, book_id: params.id }); } catch {}
+            }
         } catch (error) {
             console.error(error);
-            alert('Failed to regenerate. Please try again.');
+            alert(isFirstGeneration ? 'Failed to generate quotes. Please try again.' : 'Failed to regenerate. Please try again.');
         } finally {
             setGenerating(false);
         }
     };
+
+    const handleGenerate = () => generateQuotes(true);
+    const handleRegenerate = () => generateQuotes(false);
 
     const startEdit = (index: number) => {
         setEditingIndex(index);
