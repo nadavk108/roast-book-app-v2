@@ -66,30 +66,25 @@ export default function UploadPage() {
     }, []);
 
     const handleCropConfirm = async () => {
-        if (!imgRef.current || !completedCrop || completedCrop.width === 0) return;
+        if (!imgRef.current || !completedCrop || completedCrop.width === 0 || loading) return;
+        let croppedFile: File;
         try {
-            const croppedFile = await getCroppedImg(imgRef.current, completedCrop, rawFileName);
-            const preview = URL.createObjectURL(croppedFile);
-            setImageFile(croppedFile);
-            setImagePreview(preview);
-            setRawImageSrc(null);
-            setRawFile(null);
+            croppedFile = await getCroppedImg(imgRef.current, completedCrop, rawFileName);
         } catch (err) {
             console.error('Crop failed:', err);
             alert('Could not crop the image. Please try again.');
+            return;
         }
+        await performUpload(croppedFile);
     };
 
-    const handleSkipCrop = () => {
-        if (!rawFile || !rawImageSrc) return;
-        const preview = URL.createObjectURL(rawFile);
-        setImageFile(rawFile);
-        setImagePreview(preview);
-        setRawImageSrc(null);
-        setRawFile(null);
+    const handleSkipCrop = async () => {
+        if (!rawFile || !rawImageSrc || loading) return;
+        await performUpload(rawFile);
     };
 
     const handleChangePhoto = () => {
+        if (loading) return;
         const input = document.getElementById('image-upload') as HTMLInputElement | null;
         if (input) input.value = '';
         setRawImageSrc(null);
@@ -101,14 +96,14 @@ export default function UploadPage() {
         input?.click();
     };
 
-    const handleUpload = async () => {
-        if (!victimName || !imageFile) {
+    const performUpload = async (file: File) => {
+        if (!victimName || !file) {
             alert('Please enter a name and upload a photo');
             return;
         }
 
         const maxSize = 4 * 1024 * 1024;
-        if (imageFile.size > maxSize) {
+        if (file.size > maxSize) {
             alert('Image is too large. Please upload an image smaller than 4MB.');
             return;
         }
@@ -116,7 +111,7 @@ export default function UploadPage() {
         captureEvent(Events.BOOK_CREATION_STARTED, { victim_name: victimName });
 
         setLoading(true);
-        console.log('Starting upload...', { victimName, fileSize: imageFile.size });
+        console.log('Starting upload...', { victimName, fileSize: file.size });
 
         try {
             const sessionToken = getOrCreateSessionToken();
@@ -124,7 +119,7 @@ export default function UploadPage() {
             const formData = new FormData();
             formData.append('victimName', victimName);
             formData.append('victimGender', victimGender);
-            formData.append('image', imageFile);
+            formData.append('image', file);
             formData.append('session_token', sessionToken);
 
             console.log('Sending request to /api/upload...');
@@ -207,7 +202,7 @@ export default function UploadPage() {
                 errorMessage = error.message;
             }
 
-            alert(`Error: ${errorMessage}\n\nDebug info:\n- File size: ${(imageFile.size / 1024 / 1024).toFixed(2)}MB\n- Name: ${victimName}\n\nPlease try again or contact support.`);
+            alert(`Error: ${errorMessage}\n\nDebug info:\n- File size: ${(file.size / 1024 / 1024).toFixed(2)}MB\n- Name: ${victimName}\n\nPlease try again or contact support.`);
         } finally {
             setLoading(false);
         }
@@ -398,16 +393,27 @@ export default function UploadPage() {
 
                                     <Button
                                         onClick={handleCropConfirm}
+                                        disabled={loading}
                                         className="w-full text-lg py-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
                                     >
-                                        Crop &amp; Continue
-                                        <ArrowRight className="ml-2 h-5 w-5" />
+                                        {loading ? (
+                                            <>
+                                                <div className="animate-spin rounded-full h-5 w-5 border-2 border-black border-t-transparent mr-2" />
+                                                Analyzing photo...
+                                            </>
+                                        ) : (
+                                            <>
+                                                Crop &amp; Continue
+                                                <ArrowRight className="ml-2 h-5 w-5" />
+                                            </>
+                                        )}
                                     </Button>
 
                                     <button
                                         type="button"
                                         onClick={handleSkipCrop}
-                                        className="w-full text-sm text-gray-600 hover:text-black py-1 transition-colors"
+                                        disabled={loading}
+                                        className={`w-full text-sm py-1 transition-colors ${loading ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:text-black'}`}
                                     >
                                         Skip crop &rarr;
                                     </button>
@@ -415,7 +421,8 @@ export default function UploadPage() {
                                     <button
                                         type="button"
                                         onClick={handleChangePhoto}
-                                        className="w-full text-sm text-gray-500 hover:text-black underline underline-offset-2 py-1 transition-colors"
+                                        disabled={loading}
+                                        className={`w-full text-sm underline underline-offset-2 py-1 transition-colors ${loading ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:text-black'}`}
                                     >
                                         &larr; Change photo
                                     </button>
@@ -448,27 +455,6 @@ export default function UploadPage() {
                                 </label>
                             )}
 
-                            {/* Continue button - only shown after crop is committed */}
-                            {!showCropUI && (
-                                <Button
-                                    onClick={handleUpload}
-                                    disabled={!imageFile || loading}
-                                    className="w-full text-lg py-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all mt-4"
-                                    size="lg"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-black border-t-transparent mr-2" />
-                                            Analyzing photo...
-                                        </>
-                                    ) : (
-                                        <>
-                                            Continue
-                                            <ArrowRight className="ml-2 h-5 w-5" />
-                                        </>
-                                    )}
-                                </Button>
-                            )}
                         </div>
                     </div>
                 )}
