@@ -158,20 +158,41 @@ export default function UploadPage() {
 
             try { captureEvent(Events.PHOTO_UPLOADED, { book_id: bookId }); } catch {}
 
-            console.log('Starting image analysis...');
-            const analyzeRes = await fetch('/api/analyze', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ bookId }),
-            });
+            console.log('Starting image analysis and quote generation in parallel...');
+            await Promise.all([
+                // Analyze the photo (populates victim_description for image generation)
+                fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bookId }),
+                }).then(async (res) => {
+                    if (!res.ok) {
+                        const err = await res.json();
+                        console.error('Analysis failed:', err);
+                        throw new Error(`Image analysis failed: ${err.error || 'Unknown error'}`);
+                    }
+                    console.log('Analysis complete');
+                }),
+                // Pre-generate quotes from traits and save to DB so quotes page shows selection step
+                description.trim()
+                    ? fetch('/api/generate-quotes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ bookId, victimName, trueTraits: description.trim() }),
+                    }).then(async (res) => {
+                        if (!res.ok) {
+                            console.warn('[Upload] Quote pre-generation failed, user can generate on quotes page');
+                            return;
+                        }
+                        console.log('[Upload] Quotes pre-generated and saved to DB');
+                    }).catch((err) => {
+                        console.warn('[Upload] Quote pre-generation error:', err);
+                    })
+                    : Promise.resolve(),
+            ]);
 
-            if (!analyzeRes.ok) {
-                const analyzeError = await analyzeRes.json();
-                console.error('Analysis failed:', analyzeError);
-                throw new Error(`Image analysis failed: ${analyzeError.error || 'Unknown error'}`);
-            }
-
-            console.log('Analysis complete, redirecting to quotes page');
+            console.log('Redirecting to quotes page');
+            // Keep traits as URL param as fallback in case quote generation failed
             const traitsParam = description.trim()
                 ? `?traits=${encodeURIComponent(description.trim())}`
                 : '';

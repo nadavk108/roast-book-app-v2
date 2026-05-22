@@ -110,17 +110,18 @@ export async function POST(request: NextRequest) {
 
       console.log('Generated quotes:', quotes);
 
-        // Save traits to book if bookId provided
+        // Save traits and generated quotes to book if bookId provided so the
+        // quotes page can jump directly to the selection step on arrival
         if (bookId) {
           const { error: traitsError } = await supabaseAdmin
             .from('roast_books')
-            .update({ victim_traits: trueTraits })
+            .update({ victim_traits: trueTraits, quotes })
             .eq('id', bookId);
 
           if (traitsError) {
-            console.error('Failed to save traits:', traitsError);
+            console.error('Failed to save traits/quotes:', traitsError);
           } else {
-            console.log(`[${bookId}] ✅ Saved victim_traits to database`);
+            console.log(`[${bookId}] ✅ Saved victim_traits and quotes to database`);
           }
         }
 
