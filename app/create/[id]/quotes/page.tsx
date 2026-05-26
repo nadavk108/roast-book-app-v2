@@ -27,6 +27,7 @@ export default function QuotesPage() {
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editText, setEditText] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const autoTriggerFiredRef = useRef(false);
 
     const adminMode = isAdminUser(user);
 
@@ -66,6 +67,21 @@ export default function QuotesPage() {
                 if (data.quotes && data.quotes.length > 0) {
                     setQuotes(data.quotes.filter((q: string) => q.trim()).slice(0, 8));
                     setStep('select');
+
+                    // Silent safety net: if quotes exist but generation never started,
+                    // trigger generate-preview now so the book isn't orphaned if the user
+                    // closed their browser before clicking "Generate Full Book".
+                    // The atomic lock in generate-preview prevents duplicate runs.
+                    if (data.status === 'analyzing' && !autoTriggerFiredRef.current) {
+                        autoTriggerFiredRef.current = true;
+                        fetch('/api/generate-preview', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ bookId: data.id, quotes: [], customGreeting: null }),
+                        }).catch((err) => {
+                            console.error('[Quotes] Auto-trigger generate-preview failed:', err);
+                        });
+                    }
                 }
             }
         } catch (error) {
