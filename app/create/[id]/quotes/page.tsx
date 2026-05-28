@@ -157,6 +157,13 @@ export default function QuotesPage() {
    const handleSubmit = async () => {
         const bookId = params.id || book?.id;
 
+        // Prevent resubmission if generation already started
+        if (book?.status && !['analyzing', 'failed'].includes(book.status)) {
+            console.log('[Quotes] Generation already in progress or complete, skipping resubmission');
+            router.push(`/progress/${bookId}`);
+            return;
+        }
+
         console.log('[Quotes] handleSubmit called, bookId:', bookId, '| quotes:', quotes.length);
 
         captureEvent(Events.QUOTES_SUBMITTED, {
@@ -423,7 +430,7 @@ export default function QuotesPage() {
                     <div className="container mx-auto max-w-2xl pointer-events-auto">
                         <Button
                             onClick={handleSubmit}
-                            disabled={saving}
+                            disabled={saving || (!!book?.status && !['analyzing', 'failed'].includes(book.status))}
                             className="w-full text-lg py-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
                             size="lg"
                         >
@@ -431,6 +438,11 @@ export default function QuotesPage() {
                                 <>
                                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                                     {isHebrew ? 'מייצר...' : 'Creating Magic...'}
+                                </>
+                            ) : (book?.status && !['analyzing', 'failed'].includes(book.status)) ? (
+                                <>
+                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                    {isHebrew ? 'מייצר...' : 'Generation in progress...'}
                                 </>
                             ) : (
                                 <>

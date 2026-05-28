@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
         .update(lockUpdate)
         .eq('id', bookId)
         .not('status', 'in', '("generating_prompts","generating_images","preview_ready","generating_remaining","complete")')
+        .or('preview_image_urls.is.null,preview_image_urls.eq.{}')
         .select('id')
         .maybeSingle();
 
