@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Sparkles, ArrowRight, ArrowLeft, RefreshCw, Shield, Loader2, Check, Pencil } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
@@ -12,20 +12,19 @@ import { isPredominantlyHebrew } from '@/lib/hebrew-utils';
 export default function QuotesPage() {
     const params = useParams();
     const router = useRouter();
-    const searchParams = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [book, setBook] = useState<any>(null);
     const [user, setUser] = useState<any>(null);
 
-    // Step: 'describe' → 'select'
-    const [step, setStep] = useState<'describe' | 'select'>('describe');
-    const [description, setDescription] = useState(searchParams.get('traits') ?? '');
+    // 'loading' while waiting for quotes to generate, 'select' once ready
+    const [step, setStep] = useState<'loading' | 'select'>('loading');
+    const [description, setDescription] = useState('');
     const [generating, setGenerating] = useState(false);
     const [quotes, setQuotes] = useState<string[]>([]);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editText, setEditText] = useState('');
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const autoTriggerFiredRef = useRef(false);
 
     const adminMode = isAdminUser(user);
@@ -45,6 +44,9 @@ export default function QuotesPage() {
     useEffect(() => {
         fetchBook();
         loadUser();
+        return () => {
+            if (pollRef.current) clearInterval(pollRef.current);
+        };
     }, []);
 
     const loadUser = async () => {
@@ -56,31 +58,56 @@ export default function QuotesPage() {
         }
     };
 
+    const applyBookData = (data: any) => {
+        setBook(data);
+        if (data.victim_traits) setDescription(data.victim_traits);
+        else if (data.victim_description) setDescription(data.victim_description);
+
+        if (data.quotes && data.quotes.length > 0) {
+            setQuotes(data.quotes.filter((q: string) => q.trim()).slice(0, 8));
+            setStep('select');
+            if (pollRef.current) {
+                clearInterval(pollRef.current);
+                pollRef.current = null;
+            }
+
+            // Silent safety net: if quotes exist but generation never started,
+            // trigger generate-preview now so the book isn't orphaned.
+            // The atomic lock in generate-preview prevents duplicate runs.
+            if (data.status === 'analyzing' && !autoTriggerFiredRef.current) {
+                autoTriggerFiredRef.current = true;
+                fetch('/api/generate-preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bookId: data.id, quotes: [], customGreeting: null }),
+                }).catch((err) => {
+                    console.error('[Quotes] Auto-trigger generate-preview failed:', err);
+                });
+            }
+            return true; // quotes found
+        }
+        return false;
+    };
+
     const fetchBook = async () => {
         try {
             const res = await fetch(`/api/book/${params.id}`);
             if (res.ok) {
                 const data = await res.json();
-                setBook(data);
-                // If book already has quotes, go to select step
-                if (data.quotes && data.quotes.length > 0) {
-                    setQuotes(data.quotes.filter((q: string) => q.trim()).slice(0, 8));
-                    setStep('select');
-
-                    // Silent safety net: if quotes exist but generation never started,
-                    // trigger generate-preview now so the book isn't orphaned if the user
-                    // closed their browser before clicking "Generate Full Book".
-                    // The atomic lock in generate-preview prevents duplicate runs.
-                    if (data.status === 'analyzing' && !autoTriggerFiredRef.current) {
-                        autoTriggerFiredRef.current = true;
-                        fetch('/api/generate-preview', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ bookId: data.id, quotes: [], customGreeting: null }),
-                        }).catch((err) => {
-                            console.error('[Quotes] Auto-trigger generate-preview failed:', err);
-                        });
-                    }
+                const hasQuotes = applyBookData(data);
+                if (!hasQuotes) {
+                    // Start polling every 2s until quotes appear
+                    pollRef.current = setInterval(async () => {
+                        try {
+                            const pollRes = await fetch(`/api/book/${params.id}`);
+                            if (pollRes.ok) {
+                                const pollData = await pollRes.json();
+                                applyBookData(pollData);
+                            }
+                        } catch (err) {
+                            console.error('[Quotes] Poll error:', err);
+                        }
+                    }, 2000);
                 }
             }
         } catch (error) {
@@ -90,18 +117,11 @@ export default function QuotesPage() {
         }
     };
 
-    const generateQuotes = async (isFirstGeneration: boolean) => {
-        if (!description.trim()) {
-            if (!isFirstGeneration) setStep('describe');
-            return;
-        }
+    const handleRegenerate = async () => {
+        if (!description.trim()) return;
 
         setGenerating(true);
         try {
-            if (isFirstGeneration) {
-                captureEvent(Events.ROAST_ASSISTANT_OPENED, { book_id: params.id });
-            }
-
             const res = await fetch('/api/generate-quotes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -116,23 +136,13 @@ export default function QuotesPage() {
 
             const { quotes: generatedQuotes } = await res.json();
             setQuotes(generatedQuotes.slice(0, 8));
-
-            if (isFirstGeneration) {
-                setStep('select');
-                captureEvent(Events.ROAST_ASSISTANT_USED, { quotes_generated: 8, book_id: params.id });
-                const numTraits = description.split(',').filter((t: string) => t.trim()).length;
-                try { captureEvent(Events.TRAITS_SUBMITTED, { num_traits: numTraits, book_id: params.id }); } catch {}
-            }
         } catch (error) {
             console.error(error);
-            alert(isFirstGeneration ? 'Failed to generate quotes. Please try again.' : 'Failed to regenerate. Please try again.');
+            alert('Failed to regenerate. Please try again.');
         } finally {
             setGenerating(false);
         }
     };
-
-    const handleGenerate = () => generateQuotes(true);
-    const handleRegenerate = () => generateQuotes(false);
 
     const startEdit = (index: number) => {
         setEditingIndex(index);
@@ -153,7 +163,7 @@ export default function QuotesPage() {
         setEditText('');
     };
 
-   const handleSubmit = async () => {
+    const handleSubmit = async () => {
         const bookId = params.id || book?.id;
 
         captureEvent(Events.QUOTES_SUBMITTED, {
@@ -195,8 +205,6 @@ export default function QuotesPage() {
         );
     }
 
-    const victimName = book?.victim_name || 'them';
-
     return (
         <div className="min-h-screen bg-[#FFFDF5] font-body text-black flex flex-col">
             {/* Header */}
@@ -234,72 +242,22 @@ export default function QuotesPage() {
 
             <main className="flex-1 container mx-auto px-4 py-6 max-w-2xl pb-32">
 
-                {/* ===== STEP 1: DESCRIBE ===== */}
-                {step === 'describe' && (
-                    <div className="bg-white border-2 border-black rounded-xl p-6 md:p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                        <div className="text-center mb-6">
-                            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-yellow-400 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] mb-4">
-                                <Sparkles className="w-7 h-7" />
-                            </div>
-                            <h1
-                                className="text-2xl md:text-3xl font-heading font-black mb-2"
-                                dir={isHebrew ? 'rtl' : 'ltr'}
-                            >
-                                {isHebrew
-                                    ? `ספרו לנו על ${victimName}`
-                                    : `Tell us about ${victimName}`}
-                            </h1>
-                            <p
-                                className="text-gray-500 max-w-md mx-auto"
-                                dir={isHebrew ? 'rtl' : 'ltr'}
-                            >
-                                {isHebrew
-                                    ? 'הכל רלוונטי: תחביבים, הרגלים, אובססיות, בדיחות פנימיות, שגעונות. אנחנו נהפוך את זה לרוסטים מטורפים.'
-                                    : "Anything goes: hobbies, habits, obsessions, quirks, inside jokes. We'll turn it into hilarious roasts."}
-                            </p>
+                {/* ===== LOADING: waiting for quotes ===== */}
+                {step === 'loading' && (
+                    <div className="flex flex-col items-center justify-center py-24 gap-4">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-400 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] mb-2">
+                            <Sparkles className="w-8 h-8 animate-pulse" />
                         </div>
-
-                        <textarea
-                            ref={textareaRef}
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            placeholder={isHebrew
-                                ? 'למשל: אוהב פיצה יותר מהחיים שלו, תמיד מאחר, מכור לטיקטוק, חושב שהוא שף מקצועי אבל שורף ביצה, ישן עד 2 בצהריים בשבת...'
-                                : "e.g. Lives for pizza, always 15 min late, TikTok addict, thinks he's a chef but burns eggs, sleeps till 2pm on weekends, still quotes The Office daily..."}
-                            className="w-full min-h-[160px] p-4 rounded-xl border-2 border-black bg-[#FFFDF5] text-lg resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400 placeholder:text-gray-400 placeholder:text-base"
-                            dir={isHebrew ? 'rtl' : 'ltr'}
-                            style={{ textAlign: isHebrew ? 'right' : 'left' }}
-                            maxLength={800}
-                        />
-                        <div className="flex justify-between items-center mt-2 mb-4">
-                            <p className="text-xs text-gray-400">{description.length}/800</p>
-                            <p className="text-xs text-gray-400">
-                                {isHebrew ? 'ככל שתכתבו יותר, הרוסטים יהיו יותר מדויקים' : 'The more you share, the funnier the roasts'}
-                            </p>
-                        </div>
-
-                        <Button
-                            onClick={handleGenerate}
-                            disabled={!description.trim() || generating}
-                            className="w-full text-lg py-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
-                            size="lg"
-                        >
-                            {generating ? (
-                                <>
-                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                    {isHebrew ? 'מייצר רוסטים...' : 'Generating roasts...'}
-                                </>
-                            ) : (
-                                <>
-                                    <Sparkles className="mr-2 h-5 w-5" />
-                                    {isHebrew ? 'צרו לי רוסטים' : 'Generate Roasts'}
-                                </>
-                            )}
-                        </Button>
+                        <p className="font-heading font-black text-2xl">
+                            {isHebrew ? 'מייצר רוסטים...' : 'Generating roasts...'}
+                        </p>
+                        <p className="text-gray-500 text-sm">
+                            {isHebrew ? 'זה לוקח כמה שניות' : 'This takes just a few seconds'}
+                        </p>
                     </div>
                 )}
 
-                {/* ===== STEP 2: EDIT QUOTES ===== */}
+                {/* ===== SELECT: edit and confirm quotes ===== */}
                 {step === 'select' && (
                     <>
                         <div className="mb-6">
@@ -308,8 +266,8 @@ export default function QuotesPage() {
                                 dir={isHebrew ? 'rtl' : 'ltr'}
                             >
                                 {isHebrew
-                                    ? `הרוסטים של ${victimName}`
-                                    : `${victimName}'s Roasts`}
+                                    ? 'בחרו את הטובים ביותר'
+                                    : 'Pick your favorites'}
                             </h1>
                             <p className="text-gray-500 text-center text-sm">
                                 {isHebrew
@@ -391,7 +349,7 @@ export default function QuotesPage() {
                             </div>
                         )}
 
-                        {/* Action buttons */}
+                        {/* Regenerate button */}
                         {!generating && (
                             <div className="flex gap-3 mb-6">
                                 <button
@@ -400,15 +358,6 @@ export default function QuotesPage() {
                                 >
                                     <RefreshCw className="w-4 h-4" />
                                     {isHebrew ? 'צרו חדשים' : 'Regenerate'}
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setStep('describe');
-                                    }}
-                                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-gray-200 bg-white text-gray-600 hover:bg-gray-50 text-sm font-bold transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)]"
-                                >
-                                    <ArrowLeft className="w-4 h-4" />
-                                    {isHebrew ? 'שנו תיאור' : 'Edit description'}
                                 </button>
                             </div>
                         )}
@@ -433,7 +382,7 @@ export default function QuotesPage() {
                                 </>
                             ) : (
                                 <>
-                                    {isHebrew ? 'הוסיפו תמונה שלהם' : 'Add Their Photo'}
+                                    {isHebrew ? 'הוסיפו תמונה שלהם' : 'Next - Add Photo'}
                                     <ArrowRight className="ml-2 h-5 w-5" />
                                 </>
                             )}
