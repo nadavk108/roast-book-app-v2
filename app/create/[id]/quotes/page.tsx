@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Sparkles, ArrowRight, ArrowLeft, RefreshCw, Shield, Loader2, Check, Pencil } from 'lucide-react';
-import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth';
 import { isAdminUser } from '@/lib/admin';
 import { captureEvent, Events } from '@/lib/posthog';
@@ -157,46 +156,35 @@ export default function QuotesPage() {
    const handleSubmit = async () => {
         const bookId = params.id || book?.id;
 
-        // Prevent resubmission if generation already started
-        if (book?.status && !['analyzing', 'failed'].includes(book.status)) {
-            console.log('[Quotes] Generation already in progress or complete, skipping resubmission');
-            router.push(`/progress/${bookId}`);
-            return;
-        }
-
-        console.log('[Quotes] handleSubmit called, bookId:', bookId, '| quotes:', quotes.length);
-
         captureEvent(Events.QUOTES_SUBMITTED, {
-            quote_count: 8,
+            quote_count: quotes.length,
             is_admin: adminMode,
             book_id: bookId,
         });
-        try { captureEvent(Events.QUOTES_SELECTED, { num_quotes_shown: 8, num_quotes_selected: quotes.length, book_id: bookId }); } catch {}
+        try { captureEvent(Events.QUOTES_SELECTED, { num_quotes_shown: quotes.length, num_quotes_selected: quotes.length, book_id: bookId }); } catch {}
         if (typeof window !== 'undefined' && typeof (window as any).fbq === 'function') {
             (window as any).fbq('track', 'Lead');
         }
 
+        // Save quotes to DB before navigating
         setSaving(true);
+        try {
+            await fetch('/api/generate-quotes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    bookId,
+                    victimName: book?.victim_name || '',
+                    trueTraits: book?.victim_traits || '',
+                    quotes, // pass selected quotes to save
+                }),
+            });
+        } catch (err) {
+            console.warn('[Quotes] Failed to persist quote selection:', err);
+        }
 
-        // Fire-and-forget - belt-and-suspenders; progress page also triggers on mount
-        console.log('[Quotes] Firing generate-preview (fire-and-forget)...');
-        fetch('/api/generate-preview', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                bookId: bookId,
-                quotes: quotes, // Always exactly 8 quotes
-                customGreeting: null,
-            }),
-        }).then(() => {
-            console.log('[Quotes] fire-and-forget completed');
-        }).catch((error) => {
-            console.error('[Quotes] Background generation failed:', error);
-        });
-
-        // Redirect instantly - progress page polls for status AND re-triggers if needed
-        console.log('[Quotes] Redirecting to progress page...');
-        router.push(`/progress/${bookId}`);
+        // Navigate to photo upload (Step 4)
+        router.push(`/create/${bookId}/photo`);
     };
 
     if (loading) {
@@ -213,17 +201,21 @@ export default function QuotesPage() {
         <div className="min-h-screen bg-[#FFFDF5] font-body text-black flex flex-col">
             {/* Header */}
             <header className="px-6 py-4 flex items-center border-b-2 border-black bg-white sticky top-0 z-30">
-                <Link href="/" className="p-2 hover:bg-black/5 rounded-full transition-colors mr-4">
+                <button
+                    type="button"
+                    onClick={() => router.back()}
+                    className="p-2 hover:bg-black/5 rounded-full transition-colors mr-4"
+                >
                     <ArrowLeft className="w-5 h-5" />
-                </Link>
+                </button>
                 <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden border border-black max-w-xs md:max-w-md mx-auto">
                     <div
                         className="bg-yellow-400 h-full transition-all duration-300"
-                        style={{ width: step === 'describe' ? '25%' : '50%' }}
+                        style={{ width: '75%' }}
                     />
                 </div>
                 <span className="ml-4 font-bold whitespace-nowrap">
-                    Step 2/3
+                    Step 3/4
                 </span>
             </header>
 
@@ -430,23 +422,18 @@ export default function QuotesPage() {
                     <div className="container mx-auto max-w-2xl pointer-events-auto">
                         <Button
                             onClick={handleSubmit}
-                            disabled={saving || (!!book?.status && !['analyzing', 'failed'].includes(book.status))}
+                            disabled={saving || quotes.length === 0}
                             className="w-full text-lg py-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
                             size="lg"
                         >
                             {saving ? (
                                 <>
                                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                    {isHebrew ? 'מייצר...' : 'Creating Magic...'}
-                                </>
-                            ) : (book?.status && !['analyzing', 'failed'].includes(book.status)) ? (
-                                <>
-                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                    {isHebrew ? 'מייצר...' : 'Generation in progress...'}
+                                    {isHebrew ? 'טוען...' : 'Loading...'}
                                 </>
                             ) : (
                                 <>
-                                    {isHebrew ? 'צרו את הספר המלא' : 'Generate Full Book'}
+                                    {isHebrew ? 'הוסיפו תמונה שלהם' : 'Add Their Photo'}
                                     <ArrowRight className="ml-2 h-5 w-5" />
                                 </>
                             )}

@@ -1,213 +1,65 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Upload, ArrowRight, ArrowLeft } from 'lucide-react';
+import { ArrowRight, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { captureEvent, Events } from '@/lib/posthog';
 import { getOrCreateSessionToken } from '@/lib/session-token';
-import ReactCrop from 'react-image-crop';
-import type { Crop, PixelCrop } from 'react-image-crop';
-import 'react-image-crop/dist/ReactCrop.css';
-import { getCroppedImg } from '@/lib/crop-utils';
 
-export default function UploadPage() {
+export default function CreatePage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
-    const [flowStep, setFlowStep] = useState<1 | 2 | 3>(1);
+    const [flowStep, setFlowStep] = useState<1 | 2>(1);
     const [victimName, setVictimName] = useState('');
     const [victimGender, setVictimGender] = useState<'male' | 'female' | 'neutral'>('neutral');
     const [description, setDescription] = useState('');
 
-    // Raw file straight from the file picker (used only during crop)
-    const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
-    const [rawFileName, setRawFileName] = useState<string>('photo.jpg');
-    const [rawFile, setRawFile] = useState<File | null>(null);
+    const progressWidth = flowStep === 1 ? '25%' : '50%';
 
-    // Crop state
-    const imgRef = useRef<HTMLImageElement>(null);
-    const [crop, setCrop] = useState<Crop>({ unit: '%', x: 0, y: 0, width: 100, height: 100 });
-    const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null);
-
-    // Committed (post-crop) state - what gets uploaded
-    const [imageFile, setImageFile] = useState<File | null>(null);
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
-
-    const showCropUI = rawImageSrc !== null && imageFile === null;
-
-    const progressWidth = flowStep === 1 ? '33%' : flowStep === 2 ? '66%' : '100%';
-
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        setCrop({ unit: '%', x: 0, y: 0, width: 100, height: 100 });
-        setCompletedCrop(null);
-        setImageFile(null);
-        setImagePreview(null);
-        setRawFileName(file.name);
-        setRawFile(file);
-
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setRawImageSrc(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-
-        // Reset input value so re-selecting the same file triggers onChange
-        e.target.value = '';
-    };
-
-    const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-        const { width, height } = e.currentTarget;
-        setCompletedCrop({ unit: 'px', x: 0, y: 0, width, height });
-    }, []);
-
-    const handleCropConfirm = async () => {
-        if (!imgRef.current || !completedCrop || completedCrop.width === 0) return;
-        try {
-            const croppedFile = await getCroppedImg(imgRef.current, completedCrop, rawFileName);
-            const preview = URL.createObjectURL(croppedFile);
-            setImageFile(croppedFile);
-            setImagePreview(preview);
-            setRawImageSrc(null);
-            setRawFile(null);
-        } catch (err) {
-            console.error('Crop failed:', err);
-            alert('Could not crop the image. Please try again.');
-        }
-    };
-
-    const handleSkipCrop = () => {
-        if (!rawFile || !rawImageSrc) return;
-        const preview = URL.createObjectURL(rawFile);
-        setImageFile(rawFile);
-        setImagePreview(preview);
-        setRawImageSrc(null);
-        setRawFile(null);
-    };
-
-    const handleChangePhoto = () => {
-        const input = document.getElementById('image-upload') as HTMLInputElement | null;
-        if (input) input.value = '';
-        setRawImageSrc(null);
-        setRawFile(null);
-        setImageFile(null);
-        setImagePreview(null);
-        setCrop({ unit: '%', x: 0, y: 0, width: 100, height: 100 });
-        setCompletedCrop(null);
-        input?.click();
-    };
-
-    const handleUpload = async () => {
-        if (!victimName || !imageFile) {
-            alert('Please enter a name and upload a photo');
-            return;
-        }
-
-        const maxSize = 4 * 1024 * 1024;
-        if (imageFile.size > maxSize) {
-            alert('Image is too large. Please upload an image smaller than 4MB.');
-            return;
-        }
-
-        captureEvent(Events.BOOK_CREATION_STARTED, { victim_name: victimName });
+    const handleGenerateRoasts = async () => {
+        if (!victimName.trim() || !description.trim()) return;
 
         setLoading(true);
-        console.log('Starting upload...', { victimName, fileSize: imageFile.size });
 
         try {
             const sessionToken = getOrCreateSessionToken();
 
-            const formData = new FormData();
-            formData.append('victimName', victimName);
-            formData.append('victimGender', victimGender);
-            formData.append('image', imageFile);
-            formData.append('session_token', sessionToken);
-
-            console.log('Sending request to /api/upload...');
-
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000);
-
-            const uploadRes = await fetch('/api/upload', {
+            // 1. Create book (no photo yet)
+            const createRes = await fetch('/api/create-book', {
                 method: 'POST',
-                body: formData,
-                signal: controller.signal,
-            }).finally(() => clearTimeout(timeoutId));
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    victimName: victimName.trim(),
+                    victimGender,
+                    description: description.trim(),
+                    session_token: sessionToken,
+                }),
+            });
 
-            console.log('Upload response status:', uploadRes.status);
-
-            if (!uploadRes.ok) {
-                const errorText = await uploadRes.text();
-                console.error('Upload failed with response:', errorText);
-                let errorData;
-                try {
-                    errorData = JSON.parse(errorText);
-                } catch {
-                    throw new Error(`Upload failed: ${uploadRes.status} ${uploadRes.statusText}`);
-                }
-                throw new Error(errorData.error || 'Upload failed');
+            if (!createRes.ok) {
+                const err = await createRes.json();
+                throw new Error(err.error || 'Failed to create book');
             }
 
-            const responseData = await uploadRes.json();
-            console.log('Upload successful, bookId:', responseData.bookId);
-            const { bookId } = responseData;
+            const { bookId } = await createRes.json();
 
-            try { captureEvent(Events.PHOTO_UPLOADED, { book_id: bookId }); } catch {}
+            captureEvent(Events.BOOK_CREATION_STARTED, { victim_name: victimName, book_id: bookId });
 
-            console.log('Starting image analysis and quote generation in parallel...');
-            await Promise.all([
-                // Analyze the photo (populates victim_description for image generation)
-                fetch('/api/analyze', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ bookId }),
-                }).then(async (res) => {
-                    if (!res.ok) {
-                        const err = await res.json();
-                        console.error('Analysis failed:', err);
-                        throw new Error(`Image analysis failed: ${err.error || 'Unknown error'}`);
-                    }
-                    console.log('Analysis complete');
-                }),
-                // Pre-generate quotes from traits and save to DB so quotes page shows selection step
-                description.trim()
-                    ? fetch('/api/generate-quotes', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ bookId, victimName, trueTraits: description.trim() }),
-                    }).then(async (res) => {
-                        if (!res.ok) {
-                            console.warn('[Upload] Quote pre-generation failed, user can generate on quotes page');
-                            return;
-                        }
-                        console.log('[Upload] Quotes pre-generated and saved to DB');
-                    }).catch((err) => {
-                        console.warn('[Upload] Quote pre-generation error:', err);
-                    })
-                    : Promise.resolve(),
-            ]);
+            // 2. Fire quote generation (fire-and-forget — quotes page handles the case where quotes aren't ready)
+            fetch('/api/generate-quotes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookId, victimName: victimName.trim(), trueTraits: description.trim() }),
+            }).catch(err => console.warn('[Create] Quote pre-generation failed:', err));
 
-            console.log('Redirecting to quotes page');
-            // Keep traits as URL param as fallback in case quote generation failed
-            const traitsParam = description.trim()
-                ? `?traits=${encodeURIComponent(description.trim())}`
-                : '';
+            // 3. Navigate to quotes page
+            const traitsParam = `?traits=${encodeURIComponent(description.trim())}`;
             router.push(`/create/${bookId}/quotes${traitsParam}`);
         } catch (error: any) {
-            console.error('Upload error:', error);
-
-            let errorMessage = 'Failed to upload. Please try again.';
-            if (error.name === 'AbortError') {
-                errorMessage = 'Upload timed out. Please check your internet connection and try again.';
-            } else if (error.message) {
-                errorMessage = error.message;
-            }
-
-            alert(`Error: ${errorMessage}\n\nDebug info:\n- File size: ${(imageFile.size / 1024 / 1024).toFixed(2)}MB\n- Name: ${victimName}\n\nPlease try again or contact support.`);
+            alert(`Error: ${error.message || 'Failed to create book. Please try again.'}`);
         } finally {
             setLoading(false);
         }
@@ -220,7 +72,7 @@ export default function UploadPage() {
                 {flowStep > 1 ? (
                     <button
                         type="button"
-                        onClick={() => setFlowStep((s: 1 | 2 | 3) => (s - 1) as 1 | 2 | 3)}
+                        onClick={() => setFlowStep(1)}
                         className="p-2 hover:bg-black/5 rounded-full transition-colors mr-4"
                     >
                         <ArrowLeft className="w-5 h-5" />
@@ -236,7 +88,7 @@ export default function UploadPage() {
                         style={{ width: progressWidth }}
                     />
                 </div>
-                <span className="ml-4 font-bold whitespace-nowrap">Step {flowStep}/3</span>
+                <span className="ml-4 font-bold whitespace-nowrap">Step {flowStep}/4</span>
             </header>
 
             <main className="flex-1 container mx-auto px-4 py-8 max-w-lg">
@@ -344,132 +196,23 @@ export default function UploadPage() {
                         </div>
 
                         <Button
-                            onClick={() => setFlowStep(3)}
-                            disabled={!description.trim()}
+                            onClick={handleGenerateRoasts}
+                            disabled={!description.trim() || loading}
                             className="w-full text-lg py-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
                             size="lg"
                         >
-                            Next - Add Their Photo
-                            <ArrowRight className="ml-2 h-5 w-5" />
-                        </Button>
-                    </div>
-                )}
-
-                {/* ===== STEP 3: PHOTO UPLOAD ===== */}
-                {flowStep === 3 && (
-                    <div className="bg-white border-2 border-black rounded-xl p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                        <h1 className="text-3xl font-heading font-black mb-2">
-                            Last step - upload a photo of {victimName}
-                        </h1>
-                        <p className="text-gray-600 mb-8">
-                            We use it to generate the illustrated scenes. Any clear photo works - doesn't need to be perfect.
-                        </p>
-
-                        <div className="space-y-6">
-                            {/* Hidden file input - always present so handleChangePhoto can trigger it */}
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleImageChange}
-                                className="hidden"
-                                id="image-upload"
-                            />
-
-                            {showCropUI ? (
-                                /* Inline crop UI */
-                                <div className="space-y-3">
-                                    <div className="w-full rounded-xl overflow-hidden border-2 border-black bg-black flex items-center justify-center">
-                                        <ReactCrop
-                                            crop={crop}
-                                            onChange={(_, pct) => setCrop(pct)}
-                                            onComplete={(px) => setCompletedCrop(px)}
-                                            className="max-h-[60vh] max-w-full"
-                                        >
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img
-                                                ref={imgRef}
-                                                src={rawImageSrc!}
-                                                alt="Crop preview"
-                                                onLoad={onImageLoad}
-                                                style={{ maxHeight: '60vh', maxWidth: '100%', display: 'block' }}
-                                            />
-                                        </ReactCrop>
-                                    </div>
-
-                                    <Button
-                                        onClick={handleCropConfirm}
-                                        className="w-full text-lg py-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
-                                    >
-                                        Crop &amp; Continue
-                                        <ArrowRight className="ml-2 h-5 w-5" />
-                                    </Button>
-
-                                    <button
-                                        type="button"
-                                        onClick={handleSkipCrop}
-                                        className="w-full text-sm text-gray-600 hover:text-black py-1 transition-colors"
-                                    >
-                                        Skip crop &rarr;
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={handleChangePhoto}
-                                        className="w-full text-sm text-gray-500 hover:text-black underline underline-offset-2 py-1 transition-colors"
-                                    >
-                                        &larr; Change photo
-                                    </button>
-                                </div>
+                            {loading ? (
+                                <>
+                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-black border-t-transparent mr-2" />
+                                    Creating...
+                                </>
                             ) : (
-                                /* Upload picker / preview */
-                                <label
-                                    htmlFor="image-upload"
-                                    className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors relative overflow-hidden group"
-                                >
-                                    {imagePreview ? (
-                                        <img
-                                            src={imagePreview}
-                                            alt="Preview"
-                                            className="absolute inset-0 w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="text-center p-4">
-                                            <div className="bg-white p-4 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] inline-flex mb-3 group-hover:scale-110 transition-transform">
-                                                <Upload className="h-6 w-6 text-black" />
-                                            </div>
-                                            <p className="text-sm font-bold text-gray-900">
-                                                Click to upload photo
-                                            </p>
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                JPG or PNG
-                                            </p>
-                                        </div>
-                                    )}
-                                </label>
+                                <>
+                                    Generate Roasts
+                                    <ArrowRight className="ml-2 h-5 w-5" />
+                                </>
                             )}
-
-                            {/* Continue button - only shown after crop is committed */}
-                            {!showCropUI && (
-                                <Button
-                                    onClick={handleUpload}
-                                    disabled={!imageFile || loading}
-                                    className="w-full text-lg py-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all mt-4"
-                                    size="lg"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-black border-t-transparent mr-2" />
-                                            Analyzing photo...
-                                        </>
-                                    ) : (
-                                        <>
-                                            Continue
-                                            <ArrowRight className="ml-2 h-5 w-5" />
-                                        </>
-                                    )}
-                                </Button>
-                            )}
-                        </div>
+                        </Button>
                     </div>
                 )}
 
