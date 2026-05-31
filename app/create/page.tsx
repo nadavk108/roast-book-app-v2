@@ -177,10 +177,10 @@ export default function CreatePage() {
                 {flowStep === 2 && (
                     <div className="bg-white border-2 border-black rounded-xl p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                         <h1 className="text-3xl font-heading font-black mb-2">
-                            Describe their personality
+                            Tell us about {victimName}
                         </h1>
                         <p className="text-gray-600 mb-6">
-                            You're making this for {victimName}
+                            Anything goes: hobbies, habits, obsessions, quirks, inside jokes. We'll turn it into hilarious roasts.
                         </p>
 
                         <textarea

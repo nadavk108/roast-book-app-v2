@@ -25,7 +25,6 @@ export default function QuotesPage() {
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editText, setEditText] = useState('');
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const autoTriggerFiredRef = useRef(false);
 
     const adminMode = isAdminUser(user);
 
@@ -69,20 +68,6 @@ export default function QuotesPage() {
             if (pollRef.current) {
                 clearInterval(pollRef.current);
                 pollRef.current = null;
-            }
-
-            // Silent safety net: if quotes exist but generation never started,
-            // trigger generate-preview now so the book isn't orphaned.
-            // The atomic lock in generate-preview prevents duplicate runs.
-            if (data.status === 'analyzing' && !autoTriggerFiredRef.current) {
-                autoTriggerFiredRef.current = true;
-                fetch('/api/generate-preview', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ bookId: data.id, quotes: [], customGreeting: null }),
-                }).catch((err) => {
-                    console.error('[Quotes] Auto-trigger generate-preview failed:', err);
-                });
             }
             return true; // quotes found
         }
