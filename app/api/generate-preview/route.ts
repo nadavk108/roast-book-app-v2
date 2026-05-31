@@ -158,11 +158,9 @@ export async function POST(request: NextRequest) {
 
     console.log(`[${bookId}] ${adminMode ? 'ADMIN MODE' : 'PREVIEW MODE'}: Generating ${quotesToGenerate.length} quotes`);
 
-    const previewQuotes = quotesToGenerate;
-
     // STEP 4: Generate visual prompts for first 3 quotes IN PARALLEL
     console.log(`[${bookId}] Step 1/3: Generating visual prompts...`);
-    const promptPromises = previewQuotes.map((quote: string, index: number) =>
+    const promptPromises = quotesToGenerate.map((quote: string, index: number) =>
       withRetryContext(
         async () => {
           // Step 1: Pre-compute scene direction with GPT-4o
@@ -326,7 +324,7 @@ export async function POST(request: NextRequest) {
           .from('roast_books')
           .update({
             status: 'failed',
-            // Note: Add error_message column to DB schema if needed
+            error_message: error?.message || 'Unknown generation error',
           })
           .eq('id', bookId);
 
