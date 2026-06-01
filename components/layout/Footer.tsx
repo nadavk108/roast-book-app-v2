@@ -1,36 +1,41 @@
 import Link from "next/link";
-import { Flame, Heart } from "lucide-react";
+import { Flame } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="border-t-3 border-foreground bg-secondary text-secondary-foreground">
-      <div className="container px-4 py-12">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
+    <footer className="bg-foreground text-background border-t-[2.5px] border-foreground">
+      <div className="container max-w-[1200px] mx-auto px-4 py-14">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
           {/* Brand */}
-          <div className="md:col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg border-3 border-secondary-foreground bg-primary text-primary-foreground">
-                <Flame className="h-6 w-6" />
+          <div className="md:col-span-1">
+            <Link href="/" className="flex items-center gap-2 mb-4 group">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl border-2 border-background bg-primary shadow-[3px_3px_0_#FFC700] group-hover:animate-wiggle">
+                <Flame className="h-5 w-5 text-foreground" />
               </div>
-              <span className="font-heading text-xl font-bold">The Roast Book</span>
+              <span className="font-heading text-lg font-black tracking-tight">THE ROAST BOOK</span>
             </Link>
-            <p className="text-secondary-foreground/80 max-w-md">
+            <p className="text-background/60 text-sm leading-relaxed max-w-xs">
               The funniest personalized gift you can give. Upload a photo, describe their quirks, and AI creates a custom illustrated roast book in minutes.
             </p>
           </div>
 
-          {/* Quick Links */}
+          {/* Product */}
           <div>
-            <h4 className="font-heading font-bold text-lg mb-4">Quick Links</h4>
-            <ul className="space-y-2">
+            <h4 className="font-heading font-black text-sm uppercase tracking-widest text-background/40 mb-4">Product</h4>
+            <ul className="space-y-3">
               <li>
-                <Link href="/how-it-works" className="text-secondary-foreground/80 hover:text-primary transition-colors">
+                <Link href="/how-it-works" className="text-background/70 hover:text-primary transition-colors text-sm font-medium">
                   How It Works
                 </Link>
               </li>
               <li>
-                <Link href="/examples" className="text-secondary-foreground/80 hover:text-primary transition-colors">
+                <Link href="/examples" className="text-background/70 hover:text-primary transition-colors text-sm font-medium">
                   Examples
+                </Link>
+              </li>
+              <li>
+                <Link href="/create" className="text-background/70 hover:text-primary transition-colors text-sm font-medium">
+                  Start Roasting
                 </Link>
               </li>
             </ul>
@@ -38,15 +43,15 @@ export function Footer() {
 
           {/* Legal */}
           <div>
-            <h4 className="font-heading font-bold text-lg mb-4">Legal</h4>
-            <ul className="space-y-2">
+            <h4 className="font-heading font-black text-sm uppercase tracking-widest text-background/40 mb-4">Legal</h4>
+            <ul className="space-y-3">
               <li>
-                <Link href="/privacy" className="text-secondary-foreground/80 hover:text-primary transition-colors">
+                <Link href="/privacy" className="text-background/70 hover:text-primary transition-colors text-sm font-medium">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="/terms" className="text-secondary-foreground/80 hover:text-primary transition-colors">
+                <Link href="/terms" className="text-background/70 hover:text-primary transition-colors text-sm font-medium">
                   Terms of Service
                 </Link>
               </li>
@@ -54,13 +59,12 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="mt-12 pt-6 border-t border-secondary-foreground/20 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-secondary-foreground/60">
+        <div className="mt-12 pt-6 border-t border-background/10 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-sm text-background/40">
             © 2026 The Roast Book. All rights reserved.
           </p>
-          <p className="text-sm text-secondary-foreground/60 flex items-center gap-1">
-            Made with <Heart className="h-4 w-4 text-accent fill-accent" /> for your best frenemies
+          <p className="text-sm text-background/40">
+            Made for your best frenemies
           </p>
         </div>
       </div>

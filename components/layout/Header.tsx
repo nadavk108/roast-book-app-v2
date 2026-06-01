@@ -44,22 +44,21 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b-2 md:border-b-3 border-foreground bg-background">
-      {/* Ultra-compact height on mobile: h-10 vs h-14 on desktop */}
-      <div className="container flex h-10 md:h-14 items-center justify-between">
-        <Link href="/" className="flex items-center gap-1.5 group">
-          <div className="flex h-7 w-7 md:h-9 md:w-9 items-center justify-center rounded-lg border-2 md:border-3 border-foreground bg-primary shadow-brutal group-hover:animate-wiggle">
-            <Flame className="h-4 w-4 md:h-5 md:w-5" />
+    <header className="sticky top-0 z-50 w-full border-b-[2.5px] border-foreground bg-foreground text-background">
+      <div className="container flex h-14 items-center justify-between">
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl border-2 border-background bg-primary shadow-[3px_3px_0_#FFC700] group-hover:animate-wiggle">
+            <Flame className="h-4 w-4 text-foreground" />
           </div>
-          <span className="font-heading text-sm md:text-lg font-bold hidden xs:inline">The Roast Book</span>
+          <span className="font-heading text-base md:text-lg font-black tracking-tight text-background">THE ROAST BOOK</span>
         </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-4">
-          <Link href="/how-it-works" className="font-heading font-semibold hover:text-accent transition-colors">
+          <Link href="/how-it-works" className="font-heading font-semibold text-background/80 hover:text-background transition-colors text-sm">
             How It Works
           </Link>
-          <Link href="/examples" className="font-heading font-semibold hover:text-accent transition-colors">
+          <Link href="/examples" className="font-heading font-semibold text-background/80 hover:text-background transition-colors text-sm">
             Examples
           </Link>
 
@@ -103,9 +102,9 @@ export function Header() {
                         className="fixed inset-0 z-40"
                         onClick={() => setDropdownOpen(false)}
                       />
-                      <div className="absolute right-0 mt-2 w-56 bg-card border-3 border-foreground rounded-xl shadow-brutal-lg z-50 overflow-hidden">
-                        <div className="p-3 border-b-2 border-border">
-                          <p className="font-semibold text-sm truncate">{user.user_metadata?.full_name || 'User'}</p>
+                      <div className="absolute right-0 mt-2 w-56 bg-card border-[2.5px] border-foreground rounded-xl shadow-[6px_6px_0_#0E0E0E] z-50 overflow-hidden">
+                        <div className="p-3 border-b-2 border-foreground/10">
+                          <p className="font-semibold text-sm truncate text-foreground">{user.user_metadata?.full_name || 'User'}</p>
                           <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                         </div>
                         <div className="p-2">
@@ -145,7 +144,7 @@ export function Header() {
               ) : (
                 <>
                   <Link href="/login">
-                    <button className="font-heading font-semibold px-4 py-2 hover:text-accent transition-colors">
+                    <button className="font-heading font-semibold px-4 py-2 text-background/70 hover:text-background transition-colors text-sm">
                       Sign In
                     </button>
                   </Link>
@@ -154,7 +153,7 @@ export function Header() {
                       size="sm"
                       onClick={() => captureEvent(Events.START_ROASTING_CLICKED, { button_location: 'navbar' })}
                     >
-                      Start Roasting 🔥
+                      Start free 🔥
                     </BrutalButton>
                   </Link>
                 </>
@@ -163,9 +162,9 @@ export function Header() {
           )}
         </nav>
 
-        {/* Mobile Menu Button - larger touch target */}
+        {/* Mobile Menu Button */}
         <button
-          className="md:hidden p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
+          className="md:hidden p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-background"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
         >
@@ -175,18 +174,18 @@ export function Header() {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t-3 border-foreground bg-background p-4 animate-slide-up">
+        <div className="md:hidden border-t-[2.5px] border-background/20 bg-foreground p-4 animate-slide-up">
           <nav className="flex flex-col gap-4">
             <Link
               href="/how-it-works"
-              className="font-heading font-semibold py-2 hover:text-accent"
+              className="font-heading font-semibold py-2 text-background/80 hover:text-background"
               onClick={() => setMobileMenuOpen(false)}
             >
               How It Works
             </Link>
             <Link
               href="/examples"
-              className="font-heading font-semibold py-2 hover:text-accent"
+              className="font-heading font-semibold py-2 text-background/80 hover:text-background"
               onClick={() => setMobileMenuOpen(false)}
             >
               Examples
@@ -256,7 +255,7 @@ export function Header() {
                   <>
                     <Link
                       href="/login"
-                      className="font-heading font-semibold py-2 hover:text-accent"
+                      className="font-heading font-semibold py-2 text-background/80 hover:text-background"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Sign In
@@ -266,7 +265,7 @@ export function Header() {
                       captureEvent(Events.START_ROASTING_CLICKED, { button_location: 'navbar' });
                     }}>
                       <BrutalButton className="w-full">
-                        Start Roasting 🔥
+                        Start free 🔥
                       </BrutalButton>
                     </Link>
                   </>

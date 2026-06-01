@@ -2,36 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import bold fonts */
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-
 /* Neo-Brutalist Design System - The Roast Book */
 @layer base {
   :root {
     /* Core palette - Neo Brutalism */
-    --background: 60 9% 98%;
-    --foreground: 0 0% 5%;
+    --background: 46 72% 94%;     /* #FBF6E6 cream */
+    --foreground: 0 0% 5.5%;      /* #0E0E0E ink */
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 5%;
+    --card-foreground: 0 0% 5.5%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 5%;
+    --popover-foreground: 0 0% 5.5%;
 
-    /* Electric Yellow - Primary */
-    --primary: 48 96% 53%;
-    --primary-foreground: 0 0% 5%;
+    /* Yellow - Primary #FFC700 */
+    --primary: 47 100% 50%;
+    --primary-foreground: 0 0% 5.5%;
 
-    /* Hot Pink - Accent */
-    --accent: 330 85% 60%;
+    /* Pink - Accent #FF2E88 */
+    --accent: 334 100% 59%;
     --accent-foreground: 0 0% 100%;
 
-    /* Deep Black - Secondary */
-    --secondary: 0 0% 5%;
+    /* Ink - Secondary / dark sections */
+    --secondary: 0 0% 5.5%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 60 5% 90%;
-    --muted-foreground: 0 0% 35%;
+    /* Cream-2 for alternate sections / input fills */
+    --muted: 46 61% 91%;           /* #F6EFD8 */
+    --muted-foreground: 0 0% 17%;  /* #2B2B2B ink-soft */
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;

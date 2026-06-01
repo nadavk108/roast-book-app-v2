@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Syne, Space_Grotesk } from 'next/font/google';
+import { Syne, Space_Grotesk, Archivo, Hanken_Grotesk } from 'next/font/google';
 import Script from 'next/script';
 import { PostHogProvider } from '@/components/providers/PostHogProvider';
 import './globals.css';
@@ -14,6 +14,18 @@ const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-space-grotesk',
+});
+
+const archivo = Archivo({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  variable: '--font-archivo',
+});
+
+const hankenGrotesk = Hanken_Grotesk({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-hanken-grotesk',
 });
 
 export const viewport: Viewport = {
@@ -234,7 +246,7 @@ export default function RootLayout({
           fbq('track', 'PageView');
         `}
       </Script>
-      <body className={`${syne.variable} ${spaceGrotesk.variable} antialiased`}>
+      <body className={`${syne.variable} ${spaceGrotesk.variable} ${archivo.variable} ${hankenGrotesk.variable} antialiased`}>
         <noscript>
           <img
             height="1"

@@ -17,8 +17,8 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        heading: ["Syne", "system-ui", "sans-serif"],
-        body: ["Space Grotesk", "system-ui", "sans-serif"],
+        heading: ["var(--font-archivo)", "Archivo", "system-ui", "sans-serif"],
+        body: ["var(--font-hanken-grotesk)", "Hanken Grotesk", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
