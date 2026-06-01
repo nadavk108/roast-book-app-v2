@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -65,154 +64,157 @@ export default function CreatePage() {
         }
     };
 
+    const step1Valid = victimName.trim().length > 0;
+    const step2Valid = description.trim().length >= 12 && !loading;
+
     return (
-        <div className="min-h-screen bg-[#FFFDF5] font-body text-black flex flex-col">
-            {/* Header */}
-            <header className="px-6 py-4 flex items-center border-b-2 border-black bg-white">
+        <div className="min-h-screen bg-background font-body text-foreground flex flex-col">
+            {/* App bar */}
+            <header className="px-4 py-3 flex items-center gap-3 border-b-[2.5px] border-foreground bg-background sticky top-0 z-30">
                 {flowStep > 1 ? (
                     <button
                         type="button"
                         onClick={() => setFlowStep(1)}
-                        className="p-2 hover:bg-black/5 rounded-full transition-colors mr-4"
+                        className="flex items-center justify-center w-9 h-9 rounded-xl border-[2px] border-foreground bg-card shadow-[2px_2px_0_#0E0E0E] hover:-translate-x-px hover:-translate-y-px active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all shrink-0"
+                        aria-label="Go back"
                     >
-                        <ArrowLeft className="w-5 h-5" />
+                        <ArrowLeft className="w-4 h-4" />
                     </button>
                 ) : (
-                    <Link href="/" className="p-2 hover:bg-black/5 rounded-full transition-colors mr-4">
-                        <ArrowLeft className="w-5 h-5" />
+                    <Link
+                        href="/"
+                        className="flex items-center justify-center w-9 h-9 rounded-xl border-[2px] border-foreground bg-card shadow-[2px_2px_0_#0E0E0E] hover:-translate-x-px hover:-translate-y-px active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all shrink-0"
+                        aria-label="Back to home"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
                     </Link>
                 )}
-                <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden border border-black">
+
+                {/* Progress bar */}
+                <div className="flex-1 bg-foreground/10 h-2.5 rounded-full overflow-hidden border border-foreground/20">
                     <div
-                        className="bg-yellow-400 h-full transition-all duration-300"
+                        className="bg-primary h-full rounded-full transition-all duration-500 border-r border-foreground/30"
                         style={{ width: progressWidth }}
                     />
                 </div>
-                <span className="ml-4 font-bold whitespace-nowrap">Step {flowStep}/4</span>
+
+                <span className="font-heading font-black text-sm whitespace-nowrap shrink-0">
+                    Step {flowStep} of 4
+                </span>
             </header>
 
             <main className="flex-1 container mx-auto px-4 py-8 max-w-lg">
 
                 {/* ===== STEP 1: NAME + GENDER ===== */}
                 {flowStep === 1 && (
-                    <div className="bg-white border-2 border-black rounded-xl p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                        <h1 className="text-3xl font-heading font-black mb-2">
+                    <div className="bg-card border-[2.5px] border-foreground rounded-2xl p-6 md:p-8 shadow-[6px_6px_0_#0E0E0E]">
+                        <h1 className="font-heading font-black text-2xl md:text-3xl mb-2 tracking-tight">
                             Who are we roasting?
                         </h1>
-                        <p className="text-gray-600 mb-8">
-                            Start with their name and we'll build the book around them.
+                        <p className="text-foreground/50 mb-8 text-sm">
+                            Start with their name and we&apos;ll build the book around them.
                         </p>
 
                         <div className="space-y-6">
                             <div>
-                                <label className="block text-sm font-bold mb-2">
+                                <label className="block font-heading font-black text-sm mb-2" htmlFor="victim-name">
                                     Their name
                                 </label>
                                 <Input
+                                    id="victim-name"
                                     placeholder="e.g. Josh"
                                     value={victimName}
                                     onChange={(e) => setVictimName(e.target.value)}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter' && victimName.trim()) setFlowStep(2);
                                     }}
-                                    className="text-lg py-6 border-2 border-black rounded-xl focus:ring-yellow-400"
+                                    className="text-lg py-6 border-[2.5px] border-foreground rounded-xl bg-muted focus:ring-primary focus:border-primary shadow-[2px_2px_0_#0E0E0E]"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-bold mb-2">
+                                <label className="block font-heading font-black text-sm mb-2">
                                     Gender
                                 </label>
-                                <div className="flex gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setVictimGender('male')}
-                                        className={`flex-1 py-3 px-4 rounded-xl border-2 font-bold transition-all ${
-                                            victimGender === 'male'
-                                                ? 'bg-yellow-400 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                                                : 'bg-white border-gray-300 hover:border-black'
-                                        }`}
-                                    >
-                                        Male
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setVictimGender('female')}
-                                        className={`flex-1 py-3 px-4 rounded-xl border-2 font-bold transition-all ${
-                                            victimGender === 'female'
-                                                ? 'bg-yellow-400 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                                                : 'bg-white border-gray-300 hover:border-black'
-                                        }`}
-                                    >
-                                        Female
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setVictimGender('neutral')}
-                                        className={`flex-1 py-3 px-4 rounded-xl border-2 font-bold transition-all ${
-                                            victimGender === 'neutral'
-                                                ? 'bg-yellow-400 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                                                : 'bg-white border-gray-300 hover:border-black'
-                                        }`}
-                                    >
-                                        Other
-                                    </button>
+                                <div className="flex gap-2">
+                                    {(['male', 'female', 'neutral'] as const).map((g) => (
+                                        <button
+                                            key={g}
+                                            type="button"
+                                            onClick={() => setVictimGender(g)}
+                                            className={`flex-1 py-3 px-3 rounded-xl border-[2.5px] font-heading font-bold text-sm transition-all ${
+                                                victimGender === g
+                                                    ? 'bg-primary border-foreground shadow-[3px_3px_0_#0E0E0E]'
+                                                    : 'bg-card border-foreground/30 hover:border-foreground text-foreground/60 hover:text-foreground'
+                                            }`}
+                                        >
+                                            {g === 'male' ? 'He' : g === 'female' ? 'She' : 'They'}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
 
-                            <Button
+                            <button
+                                type="button"
                                 onClick={() => setFlowStep(2)}
-                                disabled={!victimName.trim()}
-                                className="w-full text-lg py-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all mt-4"
-                                size="lg"
+                                disabled={!step1Valid}
+                                className={`w-full flex items-center justify-center gap-2 font-heading font-black text-lg py-4 rounded-xl border-[2.5px] transition-all mt-2 ${
+                                    step1Valid
+                                        ? 'bg-primary border-foreground shadow-[6px_6px_0_#0E0E0E] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[8px_8px_0_#0E0E0E] active:translate-x-[6px] active:translate-y-[6px] active:shadow-none cursor-pointer'
+                                        : 'bg-[#ECE5CE] border-[#CDC4A6] text-[#B5AC8F] cursor-not-allowed'
+                                }`}
                             >
-                                Next - Describe Them
-                                <ArrowRight className="ml-2 h-5 w-5" />
-                            </Button>
+                                Next - describe them
+                                <ArrowRight className="h-5 w-5" />
+                            </button>
                         </div>
                     </div>
                 )}
 
                 {/* ===== STEP 2: DESCRIBE PERSONALITY ===== */}
                 {flowStep === 2 && (
-                    <div className="bg-white border-2 border-black rounded-xl p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                        <h1 className="text-3xl font-heading font-black mb-2">
+                    <div className="bg-card border-[2.5px] border-foreground rounded-2xl p-6 md:p-8 shadow-[6px_6px_0_#0E0E0E]">
+                        <h1 className="font-heading font-black text-2xl md:text-3xl mb-2 tracking-tight">
                             Tell us about {victimName}
                         </h1>
-                        <p className="text-gray-600 mb-6">
-                            Anything goes: hobbies, habits, obsessions, quirks, inside jokes. We'll turn it into hilarious roasts.
+                        <p className="text-foreground/50 mb-6 text-sm">
+                            Anything goes: hobbies, habits, obsessions, quirks, inside jokes. We&apos;ll turn it into hilarious roasts.
                         </p>
 
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="e.g. Lives for pizza, always 15 min late, TikTok addict, thinks he's a chef but burns eggs, sleeps till 2pm on weekends, still quotes The Office daily..."
-                            className="w-full min-h-[160px] p-4 rounded-xl border-2 border-black bg-[#FFFDF5] text-lg resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400 placeholder:text-gray-400 placeholder:text-base"
+                            className="w-full min-h-[160px] p-4 rounded-xl border-[2.5px] border-foreground bg-muted text-base resize-none focus:outline-none focus:ring-2 focus:ring-primary shadow-[2px_2px_0_#0E0E0E] placeholder:text-foreground/30 placeholder:text-sm"
                             maxLength={800}
                         />
                         <div className="flex justify-between items-center mt-2 mb-6">
-                            <p className="text-xs text-gray-400">{description.length}/800</p>
-                            <p className="text-xs text-gray-400">The more you share, the funnier the roasts</p>
+                            <p className="text-xs text-foreground/40 font-mono">{description.length}/800</p>
+                            <p className="text-xs text-foreground/40">The more you share, the funnier the roasts</p>
                         </div>
 
-                        <Button
+                        <button
+                            type="button"
                             onClick={handleGenerateRoasts}
-                            disabled={!description.trim() || loading}
-                            className="w-full text-lg py-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
-                            size="lg"
+                            disabled={!step2Valid}
+                            className={`w-full flex items-center justify-center gap-2 font-heading font-black text-lg py-4 rounded-xl border-[2.5px] transition-all ${
+                                step2Valid
+                                    ? 'bg-primary border-foreground shadow-[6px_6px_0_#0E0E0E] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[8px_8px_0_#0E0E0E] active:translate-x-[6px] active:translate-y-[6px] active:shadow-none cursor-pointer'
+                                    : 'bg-[#ECE5CE] border-[#CDC4A6] text-[#B5AC8F] cursor-not-allowed'
+                            }`}
                         >
                             {loading ? (
                                 <>
-                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-black border-t-transparent mr-2" />
-                                    Creating...
+                                    <div className="w-5 h-5 rounded-full border-2 border-foreground border-t-transparent animate-spin" />
+                                    Writing roasts...
                                 </>
                             ) : (
                                 <>
-                                    Generate Roasts
-                                    <ArrowRight className="ml-2 h-5 w-5" />
+                                    Next - generate roasts
+                                    <ArrowRight className="h-5 w-5" />
                                 </>
                             )}
-                        </Button>
+                        </button>
                     </div>
                 )}
 

@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/Button';
 import { Sparkles, ArrowRight, ArrowLeft, RefreshCw, Shield, Loader2, Check, Pencil } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
 import { isAdminUser } from '@/lib/admin';
@@ -184,42 +183,40 @@ export default function QuotesPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#FFFDF5] flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin" />
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#FFFDF5] font-body text-black flex flex-col">
-            {/* Header */}
-            <header className="px-6 py-4 flex items-center border-b-2 border-black bg-white sticky top-0 z-30">
+        <div className="min-h-screen bg-background font-body text-foreground flex flex-col">
+            {/* App bar */}
+            <header className="px-4 py-3 flex items-center gap-3 border-b-[2.5px] border-foreground bg-background sticky top-0 z-30">
                 <button
                     type="button"
                     onClick={() => router.back()}
-                    className="p-2 hover:bg-black/5 rounded-full transition-colors mr-4"
+                    className="flex items-center justify-center w-9 h-9 rounded-xl border-[2px] border-foreground bg-card shadow-[2px_2px_0_#0E0E0E] hover:-translate-x-px hover:-translate-y-px active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all shrink-0"
+                    aria-label="Go back"
                 >
-                    <ArrowLeft className="w-5 h-5" />
+                    <ArrowLeft className="w-4 h-4" />
                 </button>
-                <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden border border-black max-w-xs md:max-w-md mx-auto">
-                    <div
-                        className="bg-yellow-400 h-full transition-all duration-300"
-                        style={{ width: '75%' }}
-                    />
+
+                <div className="flex-1 bg-foreground/10 h-2.5 rounded-full overflow-hidden border border-foreground/20">
+                    <div className="bg-primary h-full rounded-full border-r border-foreground/30" style={{ width: '75%' }} />
                 </div>
-                <span className="ml-4 font-bold whitespace-nowrap">
-                    Step 3/4
-                </span>
+
+                <span className="font-heading font-black text-sm whitespace-nowrap shrink-0">Step 3 of 4</span>
             </header>
 
             {/* Admin Badge */}
             {adminMode && (
-                <div className="mx-4 mt-4 bg-primary border-3 border-foreground rounded-xl p-4 shadow-brutal">
+                <div className="mx-4 mt-4 bg-primary border-[2.5px] border-foreground rounded-xl p-4 shadow-[4px_4px_0_#0E0E0E]">
                     <div className="flex items-center gap-3">
-                        <Shield className="h-6 w-6" />
+                        <Shield className="h-5 w-5" />
                         <div>
-                            <p className="font-heading font-bold text-lg">ADMIN MODE</p>
-                            <p className="text-sm">Min 1 quote. All images generated immediately.</p>
+                            <p className="font-heading font-bold">ADMIN MODE</p>
+                            <p className="text-sm text-foreground/60">Min 1 quote. All images generated immediately.</p>
                         </div>
                     </div>
                 </div>
@@ -230,14 +227,14 @@ export default function QuotesPage() {
                 {/* ===== LOADING: waiting for quotes ===== */}
                 {step === 'loading' && (
                     <div className="flex flex-col items-center justify-center py-24 gap-4">
-                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-400 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] mb-2">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary border-[2.5px] border-foreground shadow-[4px_4px_0_#0E0E0E] mb-2">
                             <Sparkles className="w-8 h-8 animate-pulse" />
                         </div>
                         <p className="font-heading font-black text-2xl">
-                            {isHebrew ? 'מייצר רוסטים...' : 'Generating roasts...'}
+                            {isHebrew ? 'מייצר רוסטים...' : `Writing ${book?.victim_name || 'their'}’s roasts…`}
                         </p>
-                        <p className="text-gray-500 text-sm">
-                            {isHebrew ? 'זה לוקח כמה שניות' : 'This takes just a few seconds'}
+                        <p className="text-foreground/50 text-sm">
+                            {isHebrew ? 'זה לוקח כמה שניות' : 'Just a few seconds'}
                         </p>
                     </div>
                 )}
@@ -245,33 +242,29 @@ export default function QuotesPage() {
                 {/* ===== SELECT: edit and confirm quotes ===== */}
                 {step === 'select' && (
                     <>
-                        <div className="mb-6">
+                        <div className="mb-6 text-center">
                             <h1
-                                className="text-2xl font-heading font-black mb-1 text-center"
+                                className="font-heading font-black text-2xl mb-1 tracking-tight"
                                 dir={isHebrew ? 'rtl' : 'ltr'}
                             >
-                                {isHebrew
-                                    ? 'בחרו את הטובים ביותר'
-                                    : 'Pick your favorites'}
+                                {isHebrew ? 'בחרו את הטובים ביותר' : 'Pick your favorites'}
                             </h1>
-                            <p className="text-gray-500 text-center text-sm">
-                                {isHebrew
-                                    ? 'הקישו על ציטוט כדי לערוך אותו'
-                                    : 'Tap any quote to edit it'}
+                            <p className="text-foreground/50 text-sm">
+                                {isHebrew ? 'הקישו על ציטוט כדי לערוך אותו' : 'Tap any quote to edit it'}
                             </p>
                         </div>
 
                         {/* Loading overlay for regeneration */}
                         {generating && (
-                            <div className="flex items-center justify-center py-12">
-                                <Loader2 className="w-8 h-8 animate-spin text-yellow-500 mr-3" />
+                            <div className="flex items-center justify-center py-12 gap-3">
+                                <Loader2 className="w-6 h-6 animate-spin text-primary" />
                                 <p className="font-heading font-bold">
                                     {isHebrew ? 'מייצר רוסטים חדשים...' : 'Generating new roasts...'}
                                 </p>
                             </div>
                         )}
 
-                        {/* Quote cards - exactly 8, always */}
+                        {/* Quote cards */}
                         {!generating && (
                             <div className="space-y-3 mb-6">
                                 {quotes.map((quote, i) => {
@@ -280,11 +273,11 @@ export default function QuotesPage() {
 
                                     if (isEditing) {
                                         return (
-                                            <div key={i} className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4 shadow-[2px_2px_0px_0px_#FACC15]">
+                                            <div key={i} className="bg-primary/10 border-[2.5px] border-primary rounded-xl p-4 shadow-[3px_3px_0_#FFC700]">
                                                 <textarea
                                                     value={editText}
                                                     onChange={(e) => setEditText(e.target.value)}
-                                                    className="w-full min-h-[80px] p-3 border-2 border-black rounded-lg text-sm font-medium bg-white resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                                    className="w-full min-h-[80px] p-3 border-[2px] border-foreground rounded-xl text-sm font-medium bg-card resize-none focus:outline-none focus:ring-2 focus:ring-primary"
                                                     dir={isPredominantlyHebrew(editText) ? 'rtl' : 'ltr'}
                                                     autoFocus
                                                     onKeyDown={(e) => {
@@ -293,17 +286,17 @@ export default function QuotesPage() {
                                                     }}
                                                     onBlur={saveEdit}
                                                 />
-                                                <div className="flex gap-2 mt-2">
+                                                <div className="flex gap-3 mt-2">
                                                     <button
                                                         onClick={saveEdit}
-                                                        className="flex items-center gap-1 text-xs font-bold text-green-600 hover:underline"
+                                                        className="flex items-center gap-1 text-xs font-heading font-black text-[#1FAE54] hover:underline"
                                                     >
                                                         <Check className="w-3 h-3" />
                                                         {isHebrew ? 'שמור' : 'Save'}
                                                     </button>
                                                     <button
                                                         onClick={cancelEdit}
-                                                        className="text-xs font-bold text-gray-400 hover:underline"
+                                                        className="text-xs font-heading font-bold text-foreground/40 hover:underline"
                                                     >
                                                         {isHebrew ? 'ביטול' : 'Cancel'}
                                                     </button>
@@ -316,17 +309,17 @@ export default function QuotesPage() {
                                         <div
                                             key={i}
                                             onClick={() => startEdit(i)}
-                                            className="relative p-4 rounded-xl border-2 border-yellow-400 bg-yellow-50 shadow-[2px_2px_0px_0px_#FACC15] cursor-pointer transition-all hover:shadow-[4px_4px_0px_0px_#FACC15] hover:-translate-y-0.5 active:shadow-[1px_1px_0px_0px_#FACC15] active:translate-y-0"
+                                            className="relative p-4 rounded-xl border-[2.5px] border-foreground bg-card shadow-[4px_4px_0_#0E0E0E] cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#0E0E0E] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none"
                                         >
                                             <Pencil
-                                                className={`absolute top-2 ${isHebrewQuote ? 'left-2' : 'right-2'} w-4 h-4 text-gray-400 pointer-events-none${i === 0 && showFirstPulse ? ' animate-pulse' : ''}`}
+                                                className={`absolute top-3 ${isHebrewQuote ? 'left-3' : 'right-3'} w-4 h-4 text-foreground/30 pointer-events-none${i === 0 && showFirstPulse ? ' animate-pulse' : ''}`}
                                             />
                                             <p
-                                                className={`text-sm md:text-base font-medium leading-relaxed ${isHebrewQuote ? 'pl-6' : 'pr-6'}`}
+                                                className={`text-sm md:text-base font-medium leading-relaxed text-foreground ${isHebrewQuote ? 'pl-6' : 'pr-6'}`}
                                                 dir={isHebrewQuote ? 'rtl' : 'ltr'}
                                                 style={{ textAlign: isHebrewQuote ? 'right' : 'left' }}
                                             >
-                                                "{quote}"
+                                                &ldquo;{quote}&rdquo;
                                             </p>
                                         </div>
                                     );
@@ -336,13 +329,13 @@ export default function QuotesPage() {
 
                         {/* Regenerate button */}
                         {!generating && (
-                            <div className="flex gap-3 mb-6">
+                            <div className="mb-6">
                                 <button
                                     onClick={handleRegenerate}
-                                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-gray-200 bg-white text-gray-600 hover:bg-gray-50 text-sm font-bold transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)]"
+                                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-[2.5px] border-foreground bg-card font-heading font-bold text-sm transition-all shadow-[3px_3px_0_#0E0E0E] hover:-translate-y-0.5 hover:shadow-[5px_5px_0_#0E0E0E] active:translate-y-0 active:shadow-none text-foreground"
                                 >
                                     <RefreshCw className="w-4 h-4" />
-                                    {isHebrew ? 'צרו חדשים' : 'Regenerate'}
+                                    {isHebrew ? 'צרו חדשים' : 'Regenerate roasts'}
                                 </button>
                             </div>
                         )}
@@ -350,28 +343,32 @@ export default function QuotesPage() {
                 )}
             </main>
 
-            {/* Sticky Submit Button - Only on select step */}
+            {/* Sticky Submit Button */}
             {step === 'select' && !generating && (
-                <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#FFFDF5] via-[#FFFDF5] to-transparent pointer-events-none z-20">
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent pointer-events-none z-20">
                     <div className="container mx-auto max-w-2xl pointer-events-auto">
-                        <Button
+                        <button
+                            type="button"
                             onClick={handleSubmit}
                             disabled={saving || quotes.length === 0}
-                            className="w-full text-lg py-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
-                            size="lg"
+                            className={`w-full flex items-center justify-center gap-2 font-heading font-black text-lg py-4 rounded-xl border-[2.5px] transition-all ${
+                                !saving && quotes.length > 0
+                                    ? 'bg-primary border-foreground shadow-[6px_6px_0_#0E0E0E] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[8px_8px_0_#0E0E0E] active:translate-x-[6px] active:translate-y-[6px] active:shadow-none cursor-pointer'
+                                    : 'bg-[#ECE5CE] border-[#CDC4A6] text-[#B5AC8F] cursor-not-allowed'
+                            }`}
                         >
                             {saving ? (
                                 <>
-                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                    {isHebrew ? 'טוען...' : 'Loading...'}
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                    {isHebrew ? 'טוען...' : 'Saving...'}
                                 </>
                             ) : (
                                 <>
-                                    {isHebrew ? 'הוסיפו תמונה שלהם' : 'Next - Add Photo'}
-                                    <ArrowRight className="ml-2 h-5 w-5" />
+                                    {isHebrew ? 'הוסיפו תמונה שלהם' : 'Next - add their photo'}
+                                    <ArrowRight className="h-5 w-5" />
                                 </>
                             )}
-                        </Button>
+                        </button>
                     </div>
                 </div>
             )}

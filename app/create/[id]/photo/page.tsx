@@ -2,7 +2,6 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/Button';
 import { Upload, ArrowRight, ArrowLeft, Check, Loader2 } from 'lucide-react';
 import ReactCrop from 'react-image-crop';
 import type { Crop, PixelCrop } from 'react-image-crop';
@@ -191,21 +190,24 @@ export default function PhotoPage() {
     if (loading) {
         if (generationError) {
             return (
-                <div className="min-h-screen bg-[#FFFDF5] flex items-center justify-center p-4">
-                    <div className="bg-white border-2 border-black rounded-xl p-8 max-w-md text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                        <div className="text-red-500 text-5xl mb-4">✗</div>
-                        <h2 className="text-2xl font-heading font-black mb-2">Something went wrong</h2>
-                        <p className="text-gray-600 mb-6">{generationError}</p>
-                        <Button
+                <div className="min-h-screen bg-background flex items-center justify-center p-4">
+                    <div className="bg-card border-[2.5px] border-foreground rounded-2xl p-8 max-w-md w-full text-center shadow-[6px_6px_0_#0E0E0E]">
+                        <div className="w-16 h-16 rounded-2xl bg-destructive/10 border-[2.5px] border-destructive flex items-center justify-center mx-auto mb-4 text-2xl">
+                            ✗
+                        </div>
+                        <h2 className="font-heading font-black text-2xl mb-2">Something went wrong</h2>
+                        <p className="text-foreground/60 mb-6 text-sm">{generationError}</p>
+                        <button
+                            type="button"
                             onClick={() => {
                                 setLoading(false);
                                 setGenerationError(null);
                                 setBookStatus(null);
                             }}
-                            className="w-full"
+                            className="w-full flex items-center justify-center gap-2 font-heading font-black text-base py-4 rounded-xl border-[2.5px] border-foreground bg-primary shadow-[4px_4px_0_#0E0E0E] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all"
                         >
                             Try again
-                        </Button>
+                        </button>
                     </div>
                 </div>
             );
@@ -220,34 +222,38 @@ export default function PhotoPage() {
         ];
 
         return (
-            <div className="min-h-screen bg-[#FFFDF5] flex items-center justify-center p-4">
-                <div className="bg-white border-2 border-black rounded-xl p-8 max-w-md w-full shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <div className="min-h-screen bg-background flex items-center justify-center p-4">
+                <div className="bg-card border-[2.5px] border-foreground rounded-2xl p-8 max-w-md w-full shadow-[6px_6px_0_#0E0E0E]">
                     <div className="text-center mb-8">
-                        <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-yellow-400 border-t-transparent mb-4" />
-                        <h2 className="text-2xl font-heading font-black mb-2">
-                            Creating your roast book...
+                        <div className="inline-block w-16 h-16 rounded-2xl bg-primary border-[2.5px] border-foreground shadow-[4px_4px_0_#0E0E0E] mb-4 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-full border-4 border-foreground border-t-transparent animate-spin" />
+                        </div>
+                        <h2 className="font-heading font-black text-2xl mb-2 tracking-tight">
+                            Building the book...
                         </h2>
-                        <p className="text-gray-600">
-                            This usually takes 30-60 seconds
+                        <p className="text-foreground/50 text-sm">
+                            This usually takes 30 to 60 seconds
                         </p>
                     </div>
                     <div className="space-y-4">
-                        {stepStates.map((step, i) => (
+                        {stepStates.map((s, i) => (
                             <div key={i} className="flex items-center gap-3">
-                                <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${
-                                    step.state === 'complete' ? 'bg-green-100 border-green-500' :
-                                    step.state === 'active' ? 'bg-yellow-100 border-yellow-500' :
-                                    'bg-gray-100 border-gray-300'
+                                <div className={`w-8 h-8 rounded-xl border-[2px] flex items-center justify-center shrink-0 ${
+                                    s.state === 'complete'
+                                        ? 'bg-[#1FAE54]/10 border-[#1FAE54]'
+                                        : s.state === 'active'
+                                        ? 'bg-primary border-foreground'
+                                        : 'bg-foreground/5 border-foreground/20'
                                 }`}>
-                                    {step.state === 'complete' && <Check className="w-4 h-4 text-green-600" />}
-                                    {step.state === 'active' && <Loader2 className="w-4 h-4 text-yellow-600 animate-spin" />}
+                                    {s.state === 'complete' && <Check className="w-4 h-4 text-[#1FAE54]" />}
+                                    {s.state === 'active' && <Loader2 className="w-4 h-4 text-foreground animate-spin" />}
                                 </div>
-                                <span className={`font-medium ${
-                                    step.state === 'complete' ? 'text-gray-400' :
-                                    step.state === 'active' ? 'text-black' :
-                                    'text-gray-300'
+                                <span className={`font-medium text-sm ${
+                                    s.state === 'complete' ? 'text-foreground/40 line-through' :
+                                    s.state === 'active' ? 'text-foreground font-bold' :
+                                    'text-foreground/30'
                                 }`}>
-                                    {step.label}
+                                    {s.label}
                                 </span>
                             </div>
                         ))}
@@ -259,35 +265,35 @@ export default function PhotoPage() {
 
     // ── main: photo upload ────────────────────────────────────────────────────
     return (
-        <div className="min-h-screen bg-[#FFFDF5] font-body text-black flex flex-col">
-            {/* Header */}
-            <header className="px-6 py-4 flex items-center border-b-2 border-black bg-white">
+        <div className="min-h-screen bg-background font-body text-foreground flex flex-col">
+            {/* App bar */}
+            <header className="px-4 py-3 flex items-center gap-3 border-b-[2.5px] border-foreground bg-background sticky top-0 z-30">
                 <button
                     type="button"
                     onClick={() => router.back()}
-                    className="p-2 hover:bg-black/5 rounded-full transition-colors mr-4"
+                    className="flex items-center justify-center w-9 h-9 rounded-xl border-[2px] border-foreground bg-card shadow-[2px_2px_0_#0E0E0E] hover:-translate-x-px hover:-translate-y-px active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all shrink-0"
+                    aria-label="Go back"
                 >
-                    <ArrowLeft className="w-5 h-5" />
+                    <ArrowLeft className="w-4 h-4" />
                 </button>
-                <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden border border-black">
-                    <div
-                        className="bg-yellow-400 h-full transition-all duration-300"
-                        style={{ width: '100%' }}
-                    />
+
+                <div className="flex-1 bg-foreground/10 h-2.5 rounded-full overflow-hidden border border-foreground/20">
+                    <div className="bg-primary h-full rounded-full border-r border-foreground/30" style={{ width: '100%' }} />
                 </div>
-                <span className="ml-4 font-bold whitespace-nowrap">Step 4/4</span>
+
+                <span className="font-heading font-black text-sm whitespace-nowrap shrink-0">Step 4 of 4</span>
             </header>
 
             <main className="flex-1 container mx-auto px-4 py-8 max-w-lg">
-                <div className="bg-white border-2 border-black rounded-xl p-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                    <h1 className="text-3xl font-heading font-black mb-2">
-                        Last step - upload a photo of {victimName || 'them'}
+                <div className="bg-card border-[2.5px] border-foreground rounded-2xl p-6 md:p-8 shadow-[6px_6px_0_#0E0E0E]">
+                    <h1 className="font-heading font-black text-2xl md:text-3xl mb-2 tracking-tight">
+                        Last step - a photo of {victimName || 'them'}
                     </h1>
-                    <p className="text-gray-600 mb-8">
-                        We use it to generate the illustrated scenes. Any clear photo works - doesn't need to be perfect.
+                    <p className="text-foreground/50 mb-8 text-sm">
+                        We use it to generate the illustrated scenes. Any clear photo works.
                     </p>
 
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         <input
                             type="file"
                             accept="image/*"
@@ -298,7 +304,7 @@ export default function PhotoPage() {
 
                         {showCropUI ? (
                             <div className="space-y-3">
-                                <div className="w-full rounded-xl overflow-hidden border-2 border-black bg-black flex items-center justify-center">
+                                <div className="w-full rounded-xl overflow-hidden border-[2.5px] border-foreground bg-black flex items-center justify-center shadow-[4px_4px_0_#0E0E0E]">
                                     <ReactCrop
                                         crop={crop}
                                         onChange={(_, pct) => setCrop(pct)}
@@ -316,18 +322,19 @@ export default function PhotoPage() {
                                     </ReactCrop>
                                 </div>
 
-                                <Button
+                                <button
+                                    type="button"
                                     onClick={handleCropConfirm}
-                                    className="w-full text-lg py-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                    className="w-full flex items-center justify-center gap-2 font-heading font-black text-base py-4 rounded-xl border-[2.5px] border-foreground bg-primary shadow-[4px_4px_0_#0E0E0E] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all"
                                 >
-                                    Crop &amp; Continue
-                                    <ArrowRight className="ml-2 h-5 w-5" />
-                                </Button>
+                                    Crop &amp; create book
+                                    <ArrowRight className="h-5 w-5" />
+                                </button>
 
                                 <button
                                     type="button"
                                     onClick={handleSkipCrop}
-                                    className="w-full text-sm text-gray-600 hover:text-black py-1 transition-colors"
+                                    className="w-full text-sm font-heading font-bold text-foreground/50 hover:text-foreground py-2 transition-colors"
                                 >
                                     Skip crop &rarr;
                                 </button>
@@ -335,7 +342,7 @@ export default function PhotoPage() {
                                 <button
                                     type="button"
                                     onClick={handleChangePhoto}
-                                    className="w-full text-sm text-gray-500 hover:text-black underline underline-offset-2 py-1 transition-colors"
+                                    className="w-full text-sm font-medium text-foreground/40 hover:text-foreground underline underline-offset-2 py-1 transition-colors"
                                 >
                                     &larr; Change photo
                                 </button>
@@ -344,7 +351,7 @@ export default function PhotoPage() {
                             <>
                                 <label
                                     htmlFor="photo-upload"
-                                    className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors relative overflow-hidden group"
+                                    className="flex flex-col items-center justify-center w-full h-60 border-[2.5px] border-dashed border-foreground rounded-2xl cursor-pointer bg-muted hover:bg-muted/70 transition-colors relative overflow-hidden group"
                                 >
                                     {imagePreview ? (
                                         // eslint-disable-next-line @next/next/no-img-element
@@ -355,34 +362,38 @@ export default function PhotoPage() {
                                         />
                                     ) : (
                                         <div className="text-center p-4">
-                                            <div className="bg-white p-4 rounded-full border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] inline-flex mb-3 group-hover:scale-110 transition-transform">
-                                                <Upload className="h-6 w-6 text-black" />
+                                            <div className="bg-card p-4 rounded-2xl border-[2.5px] border-foreground shadow-[3px_3px_0_#0E0E0E] inline-flex mb-3 group-hover:scale-105 transition-transform">
+                                                <Upload className="h-6 w-6 text-foreground" />
                                             </div>
-                                            <p className="text-sm font-bold text-gray-900">
-                                                Click to upload photo
+                                            <p className="font-heading font-black text-sm text-foreground">
+                                                Tap to upload photo
                                             </p>
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                JPG or PNG
+                                            <p className="text-xs text-foreground/40 mt-1">
+                                                JPG or PNG, max 4MB
                                             </p>
                                         </div>
                                     )}
                                 </label>
 
-                                <Button
+                                <button
+                                    type="button"
                                     onClick={handleSubmit}
                                     disabled={!imageFile}
-                                    className="w-full text-lg py-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all mt-4"
-                                    size="lg"
+                                    className={`w-full flex items-center justify-center gap-2 font-heading font-black text-lg py-4 rounded-xl border-[2.5px] transition-all ${
+                                        imageFile
+                                            ? 'bg-primary border-foreground shadow-[6px_6px_0_#0E0E0E] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[8px_8px_0_#0E0E0E] active:translate-x-[6px] active:translate-y-[6px] active:shadow-none cursor-pointer'
+                                            : 'bg-[#ECE5CE] border-[#CDC4A6] text-[#B5AC8F] cursor-not-allowed'
+                                    }`}
                                 >
-                                    Continue
-                                    <ArrowRight className="ml-2 h-5 w-5" />
-                                </Button>
+                                    Create the book
+                                    <ArrowRight className="h-5 w-5" />
+                                </button>
 
                                 {imageFile && (
                                     <button
                                         type="button"
                                         onClick={handleChangePhoto}
-                                        className="w-full text-sm text-gray-500 hover:text-black underline underline-offset-2 py-1 transition-colors text-center"
+                                        className="w-full text-sm font-medium text-foreground/40 hover:text-foreground underline underline-offset-2 py-1 transition-colors text-center"
                                     >
                                         Change photo
                                     </button>
