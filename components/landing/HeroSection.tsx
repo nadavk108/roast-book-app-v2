@@ -2,9 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { BrutalButton } from "@/components/ui/brutal-button";
-import { BrutalBadge } from "@/components/ui/brutal-badge";
-import { ArrowRight, Play, Shield, Zap, Clock } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { captureEvent, Events } from "@/lib/posthog";
@@ -42,7 +40,6 @@ function buildSlides(data: BookData): HeroSlide[] {
 export function HeroSection({ initialBook }: { initialBook?: BookData }) {
   const [currentExample, setCurrentExample] = useState(0);
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(() => buildSlides(initialBook ?? null));
-  // Skip entrance animation on first paint so the LCP image is visible immediately
   const skipEntrance = useRef(true);
 
   useEffect(() => {
@@ -60,52 +57,93 @@ export function HeroSection({ initialBook }: { initialBook?: BookData }) {
   const currentSlide = heroSlides[currentExample];
 
   return (
-    <section className="relative overflow-hidden" aria-labelledby="hero-heading">
-      {/* Gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5" aria-hidden="true" />
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" aria-hidden="true" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-accent/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" aria-hidden="true" />
+    <section className="bg-background" aria-labelledby="hero-heading">
+      <div className="container max-w-[1200px] mx-auto px-4 pt-12 pb-10 md:pt-16 md:pb-14">
+        <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-16">
 
-      <div className="container py-16 md:py-24 lg:py-32 relative z-10 max-w-[1200px] mx-auto">
-        {/*
-          Mobile (flex-col + order):  headline/subtext → phone → CTAs → price → trust
-          Desktop (lg: 2-col grid):   left col = headline+subtext (row 1) + price/CTAs/trust (row 2)
-                                       right col = phone (row-span-2)
-        */}
-        <div className="flex flex-col gap-8 lg:grid lg:grid-cols-2 lg:grid-rows-[auto_1fr] lg:gap-x-16 lg:gap-y-8 lg:items-start">
+          {/* Left: headline + CTAs */}
+          <div className="flex-1 max-w-xl mx-auto lg:mx-0">
+            {/* Eyebrow */}
+            <div className="inline-flex items-center gap-2 bg-primary border-[2.5px] border-foreground rounded-full px-4 py-1.5 shadow-[3px_3px_0_#0E0E0E] mb-6">
+              <span aria-hidden="true">🔥</span>
+              <span className="font-heading font-black text-sm text-foreground tracking-tight">AI Roast Book</span>
+            </div>
 
-          {/* ── 1 (mobile) / Left col row 1 (desktop): Headline + Subtext ── */}
-          <div className="order-1 lg:col-start-1 lg:row-start-1">
-            <p className="text-sm font-bold uppercase tracking-widest text-black mb-3">
-              🔥 The Roast Book
-            </p>
+            {/* Headline */}
             <h1
               id="hero-heading"
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-black leading-[1.1] tracking-tight mb-6"
+              className="font-heading font-black text-4xl sm:text-5xl md:text-[3.5rem] leading-[1.02] tracking-[-1px] text-foreground mb-5"
             >
-              The Funniest Gift They&apos;ll Never See Coming
+              The funniest gift they&apos;ll{' '}
+              <span className="relative inline-block">
+                <span className="relative z-10">never</span>
+                <span
+                  className="absolute inset-0 -mx-1 bg-primary rounded-sm -rotate-1"
+                  aria-hidden="true"
+                  style={{ zIndex: 0, bottom: '2px', top: '2px' }}
+                />
+              </span>
+              {' '}see coming.
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-lg">
-              Describe your friend&apos;s quirks and we&apos;ll generate a hilarious personalized roast book
-              with AI-powered quotes and illustrations. Takes 5 minutes. They&apos;ll never forget it.
+
+            {/* Star rating */}
+            <div className="flex items-center gap-2 mb-8">
+              <span className="text-primary text-lg font-bold" aria-hidden="true">★★★★★</span>
+              <span className="font-heading font-black text-sm text-foreground">4.9</span>
+              <span className="text-foreground/40 text-sm">· 2,300+ books made</span>
+            </div>
+
+            {/* CTAs */}
+            <nav className="flex flex-col sm:flex-row gap-3 mb-8" aria-label="Primary actions">
+              <Link
+                href="/create"
+                id="hero-cta"
+                className="flex items-center justify-center gap-2 bg-primary text-foreground font-heading font-black text-lg px-8 py-4 rounded-xl border-[2.5px] border-foreground shadow-[6px_6px_0_#0E0E0E] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[8px_8px_0_#0E0E0E] active:translate-x-[6px] active:translate-y-[6px] active:shadow-none transition-all"
+                onClick={() => {
+                  try { captureEvent(Events.START_ROASTING_CLICKED, { button_location: 'hero' }); } catch {}
+                }}
+              >
+                Start Roasting Free
+                <ArrowRight className="h-5 w-5" aria-hidden="true" />
+              </Link>
+              <button
+                className="flex items-center justify-center gap-2 bg-card text-foreground font-heading font-bold text-base px-6 py-4 rounded-xl border-[2.5px] border-foreground shadow-[4px_4px_0_#0E0E0E] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all"
+                onClick={scrollToExamples}
+              >
+                See real examples
+              </button>
+            </nav>
+
+            {/* Price */}
+            <div className="flex items-center gap-3 mb-4">
+              <span className="font-heading font-black text-3xl text-foreground">$9.99</span>
+              <span className="text-foreground/40 line-through text-base" aria-label="Original price $29">$29</span>
+              <span className="bg-accent text-background font-heading font-black text-xs px-3 py-1 rounded-full border-[2px] border-foreground">
+                Save 66%
+              </span>
+            </div>
+
+            {/* Reassurance */}
+            <p className="text-foreground/50 text-sm font-medium">
+              Preview free before you pay · No subscription
             </p>
           </div>
 
-          {/* ── 2 (mobile) / Right col rows 1-2 (desktop): Phone mockup ── */}
+          {/* Right: phone mockup */}
           <div
-            className="order-2 lg:col-start-2 lg:row-start-1 lg:row-span-2 relative"
+            className="shrink-0 mx-auto lg:mx-0"
+            style={{ width: 'min(280px, 80vw)' }}
             aria-label="Example roast book preview"
           >
-            {/* Phone mockup frame — tap to open Tyler's book */}
             <Link href="/book/9x7dzympme" className="block" aria-label="Tap to explore Tyler's roast book">
-              <figure className="relative mx-auto max-w-[220px] sm:max-w-[280px] md:max-w-[320px] lg:max-w-[380px]">
-                {/* Phone bezel */}
-                <div className="bg-foreground rounded-[2.5rem] p-2 shadow-2xl">
+              <figure className="relative">
+                {/* Phone frame */}
+                <div className="bg-foreground rounded-[2.5rem] p-2 shadow-[8px_8px_0_#0E0E0E] border-[2.5px] border-foreground">
                   <div className="bg-black rounded-[2rem] overflow-hidden relative">
                     {/* Notch */}
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-foreground rounded-b-2xl z-20" aria-hidden="true" />
 
-                    {/* Screen content */}
+                    {/* Screen */}
                     <div className="aspect-[9/16] relative overflow-hidden" aria-live="polite" aria-atomic="true">
                       {heroSlides.length === 0 ? (
                         <div className="absolute inset-0 bg-zinc-800 animate-pulse" aria-hidden="true" />
@@ -113,9 +151,7 @@ export function HeroSection({ initialBook }: { initialBook?: BookData }) {
                         <AnimatePresence mode="wait">
                           <motion.div
                             key={currentExample}
-                            initial={skipEntrance.current
-                              ? { opacity: 1, scale: 1 }
-                              : { opacity: 0, scale: 1.05 }}
+                            initial={skipEntrance.current ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.05 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ duration: 0.5 }}
@@ -128,10 +164,8 @@ export function HeroSection({ initialBook }: { initialBook?: BookData }) {
                               fill
                               className="object-cover"
                               priority={currentExample === 0}
-                              sizes="(max-width: 640px) 220px, (max-width: 768px) 280px, (max-width: 1024px) 320px, 380px"
+                              sizes="(max-width: 640px) 220px, (max-width: 768px) 280px, 280px"
                             />
-
-                            {/* Cover overlay — matches flipbook viewer's cover page style */}
                             {currentSlide.isCover ? (
                               <motion.div
                                 initial={{ opacity: 0, y: 20 }}
@@ -147,7 +181,6 @@ export function HeroSection({ initialBook }: { initialBook?: BookData }) {
                                 </p>
                               </motion.div>
                             ) : (
-                              /* Quote overlay — roast images */
                               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-32 pb-8 px-4">
                                 <motion.div
                                   initial={{ opacity: 0, y: 20 }}
@@ -172,20 +205,12 @@ export function HeroSection({ initialBook }: { initialBook?: BookData }) {
                       {heroSlides.length > 0 && (
                         <div className="absolute top-8 left-2 right-2 flex gap-1 z-10" aria-hidden="true">
                           {heroSlides.map((_, idx) => (
-                            <div
-                              key={idx}
-                              className="h-0.5 flex-1 rounded-full overflow-hidden bg-white/30"
-                            >
+                            <div key={idx} className="h-0.5 flex-1 rounded-full overflow-hidden bg-white/30">
                               <motion.div
                                 className="h-full bg-white"
                                 initial={{ width: "0%" }}
-                                animate={{
-                                  width: idx === currentExample ? "100%" : idx < currentExample ? "100%" : "0%"
-                                }}
-                                transition={{
-                                  duration: idx === currentExample ? 3.5 : 0,
-                                  ease: "linear"
-                                }}
+                                animate={{ width: idx === currentExample ? "100%" : idx < currentExample ? "100%" : "0%" }}
+                                transition={{ duration: idx === currentExample ? 3.5 : 0, ease: "linear" }}
                               />
                             </div>
                           ))}
@@ -195,72 +220,14 @@ export function HeroSection({ initialBook }: { initialBook?: BookData }) {
                   </div>
                 </div>
                 <figcaption className="sr-only">
-                  Interactive preview of AI-generated roast book images rotating through Tyler&apos;s examples
+                  Interactive preview of AI-generated roast book images rotating through examples
                 </figcaption>
-
               </figure>
             </Link>
-            <p className="text-center mt-3 text-sm text-muted-foreground flex items-center justify-center gap-1">
-              Tap to explore
-              <ArrowRight className="h-3 w-3" aria-hidden="true" />
+            <p className="text-center mt-3 text-sm text-foreground/40 font-medium">
+              Tap to explore a real book
             </p>
           </div>
-
-          {/* ── 3 (mobile) / Left col row 2 (desktop): CTAs + Price + Trust ──
-               Inner flex-col so order-* classes can reposition price between mobile/desktop.
-               Mobile:  CTAs (order-1) → price (order-2) → trust (order-3)
-               Desktop: price (order-1 → lg:order-1) → CTAs (order-2 → lg:order-2) → trust (order-3)
-          */}
-          <div className="order-3 lg:col-start-1 lg:row-start-2 flex flex-col gap-6">
-            {/* Price — order-2 on mobile (after CTAs), order-1 on desktop (before CTAs) */}
-            <div className="order-2 lg:order-1 flex items-center gap-4 py-2">
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl md:text-4xl font-black text-primary">$9.99</span>
-                <span className="text-muted-foreground line-through" aria-label="Original price $29">$29</span>
-              </div>
-              <BrutalBadge variant="accent" size="sm">
-                <Zap className="h-3 w-3 mr-1" aria-hidden="true" /> Introductory Price
-              </BrutalBadge>
-            </div>
-
-            {/* CTAs — order-1 on mobile (first), order-2 on desktop (after price) */}
-            <nav className="order-1 lg:order-2 flex flex-col sm:flex-row gap-3" aria-label="Primary actions">
-              <Link href="/create" className="w-full sm:w-auto" onClick={() => {
-                try { captureEvent(Events.START_ROASTING_CLICKED, { button_location: 'hero' }); } catch {}
-              }}>
-                <BrutalButton size="xl" className="w-full group">
-                  Start Roasting Free
-                  <ArrowRight className="ml-2 transition-transform group-hover:translate-x-1" aria-hidden="true" />
-                </BrutalButton>
-              </Link>
-              <BrutalButton
-                variant="outline"
-                size="xl"
-                className="w-full sm:w-auto group"
-                onClick={scrollToExamples}
-              >
-                <Play className="mr-2 h-4 w-4" aria-hidden="true" />
-                See Examples
-              </BrutalButton>
-            </nav>
-
-            {/* Trust Signals — always last */}
-            <ul role="list" className="order-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground list-none">
-              <li className="flex items-center gap-1.5">
-                <Shield className="h-4 w-4 text-green-600" aria-hidden="true" />
-                <span>Secure Payment</span>
-              </li>
-              <li className="flex items-center gap-1.5">
-                <Zap className="h-4 w-4 text-primary" aria-hidden="true" />
-                <span>Preview Free Before You Pay</span>
-              </li>
-              <li className="flex items-center gap-1.5">
-                <Clock className="h-4 w-4 text-accent" aria-hidden="true" />
-                <span>Ready in 2 min</span>
-              </li>
-            </ul>
-          </div>
-
         </div>
       </div>
     </section>

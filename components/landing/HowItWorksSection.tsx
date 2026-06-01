@@ -1,109 +1,64 @@
-'use client';
-
-import { motion } from "framer-motion";
-import { Upload, Users, Gift, Sparkles, ArrowRight } from "lucide-react";
-
 const steps = [
   {
-    icon: Upload,
-    number: "1",
-    title: "Upload a Photo",
-    description: "Upload one photo of your friend - the AI needs to learn their face.",
-    duration: "30 sec",
-    color: "from-primary to-yellow-400",
+    number: '1',
+    title: 'Describe their personality',
+    description: 'Enter their name and describe their quirks, obsessions, and inside jokes. The more specific, the funnier.',
+    duration: '60 sec',
+    bg: '#FFC700',
   },
   {
-    icon: Users,
-    number: "2",
-    title: "Describe Their Quirks",
-    description: "Tell us about their personality, habits, hobbies, and inside jokes.",
-    duration: "1 minute",
-    color: "from-accent to-pink-400",
+    number: '2',
+    title: 'Pick your favorite roasts',
+    description: 'AI writes 8 personalized "Things [Name] Would Never Say" quotes. Edit or regenerate any you want.',
+    duration: '30 sec',
+    bg: '#FBF6E6',
   },
   {
-    icon: Sparkles,
-    number: "3",
-    title: "AI Generates Everything",
-    description: "AI creates hilarious roast quotes and illustrations featuring your friend.",
-    duration: "2 minutes",
-    color: "from-blue-500 to-cyan-400",
-  },
-  {
-    icon: Gift,
-    number: "4",
-    title: "Preview & Pay",
-    description: "Review your custom roast book, then pay to unlock the full flipbook.",
-    duration: "Ready now",
-    color: "from-purple-500 to-pink-500",
+    number: '3',
+    title: 'Upload their photo',
+    description: 'One clear photo is all we need. AI places them in hilarious illustrated scenes matching each quote.',
+    duration: '30 sec',
+    bg: '#FFC700',
   },
 ];
 
 export function HowItWorksSection() {
   return (
-    <section className="py-20 md:py-28 bg-muted/50 relative overflow-hidden" aria-labelledby="how-it-works-heading">
-      {/* Background pattern */}
-      <div className="absolute inset-0 bg-grid opacity-30" aria-hidden="true" />
-
-      <div className="container relative max-w-[1200px] mx-auto">
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center max-w-2xl mx-auto mb-16"
-        >
-          <span className="text-primary font-bold text-sm uppercase tracking-wider">
-            Simple Process
-          </span>
-          <h2 id="how-it-works-heading" className="text-3xl md:text-5xl font-heading font-black mt-2 mb-4">
-            5 Minutes From 'I Have an Idea' to 'They're Crying Laughing'
+    <section className="py-20 md:py-24 bg-background" aria-labelledby="how-it-works-heading">
+      <div className="container max-w-[1200px] mx-auto px-4">
+        <div className="text-center max-w-2xl mx-auto mb-14">
+          <div className="inline-block bg-primary border-[2.5px] border-foreground rounded-full px-4 py-1 shadow-[3px_3px_0_#0E0E0E] mb-4">
+            <span className="font-heading font-black text-xs uppercase tracking-widest text-foreground">Under 2 minutes</span>
+          </div>
+          <h2 id="how-it-works-heading" className="font-heading font-black text-3xl md:text-4xl tracking-tight leading-[1.02] text-foreground">
+            From &ldquo;I have an idea&rdquo; to them crying laughing
           </h2>
-          <p className="text-lg text-muted-foreground">
-            From idea to personalized gift in under 5 minutes of your time
-          </p>
-        </motion.header>
+        </div>
 
-        <ol className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-4 list-none mx-auto">
-          {steps.map((step, index) => (
-            <motion.li
-              key={step.number}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              className="relative group"
-            >
-              {/* Connector line */}
-              {index < steps.length - 1 && (
-                <div className="hidden lg:block absolute top-12 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-border to-transparent z-0" aria-hidden="true">
-                  <ArrowRight className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
-                </div>
-              )}
-
-              <article className="relative z-10 bg-card border-2 border-border rounded-2xl p-6 h-full transition-all duration-300 hover:border-primary hover:-translate-y-1 hover:shadow-brutal-sm">
-                {/* Step number with gradient */}
-                <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br ${step.color} text-white font-black text-xl mb-4 shadow-lg`} aria-hidden="true">
+        <ol className="grid md:grid-cols-3 gap-6 list-none">
+          {steps.map((step, i) => (
+            <li key={step.number}>
+              <article
+                className="bg-card border-[2.5px] border-foreground rounded-2xl p-6 h-full shadow-[6px_6px_0_#0E0E0E] transition-all hover:-translate-y-1 hover:shadow-[8px_8px_0_#0E0E0E]"
+              >
+                <div
+                  className="w-12 h-12 rounded-xl border-[2.5px] border-foreground flex items-center justify-center font-heading font-black text-xl mb-5 shadow-[3px_3px_0_#0E0E0E]"
+                  style={{ backgroundColor: step.bg }}
+                  aria-hidden="true"
+                >
                   {step.number}
                 </div>
-
-                {/* Icon */}
-                <div className="mb-4" aria-hidden="true">
-                  <step.icon className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                </div>
-
-                {/* Content */}
-                <h3 className="font-heading text-lg font-bold mb-2">
-                  Step {step.number}: {step.title}
+                <h3 className="font-heading font-black text-lg mb-2 text-foreground">
+                  {step.title}
                 </h3>
-                <p className="text-muted-foreground text-sm mb-3">
+                <p className="text-foreground/60 text-sm leading-relaxed mb-4">
                   {step.description}
                 </p>
-
-                {/* Duration badge */}
-                <span className="inline-block text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">
+                <span className="inline-block font-heading font-black text-xs bg-primary border-[2px] border-foreground rounded-full px-3 py-1">
                   {step.duration}
                 </span>
               </article>
-            </motion.li>
+            </li>
           ))}
         </ol>
       </div>

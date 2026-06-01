@@ -2,10 +2,13 @@ import dynamic from 'next/dynamic';
 import { unstable_cache } from 'next/cache';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { StickyBottomCTA } from '@/components/layout/StickyBottomCTA';
 import { HeroSection } from '@/components/landing/HeroSection';
 import { RealExampleBooksSection } from '@/components/landing/RealExampleBooksSection';
 import { CelebrityShowcase } from '@/components/landing/CelebrityShowcase';
 import { FAQSection } from '@/components/landing/FAQSection';
+import { SocialProofBand } from '@/components/landing/SocialProofBand';
+import { OccasionsRail } from '@/components/landing/OccasionsRail';
 import { supabaseAdmin } from '@/lib/supabase';
 
 // Below-fold heavy components — dynamically imported to reduce initial JS parse/eval
@@ -51,22 +54,43 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {/* Announcement ticker */}
+      <div className="bg-foreground border-b-[2px] border-foreground/20 py-2 px-4 text-center overflow-hidden">
+        <p className="font-heading font-black text-primary text-xs md:text-sm tracking-wide animate-none">
+          🔥 Intro price $9.99 - ends soon
+        </p>
+      </div>
+
       <Header />
+
       <main className="flex-1">
+        {/* Hero */}
         <HeroSection initialBook={tylerBook} />
-        <RealExampleBooksSection initialBooks={allFeaturedBooks} />
-        {/* Value proposition banner */}
-        <div className="py-8 bg-zinc-950 border-t border-white/5 text-center px-4">
-          <p className="text-zinc-400 text-base md:text-lg font-medium">
-            Instant digital delivery&nbsp;&nbsp;•&nbsp;&nbsp;Personalized in under 2 minutes&nbsp;&nbsp;•&nbsp;&nbsp;Share via any app
-          </p>
-        </div>
+
+        {/* Celebrity proof carousel */}
         <CelebrityShowcase />
+
+        {/* Social proof band */}
+        <SocialProofBand />
+
+        {/* How it works */}
         <HowItWorksSection />
+
+        {/* Occasions rail */}
+        <OccasionsRail />
+
+        {/* Real books */}
+        <RealExampleBooksSection initialBooks={allFeaturedBooks} />
+
+        {/* Dark CTA */}
         <CTASection />
+
+        {/* FAQ */}
         <FAQSection />
       </main>
+
       <Footer />
+      <StickyBottomCTA watchId="hero-cta" />
     </div>
   );
 }

@@ -37,28 +37,28 @@ export function FAQSection() {
       <div className="container max-w-[800px] mx-auto px-4">
         <h2
           id="faq-heading"
-          className="text-3xl md:text-4xl font-heading font-black text-center mb-12"
+          className="font-heading font-black text-3xl md:text-4xl tracking-tight text-center mb-12"
         >
           Frequently Asked Questions About The Roast Book
         </h2>
 
-        <dl className="space-y-4">
+        <dl className="space-y-3">
           {faqs.map((faq) => (
             <details
               key={faq.question}
-              className="group rounded-xl border-3 border-foreground bg-background overflow-hidden"
+              className="group bg-card border-[2.5px] border-foreground rounded-2xl overflow-hidden shadow-[4px_4px_0_#0E0E0E]"
             >
-              <summary className="flex items-center justify-between gap-4 p-6 cursor-pointer list-none font-heading font-bold text-foreground text-base md:text-lg hover:bg-muted/30 transition-colors [&::-webkit-details-marker]:hidden">
+              <summary className="flex items-center justify-between gap-4 p-5 cursor-pointer list-none font-heading font-bold text-foreground text-base md:text-lg hover:bg-muted/50 transition-colors [&::-webkit-details-marker]:hidden">
                 <dt>{faq.question}</dt>
                 <span
-                  className="shrink-0 text-foreground transition-transform duration-200 group-open:rotate-180"
+                  className="shrink-0 text-foreground transition-transform duration-200 group-open:rotate-180 text-sm"
                   aria-hidden="true"
                   style={{ display: 'inline-block' }}
                 >
                   ▾
                 </span>
               </summary>
-              <dd className="px-6 pb-6 text-muted-foreground text-sm md:text-base leading-relaxed border-t border-border pt-4">
+              <dd className="px-5 pb-5 text-foreground/60 text-sm md:text-base leading-relaxed border-t-[2px] border-foreground/10 pt-4">
                 {faq.answer}
               </dd>
             </details>
