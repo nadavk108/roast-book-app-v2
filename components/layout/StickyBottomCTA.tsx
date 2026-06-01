@@ -32,18 +32,18 @@ export function StickyBottomCTA({ watchId }: { watchId: string }) {
       }`}
       aria-hidden={!visible}
     >
-      <div className="bg-foreground border-t-[2.5px] border-[#FFC700] px-4 py-3 flex items-center justify-between gap-4 max-w-lg mx-auto md:max-w-none md:rounded-none">
-        <div className="flex items-baseline gap-2">
-          <span className="font-heading font-black text-[#FFC700] text-lg">$9.99</span>
-          <span className="text-background/50 line-through text-sm">$29</span>
-          <span className="text-[#FF2E88] text-xs font-bold">Save 66%</span>
+      <div className="bg-[#0E0E0E] border-t-[2px] border-[#FFC700] px-4 py-2 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 whitespace-nowrap">
+          <span className="font-heading font-black text-[#FFC700] text-base leading-none">$9.99</span>
+          <span className="text-white/40 line-through text-xs leading-none">$29</span>
+          <span className="text-[#FF2E88] text-xs font-bold leading-none">Save 66%</span>
         </div>
         <Link
           href="/create"
-          className="flex items-center gap-1.5 bg-[#FFC700] text-foreground font-heading font-black px-5 py-2.5 rounded-xl border-[2.5px] border-foreground shadow-[3px_3px_0_#0E0E0E] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none transition-all text-sm"
+          className="flex items-center gap-1 bg-[#FFC700] text-[#0E0E0E] font-heading font-black text-xs px-3 py-2 rounded-lg border-[2px] border-[#0E0E0E] shadow-[2px_2px_0_#0E0E0E] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all whitespace-nowrap shrink-0"
         >
           Start Roasting Free
-          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
         </Link>
       </div>
     </div>
