@@ -126,21 +126,21 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         {/* Card */}
-        <div className="bg-card border-3 border-foreground rounded-2xl p-8 md:p-10 shadow-brutal">
+        <div className="bg-card border-[2.5px] border-foreground rounded-2xl p-8 md:p-10 shadow-[8px_8px_0_#0E0E0E]">
           {/* Logo */}
           <Link href="/" className="flex items-center justify-center gap-2 mb-8">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl border-3 border-foreground bg-primary shadow-brutal">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl border-[2.5px] border-foreground bg-primary shadow-[3px_3px_0_#0E0E0E]">
               <Flame className="h-7 w-7 text-primary-foreground" />
             </div>
-            <span className="font-heading text-2xl font-bold">The Roast Book</span>
+            <span className="font-heading text-2xl font-black tracking-tight">THE ROAST BOOK</span>
           </Link>
 
           {/* Heading */}
           <div className="text-center mb-8">
-            <h1 className="font-heading text-3xl md:text-4xl font-black mb-3">
+            <h1 className="font-heading text-3xl md:text-4xl font-black mb-2 tracking-tight">
               Sign in to Roast
             </h1>
-            <p className="text-muted-foreground text-lg">
+            <p className="text-foreground/50 text-base">
               Create hilarious AI-powered roast books for your friends
             </p>
           </div>
@@ -321,7 +321,7 @@ export default function LoginPage() {
       {/* Password Reset Modal */}
       {showPasswordReset && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setShowPasswordReset(false)}>
-          <div className="bg-card border-3 border-foreground rounded-2xl p-8 max-w-md w-full shadow-brutal" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-card border-[2.5px] border-foreground rounded-2xl p-8 max-w-md w-full shadow-[8px_8px_0_#0E0E0E]" onClick={(e) => e.stopPropagation()}>
             <h2 className="font-heading text-2xl font-black mb-2">Reset Password</h2>
             <p className="text-muted-foreground text-sm mb-6">
               Enter your email address and we'll send you a link to reset your password.

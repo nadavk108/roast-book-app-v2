@@ -14,16 +14,16 @@ export const metadata: Metadata = {
 
 export default function HowItWorks() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1">
-        <div className="py-12 bg-background">
+        <div className="py-14 bg-background border-b-[2.5px] border-foreground">
           <div className="container text-center max-w-[1200px] mx-auto px-4">
-            <h1 className="text-4xl md:text-5xl font-heading font-bold mb-4">
+            <h1 className="font-heading font-black text-4xl md:text-5xl tracking-tight leading-[1.02] mb-3">
               How The Roast Book Works
             </h1>
-            <p className="text-xl text-muted-foreground">
-              Create the ultimate personalized gag gift in just a few simple steps
+            <p className="text-foreground/50 text-lg max-w-xl mx-auto">
+              From idea to hilarious personalized gift in under 2 minutes
             </p>
           </div>
         </div>
@@ -34,10 +34,10 @@ export default function HowItWorks() {
           <div className="container max-w-[800px] mx-auto px-4 space-y-16">
 
             <section aria-labelledby="different-heading">
-              <h2 id="different-heading" className="text-2xl md:text-3xl font-heading font-black mb-6">
+              <h2 id="different-heading" className="font-heading font-black text-2xl md:text-3xl tracking-tight mb-6">
                 What Makes The Roast Book Different From a Regular Gift?
               </h2>
-              <div className="space-y-4 text-zinc-400 leading-relaxed">
+              <div className="space-y-4 text-foreground/60 leading-relaxed">
                 <p>
                   The Roast Book is a $9.99 AI-powered personalized gift that creates an illustrated
                   flipbook of funny quotes your friend would never say. Unlike generic greeting cards

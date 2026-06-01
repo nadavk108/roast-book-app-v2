@@ -113,10 +113,14 @@ export function LandingPageContent({
 
       {/* Sticky bottom CTA */}
       {showStickyBar && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur-sm border-t-3 border-foreground px-4 py-3 flex items-center justify-center">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-foreground border-t-[2.5px] border-primary px-4 py-3 flex items-center justify-between gap-4 max-w-lg mx-auto md:max-w-none">
+          <div className="flex items-baseline gap-2">
+            <span className="font-heading font-black text-primary text-lg">$9.99</span>
+            <span className="text-background/50 line-through text-sm">$29</span>
+          </div>
           <BrutalButton size="sm" asChild onClick={() => handleCtaClick('sticky_bar')}>
             <Link href="/create">
-              Create Their Book - $9.99
+              Start Roasting Free
               <ArrowRight className="ml-1 h-4 w-4" />
             </Link>
           </BrutalButton>
@@ -126,20 +130,18 @@ export function LandingPageContent({
       <main className="flex-1">
 
         {/* Hero */}
-        <section className="relative overflow-hidden py-20 md:py-32">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/5" aria-hidden="true" />
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" aria-hidden="true" />
+        <section className="py-16 md:py-24 bg-background">
+          <div className="container max-w-[860px] mx-auto text-center px-4">
+            <div className="inline-flex items-center gap-2 bg-primary border-[2.5px] border-foreground rounded-full px-4 py-1.5 shadow-[3px_3px_0_#0E0E0E] mb-6">
+              <span aria-hidden="true">🎁</span>
+              <span className="font-heading font-black text-sm text-foreground">Personalized Gift - $9.99</span>
+            </div>
 
-          <div className="container max-w-[860px] mx-auto text-center relative z-10 px-4">
-            <span className="inline-flex items-center gap-2 px-4 py-2 bg-primary/15 border-2 border-primary/40 rounded-full text-sm font-bold mb-8">
-              Personalized Gift - $9.99
-            </span>
-
-            <h1 className="text-4xl md:text-6xl font-heading font-black mb-6 leading-tight">
+            <h1 className="font-heading font-black text-4xl md:text-6xl mb-6 leading-[1.02] tracking-[-1px]">
               {heroHeadline}
             </h1>
 
-            <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-foreground/60 text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
               {heroSubheadline}
             </p>
 
@@ -151,16 +153,16 @@ export function LandingPageContent({
                 </Link>
               </BrutalButton>
               {bookCount !== null && (
-                <p className="mt-3 text-sm text-muted-foreground">
+                <p className="mt-3 text-sm text-foreground/50">
                   🔥 {bookCount.toLocaleString()} roast books created
                 </p>
               )}
-              <p className="mt-2 text-sm text-muted-foreground">
+              <p className="mt-2 text-sm text-foreground/50">
                 Preview 3 pages free. Pay only when you love it.
               </p>
             </div>
 
-            <p className="mt-4 text-sm text-muted-foreground">Ready in under 2 minutes</p>
+            <p className="mt-4 text-sm text-foreground/40">Ready in under 2 minutes</p>
           </div>
         </section>
 
@@ -203,12 +205,12 @@ export function LandingPageContent({
             <ol className="grid md:grid-cols-3 gap-6 list-none">
               {HOW_IT_WORKS.map(({ Icon, title, description }, i) => (
                 <li key={i}>
-                  <article className="bg-card border-3 border-foreground rounded-2xl p-6 h-full shadow-brutal transition-transform hover:-translate-y-1">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary text-primary-foreground mb-4 border-2 border-foreground shadow-brutal-hover">
+                  <article className="bg-card border-[2.5px] border-foreground rounded-2xl p-6 h-full shadow-[6px_6px_0_#0E0E0E] transition-all hover:-translate-y-1 hover:shadow-[8px_8px_0_#0E0E0E]">
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary mb-4 border-[2.5px] border-foreground shadow-[3px_3px_0_#0E0E0E]">
                       <Icon className="w-6 h-6" />
                     </div>
-                    <h3 className="font-heading text-lg font-bold mb-2">{title}</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
+                    <h3 className="font-heading font-black text-lg mb-2 tracking-tight">{title}</h3>
+                    <p className="text-foreground/60 text-sm leading-relaxed">{description}</p>
                   </article>
                 </li>
               ))}
@@ -284,19 +286,21 @@ export function LandingPageContent({
         </section>
 
         {/* Final CTA */}
-        <section className="py-20 md:py-28 bg-primary border-y-3 border-foreground">
+        <section className="py-20 md:py-28 bg-foreground">
           <div className="container max-w-[700px] mx-auto text-center px-4">
-            <h2 className="text-3xl md:text-5xl font-heading font-black text-primary-foreground mb-8">
+            <h2 className="font-heading font-black text-3xl md:text-5xl tracking-tight leading-[1.02] text-background mb-8">
               {finalCtaHeadline}
             </h2>
 
-            <BrutalButton size="xl" variant="secondary" asChild onClick={() => handleCtaClick('bottom')}>
-              <Link href="/create">
-                Create Their Book - $9.99
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </BrutalButton>
-            <p className="mt-4 text-primary-foreground/70 text-sm">
+            <Link
+              href="/create"
+              className="inline-flex items-center gap-2 bg-primary text-foreground font-heading font-black text-xl px-10 py-5 rounded-xl border-[2.5px] border-background shadow-[6px_6px_0_#F5B400] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-[6px] active:translate-y-[6px] active:shadow-none transition-all"
+              onClick={() => handleCtaClick('bottom')}
+            >
+              Create Their Book - $9.99
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
+            <p className="mt-4 text-background/40 text-sm">
               No account needed to start. Pay only when you love it.
             </p>
           </div>
