@@ -15,11 +15,34 @@ export default function CreatePage() {
     const [victimName, setVictimName] = useState('');
     const [victimGender, setVictimGender] = useState<'male' | 'female' | 'neutral'>('neutral');
     const [description, setDescription] = useState('');
+    const [selectedTraits, setSelectedTraits] = useState<string[]>([]);
+
+    const TRAIT_CHIPS = [
+        'Always late', 'Coffee addict', 'Gym obsessed',
+        'Phone addict', 'Thinks they can cook', 'Netflix binger',
+        'Party animal', 'Homebody', 'Overthinker',
+        'Sneakerhead', 'Always eating', 'Drama queen',
+        'Workaholic', 'TikTok addict', 'Never on time',
+        'Control freak', 'Shopaholic', 'Loud laugher',
+    ];
+
+    const toggleTrait = (trait: string) => {
+        setSelectedTraits(prev =>
+            prev.includes(trait)
+                ? prev.filter(t => t !== trait)
+                : [...prev, trait]
+        );
+    };
 
     const progressWidth = flowStep === 1 ? '25%' : '50%';
 
     const handleGenerateRoasts = async () => {
-        if (!victimName.trim() || !description.trim()) return;
+        const combinedDescription = [
+            ...selectedTraits,
+            description.trim(),
+        ].filter(Boolean).join(', ');
+
+        if (!victimName.trim() || !combinedDescription) return;
 
         setLoading(true);
 
@@ -33,7 +56,7 @@ export default function CreatePage() {
                 body: JSON.stringify({
                     victimName: victimName.trim(),
                     victimGender,
-                    description: description.trim(),
+                    description: combinedDescription,
                     session_token: sessionToken,
                 }),
             });
@@ -51,11 +74,11 @@ export default function CreatePage() {
             fetch('/api/generate-quotes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ bookId, victimName: victimName.trim(), trueTraits: description.trim() }),
+                body: JSON.stringify({ bookId, victimName: victimName.trim(), trueTraits: combinedDescription }),
             }).catch(err => console.warn('[Create] Quote pre-generation failed:', err));
 
             // 3. Navigate to quotes page
-            const traitsParam = `?traits=${encodeURIComponent(description.trim())}`;
+            const traitsParam = `?traits=${encodeURIComponent(combinedDescription)}`;
             router.push(`/create/${bookId}/quotes${traitsParam}`);
         } catch (error: any) {
             alert(`Error: ${error.message || 'Failed to create book. Please try again.'}`);
@@ -65,7 +88,7 @@ export default function CreatePage() {
     };
 
     const step1Valid = victimName.trim().length > 0;
-    const step2Valid = description.trim().length >= 12 && !loading;
+    const step2Valid = (selectedTraits.length >= 3 || description.trim().length >= 12) && !loading;
 
     return (
         <div className="min-h-screen bg-background font-body text-foreground flex flex-col">
@@ -177,15 +200,35 @@ export default function CreatePage() {
                         <h1 className="font-heading font-black text-2xl md:text-3xl mb-2 tracking-tight">
                             Tell us about {victimName}
                         </h1>
-                        <p className="text-foreground/50 mb-6 text-sm">
-                            Anything goes: hobbies, habits, obsessions, quirks, inside jokes. We&apos;ll turn it into hilarious roasts.
+                        <p className="text-foreground/50 mb-4 text-sm">
+                            Tap what sounds like them:
                         </p>
+
+                        <div className="flex flex-wrap gap-2 mb-6">
+                            {TRAIT_CHIPS.map((trait) => {
+                                const selected = selectedTraits.includes(trait);
+                                return (
+                                    <button
+                                        key={trait}
+                                        type="button"
+                                        onClick={() => toggleTrait(trait)}
+                                        className={`px-4 py-2 rounded-full border-[2.5px] border-[#0E0E0E] text-[14px] font-body transition-all active:translate-y-[1px] active:shadow-none ${
+                                            selected
+                                                ? 'bg-[#FFC700] font-bold shadow-[2px_2px_0_#0E0E0E]'
+                                                : 'bg-white font-semibold'
+                                        }`}
+                                    >
+                                        {trait}
+                                    </button>
+                                );
+                            })}
+                        </div>
 
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder="e.g. Lives for pizza, always 15 min late, TikTok addict, thinks he's a chef but burns eggs, sleeps till 2pm on weekends, still quotes The Office daily..."
-                            className="w-full min-h-[160px] p-4 rounded-xl border-[2.5px] border-foreground bg-muted text-base resize-none focus:outline-none focus:ring-2 focus:ring-primary shadow-[2px_2px_0_#0E0E0E] placeholder:text-foreground/30 placeholder:text-sm"
+                            placeholder="Add inside jokes, specific quirks, catchphrases..."
+                            className="w-full min-h-[100px] p-4 rounded-xl border-[2.5px] border-foreground bg-muted text-base resize-none focus:outline-none focus:ring-2 focus:ring-primary shadow-[2px_2px_0_#0E0E0E] placeholder:text-foreground/30 placeholder:text-sm"
                             maxLength={800}
                         />
                         <div className="flex justify-between items-center mt-2 mb-6">
