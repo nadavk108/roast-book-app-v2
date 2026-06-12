@@ -76,7 +76,37 @@ If a quote:
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { bookId, victimName, trueTraits } = body;
+    const { bookId, victimName, trueTraits, quotes: providedQuotes } = body;
+
+    // ============================================================
+    // SAVE PATH — user-edited quotes. Runs BEFORE any AI branch.
+    // If a non-empty quotes array is provided, it is the user's own
+    // selected/edited text. Persist it verbatim and return. Never send
+    // it to a model. Never regenerate.
+    // ============================================================
+    if (bookId && Array.isArray(providedQuotes) && providedQuotes.length > 0) {
+      const cleanQuotes = providedQuotes
+        .filter((q: unknown): q is string => typeof q === 'string' && q.trim().length > 0)
+        .map((q: string) => q.trim())
+        .slice(0, 8);
+
+      if (cleanQuotes.length === 0) {
+        return NextResponse.json({ error: 'No valid quotes provided' }, { status: 400 });
+      }
+
+      const { error: saveError } = await supabaseAdmin
+        .from('roast_books')
+        .update({ quotes: cleanQuotes })
+        .eq('id', bookId);
+
+      if (saveError) {
+        console.error(`[${bookId}] Failed to save user quotes:`, saveError);
+        return NextResponse.json({ error: 'Failed to save quotes' }, { status: 500 });
+      }
+
+      console.log(`[${bookId}] ✅ Saved ${cleanQuotes.length} user-edited quotes verbatim (no AI)`);
+      return NextResponse.json({ success: true, quotes: cleanQuotes });
+    }
 
     // Traits-based generation for Roast Assistant ("Need help" button)
     if (victimName && trueTraits) {
