@@ -160,21 +160,22 @@ export default function QuotesPage() {
             (window as any).fbq('track', 'Lead');
         }
 
-        // Save quotes to DB before navigating
+        // Persist the user's edited quotes verbatim. Send ONLY bookId + quotes so
+        // the API takes the save path and never regenerates. Only navigate if the
+        // save actually succeeded — otherwise the user proceeds with stale quotes.
         setSaving(true);
         try {
-            await fetch('/api/generate-quotes', {
+            const res = await fetch('/api/generate-quotes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    bookId,
-                    victimName: book?.victim_name || '',
-                    trueTraits: book?.victim_traits || '',
-                    quotes, // pass selected quotes to save
-                }),
+                body: JSON.stringify({ bookId, quotes }),
             });
+            if (!res.ok) throw new Error(`Save failed: ${res.status}`);
         } catch (err) {
-            console.warn('[Quotes] Failed to persist quote selection:', err);
+            console.error('[Quotes] Failed to persist quote selection:', err);
+            setSaving(false);
+            alert(isHebrew ? 'שמירת הציטוטים נכשלה. נסו שוב.' : 'Could not save your quotes. Please try again.');
+            return;
         }
 
         // Navigate to photo upload (Step 4)
