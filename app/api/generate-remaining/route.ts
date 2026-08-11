@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { createClient } from '@/lib/supabase-server';
 import { isAdminUser } from '@/lib/admin';
 import { generateVisualPrompt, generateSceneDirection } from '@/lib/prompt-engineering';
-import { generateRoastImage } from '@/lib/image-generation';
+import { generateRoastImage, GeminiReferenceError, ACTIVE_PROVIDER } from '@/lib/image-generation';
 import { downloadAndUploadImage } from '@/lib/utils';
 import { withRetryContext } from '@/lib/retry';
 
@@ -149,14 +149,14 @@ async function processRemainingImages(book: any) {
         }
       ).then(prompt => {
         console.log(`[${bookId}] ✅ Generated prompt ${i + 3}`);
-        return { index: i + 3, prompt };
+        return { index: i + 3, prompt, quote };
       })
     );
 
     const visualPrompts = await Promise.all(visualPromptPromises);
     console.log(`[${bookId}] All ${visualPrompts.length} prompts generated`);
 
-    const imagePromises = visualPrompts.map(async ({ index, prompt }) => {
+    const imagePromises = visualPrompts.map(async ({ index, prompt, quote }) => {
       console.log(`[${bookId}] Generating image ${index}...`);
 
       const imageUrl = await withRetryContext(
@@ -179,23 +179,34 @@ async function processRemainingImages(book: any) {
       );
       console.log(`[${bookId}] ✅ Image ${index} uploaded to storage`);
 
-      return { index, url: storedUrl };
+      return { index, url: storedUrl, prompt, quote };
     });
 
     const remainingImages = await Promise.all(imagePromises);
 
+    const sortedRemaining = remainingImages.sort((a, b) => a.index - b.index);
     const fullImageUrls = [
       ...book.preview_image_urls,
-      ...remainingImages.sort((a, b) => a.index - b.index).map(img => img.url)
+      ...sortedRemaining.map(img => img.url)
     ];
 
     console.log(`[${bookId}] All ${fullImageUrls.length} images ready`);
+
+    const remainingLog = sortedRemaining.map(({ index, quote, prompt }) => ({
+      index,
+      quote,
+      prompt,
+      provider: ACTIVE_PROVIDER,
+      generated_at: new Date().toISOString(),
+    }));
+    const fullLog = [...(book.generation_log || []), ...remainingLog];
 
     const { error: updateError } = await supabaseAdmin
       .from('roast_books')
       .update({
         status: 'complete',
         full_image_urls: fullImageUrls,
+        generation_log: fullLog,
       })
       .eq('id', bookId);
 
@@ -226,6 +237,19 @@ async function processRemainingImages(book: any) {
     return { totalImages: fullImageUrls.length };
 
   } catch (error) {
+    if (error instanceof GeminiReferenceError) {
+      console.error(`[${bookId}] Reference edit failed in generate-remaining — persisting flag.`);
+      await supabaseAdmin
+        .from('roast_books')
+        .update({
+          status: 'failed',
+          reference_edit_failed: true,
+          error_message: 'Reference image rejected: upload a clear photo of a real person.',
+        })
+        .eq('id', bookId);
+      throw error;
+    }
+
     console.error(`[${bookId}] ========== FAILED ==========`, error);
 
     await supabaseAdmin

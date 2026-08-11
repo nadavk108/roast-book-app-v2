@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { createClient } from '@/lib/supabase-server';
-import { generateRoastImage } from '@/lib/image-generation';
+import { generateRoastImage, GeminiReferenceError, ACTIVE_PROVIDER } from '@/lib/image-generation';
 import { generateVisualPrompt, generateSceneDirection } from '@/lib/prompt-engineering';
 import { downloadAndUploadImage } from '@/lib/utils';
 import { withRetryContext } from '@/lib/retry';
@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
         }
       ).then(prompt => {
         console.log(`[${bookId}] ✅ Prompt ${index} generated`);
-        return { index, prompt };
+        return { index, prompt, quote };
       })
     );
 
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
 
     // STEP 5: Generate all 3 images IN PARALLEL
     console.log(`[${bookId}] Step 2/3: Generating images...`);
-    const imagePromises = visualPrompts.map(async ({ index, prompt }) => {
+    const imagePromises = visualPrompts.map(async ({ index, prompt, quote }) => {
       try {
         console.log(`[${bookId}] Generating image ${index}...`);
 
@@ -219,7 +219,7 @@ export async function POST(request: NextRequest) {
 
         console.log(`[${bookId}] ✅ Image ${index} uploaded to storage`);
 
-        return { index, url: storedUrl };
+        return { index, url: storedUrl, prompt, quote };
       } catch (err) {
         console.error(`[${bookId}] ❌ Failed to generate image ${index}:`, err);
         throw err;
@@ -232,6 +232,14 @@ export async function POST(request: NextRequest) {
     const sortedImages = generatedImages.sort((a, b) => a.index - b.index);
     const previewImageUrls = sortedImages.map(img => img.url);
 
+    const generationLog = sortedImages.map(({ index, quote, prompt }) => ({
+      index,
+      quote,
+      prompt,
+      provider: ACTIVE_PROVIDER,
+      generated_at: new Date().toISOString(),
+    }));
+
     console.log(`[${bookId}] Step 3/3: Saving to database...`);
     console.log(`[${bookId}] Preview URLs:`, previewImageUrls);
 
@@ -243,6 +251,7 @@ export async function POST(request: NextRequest) {
       preview_image_urls: previewImageUrls,
       cover_image_url: previewImageUrls[0],
       status: 'preview_ready' as const,
+      generation_log: generationLog,
     };
 
     console.log(`[${bookId}] Updating book with status: ${updateData.status}`);
@@ -296,6 +305,28 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
+    // Reference image rejected by Gemini — book needs re-upload, not a generic retry
+    if (error instanceof GeminiReferenceError) {
+      console.error(`[${bookId}] Reference edit failed — persisting flag and stopping.`);
+      if (bookId) {
+        await supabaseAdmin
+          .from('roast_books')
+          .update({
+            status: 'failed',
+            reference_edit_failed: true,
+            error_message: 'Reference image rejected: upload a clear photo of a real person.',
+          })
+          .eq('id', bookId);
+      }
+      return NextResponse.json(
+        {
+          error: 'The uploaded photo could not be used. Please upload a clear, real photo of the person.',
+          code: 'reference_edit_failed',
+        },
+        { status: 422 }
+      );
+    }
+
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : undefined;
     const errorDetails = {

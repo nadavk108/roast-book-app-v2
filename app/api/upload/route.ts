@@ -47,6 +47,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate photo contains exactly one real human face — fail closed on error
+    try {
+      const validation = await validateHumanFace(imageFile);
+      if (!validation.valid) {
+        console.log('Photo rejected by face validation:', validation.errorMessage);
+        return NextResponse.json({ error: validation.errorMessage }, { status: 422 });
+      }
+    } catch (validationErr: any) {
+      console.error('Face validation call failed:', validationErr?.message);
+      return NextResponse.json(
+        { error: 'Unable to validate your photo. Please try again.' },
+        { status: 422 }
+      );
+    }
+
     // Generate unique slug
     const slug = generateBookSlug();
     // Storage path uses slug (not user_id) so anonymous uploads work fine
@@ -121,4 +136,53 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+async function validateHumanFace(
+  imageFile: File,
+): Promise<{ valid: boolean; errorMessage: string | null }> {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) throw new Error('GEMINI_API_KEY not configured');
+
+  const { GoogleGenerativeAI } = await import('@google/generative-ai');
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+
+  const bytes = await imageFile.arrayBuffer();
+  const base64 = Buffer.from(bytes).toString('base64');
+  const mimeType = imageFile.type || 'image/jpeg';
+
+  const result = await model.generateContent({
+    contents: [{
+      role: 'user',
+      parts: [
+        { inlineData: { mimeType, data: base64 } },
+        {
+          text: `Analyze this image. Reply with ONLY a JSON object, no markdown, no explanation:
+{"is_human_face":true,"face_count":1}
+
+Rules:
+- is_human_face: true ONLY if there is exactly one clearly visible real human face
+- face_count: integer count of human faces (0 if none)
+- Set is_human_face to false if image contains: animals, cartoons, memes, objects, screenshots, phone screens, or multiple people`,
+        },
+      ],
+    }],
+    generationConfig: { temperature: 0, maxOutputTokens: 60 },
+  });
+
+  // Strip markdown fences Gemini sometimes wraps around JSON
+  const raw = result.response.text().trim().replace(/^```(?:json)?\n?|\n?```$/g, '');
+  const parsed = JSON.parse(raw) as { is_human_face: boolean; face_count: number };
+
+  if (parsed.is_human_face === true) return { valid: true, errorMessage: null };
+
+  const count = parsed.face_count ?? 0;
+  if (count === 0) {
+    return { valid: false, errorMessage: 'No face detected - please upload a clear photo of the person.' };
+  }
+  if (count > 1) {
+    return { valid: false, errorMessage: 'Multiple faces detected - please upload a photo with just one person.' };
+  }
+  return { valid: false, errorMessage: 'Please upload a real photo of a person - no animals, memes, or objects.' };
 }

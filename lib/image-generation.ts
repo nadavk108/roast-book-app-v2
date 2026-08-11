@@ -3,6 +3,13 @@
  * This is Google's advanced image generation model with professional-grade output
  */
 
+export class GeminiReferenceError extends Error {
+  constructor(message: string, public readonly cause: unknown) {
+    super(message);
+    this.name = 'GeminiReferenceError';
+  }
+}
+
 export type ImageGenerationConfig = {
   prompt: string;
   victimImageUrl?: string;
@@ -11,7 +18,7 @@ export type ImageGenerationConfig = {
 export type ImageProvider = 'dall-e-3' | 'nano-banana-pro' | 'google-imagen-4' | 'google-imagen-3';
 
 // Using Gemini Nano Banana Pro for image editing with victim reference
-const ACTIVE_PROVIDER: ImageProvider = 'nano-banana-pro';
+export const ACTIVE_PROVIDER: ImageProvider = 'nano-banana-pro';
 
 /**
  * Generate a roast image using the active provider
@@ -210,9 +217,11 @@ ${config.prompt}`
     console.error('[NANO-BANANA-PRO] Error code:', error?.code);
     console.error('[NANO-BANANA-PRO] Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
 
-    // Fall back to DALL-E 3 if edit fails
-    console.log('[NANO-BANANA-PRO] Falling back to DALL-E 3...');
-    return generateWithDallE3(config);
+    console.error('[NANO-BANANA-PRO] Reference edit failed — propagating to caller, NOT falling back.');
+    throw new GeminiReferenceError(
+      `Gemini reference edit failed: ${error?.message ?? 'unknown error'}`,
+      error,
+    );
   }
 }
 
